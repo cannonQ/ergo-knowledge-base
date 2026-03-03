@@ -1,0 +1,16 @@
+# Old git clone cache — no longer used (script now uses GitHub API)
+.repo-cache/
+
+# LanceDB vector store — large binary files, not committed
+vectordb/*.lance
+vectordb/*.idx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

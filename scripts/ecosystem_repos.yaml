@@ -1,0 +1,422 @@
+# Ecosystem Repository Catalog
+# Used by: scripts/clone_and_process_repos.py
+# Sourced from: Section 8 of ergo-knowledge-base-plan.md
+#
+# Fields:
+#   org/repo    — GitHub org and repo name (cloned as github.com/{org}/{repo})
+#   priority    — high | medium | low (controls processing order and inclusion)
+#   group       — core-protocol | sdk | defi | infrastructure | dao | analytics | reference
+#   language    — list of primary languages (for file-type targeting)
+#   extract     — what to pull: contracts (.es/.ergo), patterns (regex match), readme, docs, swagger
+#   patterns    — regex keywords to find in non-ErgoScript code (tx building, EIP-12, etc.)
+#   output_dir  — relative path under EKB root where generated docs go
+#   description — one-line summary fed into LLM context
+#   special     — optional: "citadel" triggers per-protocol extraction pass
+#
+# NOTE: Verify org names against GitHub before running — some may have renamed.
+# Run with: python3 scripts/clone_and_process_repos.py --dry-run
+
+repos:
+
+  # ── Core Protocol ────────────────────────────────────────────────────────
+
+  - org: ergoplatform
+    repo: ergo
+    priority: high
+    group: core-protocol
+    language: [scala]
+    extract: [swagger, readme]
+    patterns: []
+    output_dir: content/reference/node-api
+    description: "Ergo node — REST API endpoints (Swagger), config options, mining parameters"
+
+  - org: ergoplatform
+    repo: sigmastate-interpreter
+    priority: high
+    group: core-protocol
+    language: [scala]
+    extract: [contracts, readme, docs]
+    patterns: []
+    output_dir: content/reference/ergoscript
+    description: "ErgoScript compiler internals, ErgoTree spec, test cases as usage examples"
+
+  - org: ergoplatform
+    repo: sigma-rust
+    priority: high
+    group: core-protocol
+    language: [rust]
+    extract: [readme, docs]
+    patterns: []
+    output_dir: content/sdks/sigma-rust
+    description: "Rust sigma-state implementation — WASM bindings, wallet features, ErgoTree interpreter"
+
+  - org: ergoplatform
+    repo: eips
+    priority: high
+    group: core-protocol
+    language: [markdown]
+    extract: [docs, readme]
+    patterns: []
+    output_dir: content/reference/eips
+    description: "All Ergo Improvement Proposals as structured reference docs"
+
+  - org: ergoplatform
+    repo: oracle-core
+    priority: high
+    group: core-protocol
+    language: [rust]
+    extract: [contracts, readme, docs]
+    patterns: [OraclePool, postDataPoint, updatePool]
+    output_dir: content/ecosystem/oracle-pools
+    description: "Oracle pool v2 architecture, connector patterns, data posting"
+
+  - org: ergoplatform
+    repo: ergo-appkit
+    priority: high
+    group: sdk
+    language: [java, scala]
+    extract: [readme, docs]
+    patterns: [newTxBuilder, outBoxBuilder, buildUnsignedTransaction, ErgoProver, ErgoClient]
+    output_dir: content/sdks/appkit
+    description: "JVM SDK — transaction building, contract compilation, wallet interaction"
+
+  # ── Fleet SDK ────────────────────────────────────────────────────────────
+
+  - org: fleet-sdk
+    repo: fleet
+    priority: high
+    group: sdk
+    language: [typescript]
+    extract: [readme, docs]
+    patterns: [TransactionBuilder, OutputBuilder, ErgoAddress, RECOMMENDED_MIN_FEE_VALUE, SLong, SByte]
+    output_dir: content/sdks/fleet-sdk
+    description: "Fleet SDK core — TypeScript transaction builder, wallet integration, serialization"
+
+  - org: fleet-sdk
+    repo: fleet-by-example
+    priority: high
+    group: sdk
+    language: [typescript]
+    extract: [contracts, readme]
+    patterns: [TransactionBuilder, OutputBuilder, mintToken, burnToken]
+    output_dir: examples/fleet-sdk
+    description: "Fleet SDK worked examples — direct cookbook material for token minting, tx building"
+
+  - org: fleet-sdk
+    repo: docs
+    priority: high
+    group: sdk
+    language: [markdown]
+    extract: [docs, readme]
+    patterns: []
+    output_dir: content/sdks/fleet-sdk
+    description: "Fleet SDK VitePress documentation — migrate and cross-reference"
+
+  # ── Python SDKs ──────────────────────────────────────────────────────────
+
+  - org: ergo-pad
+    repo: ergo-python-appkit
+    priority: medium
+    group: sdk
+    language: [python]
+    extract: [readme, docs]
+    patterns: [ErgoAppKit, buildUnsignedTransaction, signTransaction]
+    output_dir: content/sdks/python
+    description: "Python AppKit wrapper (ergpy) — JPype bridge, transaction building patterns"
+
+  # ── Wallets ──────────────────────────────────────────────────────────────
+
+  - org: ergoplatform
+    repo: ergo-wallet-app
+    priority: medium
+    group: infrastructure
+    language: [kotlin]
+    extract: [readme]
+    patterns: []
+    output_dir: content/ecosystem/ergo-wallet
+    description: "Official Ergo Android/iOS wallet — key management, mobile wallet patterns"
+
+  - org: ergoplatform
+    repo: ledger-app-ergo
+    priority: low
+    group: infrastructure
+    language: [c]
+    extract: [readme, docs]
+    patterns: []
+    output_dir: content/ecosystem/ledger
+    description: "Ledger hardware wallet integration for Ergo"
+
+  # ── DEX / Spectrum ───────────────────────────────────────────────────────
+
+  - org: spectrum-finance
+    repo: ergo-dex
+    priority: high
+    group: defi
+    language: [ergoscript, scala]
+    extract: [contracts, readme]
+    patterns: []
+    output_dir: content/ecosystem/spectrum-dex/contracts
+    description: "Spectrum DEX (formerly ErgoDEX) — AMM pools, order-book, atomic swaps, LP mechanics"
+
+  - org: spectrum-finance
+    repo: ergo-dex-backend
+    priority: high
+    group: defi
+    language: [scala]
+    extract: [readme]
+    patterns: [executeOrder, matchOrders, poolState, submitTransaction]
+    output_dir: content/ecosystem/spectrum-dex
+    description: "Spectrum off-chain execution bots — order matching, state tracking"
+
+  # ── Stablecoins ──────────────────────────────────────────────────────────
+
+  - org: kushti
+    repo: dexy-stable
+    priority: high
+    group: defi
+    language: [ergoscript, scala]
+    extract: [contracts, readme, docs]
+    patterns: []
+    output_dir: content/ecosystem/dexy
+    description: "Dexy stablecoin — oracle-pegged minting, LP, cross-tracker, anti-drain mechanisms"
+
+  - org: DjedAlliance
+    repo: Djed-Ergo
+    priority: high
+    group: defi
+    language: [ergoscript, scala]
+    extract: [contracts, readme]
+    patterns: [HeadlessDApp, mintSigUSD, redeemSigUSD, mintSigRSV]
+    output_dir: content/ecosystem/sigmausd
+    description: "SigmaUSD / AgeUSD — stablecoin protocol, headless dApp pattern, reserve management"
+
+  # ── Lending / Options ────────────────────────────────────────────────────
+
+  - org: duckpools-io
+    repo: duckpools
+    priority: high
+    group: defi
+    language: [ergoscript]
+    extract: [contracts, readme]
+    patterns: []
+    output_dir: content/ecosystem/duckpools
+    description: "Duckpools — lending pools, collateralized borrowing, interest rate algorithms, liquidation"
+
+  # ── Proof-of-Hodl ────────────────────────────────────────────────────────
+
+  - org: PhoenixErgo
+    repo: phoenix-hodlcoin-contracts
+    priority: medium
+    group: defi
+    language: [ergoscript]
+    extract: [contracts, readme]
+    patterns: []
+    output_dir: content/ecosystem/phoenix-hodlcoin
+    description: "HodlCoin / Phoenix — proof-of-hodl mechanics, time-locked value accrual"
+
+  # ── Rosen Bridge ─────────────────────────────────────────────────────────
+
+  - org: rosen-bridge
+    repo: contract
+    priority: high
+    group: infrastructure
+    language: [ergoscript]
+    extract: [contracts, readme, docs]
+    patterns: []
+    output_dir: content/ecosystem/rosen-bridge/contracts
+    description: "Rosen Bridge contracts — guard/watcher architecture, multi-sig consensus, RWT staking, fraud detection"
+
+  - org: rosen-bridge
+    repo: watcher
+    priority: high
+    group: infrastructure
+    language: [typescript]
+    extract: [readme]
+    patterns: [createCommitment, triggerEvent, observationExtractor]
+    output_dir: content/ecosystem/rosen-bridge
+    description: "Rosen watcher node — chain scanning, commitment creation, event trigger assembly"
+
+  - org: rosen-bridge
+    repo: scanner
+    priority: high
+    group: infrastructure
+    language: [typescript]
+    extract: [readme]
+    patterns: [AbstractScanner, extractObservation, AbstractExtractor]
+    output_dir: content/ecosystem/rosen-bridge
+    description: "Rosen abstract scanner — address/token extractors, observation extraction pattern"
+
+  # ── EIP-12 Wallets ───────────────────────────────────────────────────────
+
+  - org: nautls
+    repo: nautilus-wallet
+    priority: high
+    group: infrastructure
+    language: [typescript, vue]
+    extract: [readme]
+    patterns: [ergoConnector, get_utxos, sign_tx, submit_tx, get_change_address]
+    output_dir: content/ecosystem/nautilus
+    description: "Nautilus wallet — EIP-12 dApp connector reference implementation, Ledger integration"
+
+  - org: ThierryM1212
+    repo: SAFEW
+    priority: medium
+    group: infrastructure
+    language: [javascript]
+    extract: [readme]
+    patterns: [ergoConnector, sign_tx, ErgoMixer]
+    output_dir: content/ecosystem/safew
+    description: "SAFEW — alternative EIP-12 browser wallet, ErgoMixer integration"
+
+  # ── DAO / Governance ─────────────────────────────────────────────────────
+
+  - org: paideiadao
+    repo: paideia-contracts
+    priority: high
+    group: dao
+    language: [ergoscript, python]
+    extract: [contracts, readme, docs]
+    patterns: []
+    output_dir: content/ecosystem/paideia/contracts
+    description: "Paideia DAO contracts — staking, voting, proposal lifecycle, treasury management, config boxes"
+
+  - org: paideiadao
+    repo: paideia-app
+    priority: medium
+    group: dao
+    language: [typescript]
+    extract: [readme]
+    patterns: [ergoConnector, TransactionBuilder, walletConnect]
+    output_dir: content/ecosystem/paideia
+    description: "Paideia frontend — full Next.js dApp with wallet connection, proposal UI, staking"
+
+  - org: paideiadao
+    repo: paideia-state
+    priority: medium
+    group: dao
+    language: [scala]
+    extract: [readme]
+    patterns: [scanBoxes, trackBox, stateTransition]
+    output_dir: content/ecosystem/paideia
+    description: "Paideia on-chain state tracking — box scanning, state reconstruction"
+
+  - org: paideiadao
+    repo: paideia-offchain
+    priority: medium
+    group: dao
+    language: [python]
+    extract: [readme]
+    patterns: [buildTransaction, submitTransaction, botOperation]
+    output_dir: content/ecosystem/paideia
+    description: "Paideia off-chain logic — transaction assembly, bot operations in Python"
+
+  # ── Analytics / Indexing ─────────────────────────────────────────────────
+
+  - org: ergo-pad
+    repo: danaides
+    priority: high
+    group: analytics
+    language: [python]
+    extract: [readme, docs]
+    patterns: [indexBlock, extractBoxes, processTransaction]
+    output_dir: content/ecosystem/danaides
+    description: "Danaides blockchain indexer — high-performance UTXO indexing, dApp backend patterns"
+
+  - org: ergo-pad
+    repo: nft-market
+    priority: medium
+    group: analytics
+    language: [typescript]
+    extract: [readme]
+    patterns: [ergoConnector, mintNFT, listNFT]
+    output_dir: content/ecosystem/skyharbor
+    description: "ErgoPad NFT marketplace frontend — MUI + Next.js template, EIP-22/24 patterns"
+
+  # ── Multi-Protocol Reference ──────────────────────────────────────────────
+
+  - org: arkadianet
+    repo: citadel
+    priority: high
+    group: reference
+    language: [rust, typescript]
+    extract: [contracts, readme, docs]
+    patterns: [TransactionBuilder, ErgoPay, ergoConnector, OutputBuilder, NodeClient]
+    output_dir: content/ecosystem/citadel
+    description: >
+      Gold mine: one crate per protocol (AMM, Dexy, HodlCoin, Duckpools, Rosen, SigmaFi, SigmaUSD).
+      Shows EIP-12 tx building, box selection, sigma encoding, ErgoPay signing flow, node API client
+      with capability detection. Single repo demonstrating nearly every major Ergo protocol interaction.
+    special: citadel  # Triggers extra per-protocol extraction pass
+
+
+# ── Cross-cutting patterns ────────────────────────────────────────────────
+# These synthetic docs are assembled by aggregating pattern matches ACROSS
+# multiple repos above. Generated after all repos are processed.
+
+cross_cutting_patterns:
+
+  - id: eip12-dapp-connector
+    output_file: content/patterns/eip12-dapp-connector.md
+    source_repos:
+      - nautls/nautilus-wallet
+      - ThierryM1212/SAFEW
+      - fleet-sdk/fleet
+    pattern_regex: "ergoConnector|get_utxos|sign_tx|submit_tx|get_change_address"
+    description: "EIP-12 dApp Connector — connection API, context API, multi-wallet detection, TypeScript types"
+
+  - id: ergopay-signing
+    output_file: content/patterns/ergopay-signing.md
+    source_repos:
+      - arkadianet/citadel
+      - nautls/nautilus-wallet
+    pattern_regex: "ErgoPay|ergopay|ergoPayUrl|ErgoPayResponse"
+    description: "ErgoPay (EIP-20) — mobile signing, URI scheme, dynamic vs static requests, desktop↔mobile flow"
+
+  - id: ergoauth
+    output_file: content/patterns/ergoauth-authentication.md
+    source_repos:
+      - paideiadao/paideia-app
+    pattern_regex: "ErgoAuth|ergoauth|SigmaProp.*verify|proveAddress"
+    description: "ErgoAuth (EIP-28) — user authentication via SigmaProp signature, challenge-response flow"
+
+  - id: transaction-building
+    output_file: content/patterns/transaction-building.md
+    source_repos:
+      - fleet-sdk/fleet
+      - fleet-sdk/fleet-by-example
+      - arkadianet/citadel
+      - ergoplatform/ergo-appkit
+    pattern_regex: "TransactionBuilder|OutputBuilder|newTxBuilder|buildUnsignedTransaction"
+    description: "Transaction building — Fleet SDK + AppKit patterns, box selection, fee handling, token ops"
+
+  - id: offchain-bots
+    output_file: content/patterns/offchain-bots.md
+    source_repos:
+      - spectrum-finance/ergo-dex-backend
+      - duckpools-io/duckpools
+    pattern_regex: "executeOrder|matchOrders|scanBlocks|submitTransaction|botLoop"
+    description: "Off-chain bots — chain scanning → state detection → tx assembly → submission"
+
+  - id: onchain-state-tracking
+    output_file: content/patterns/onchain-state-tracking.md
+    source_repos:
+      - rosen-bridge/scanner
+      - paideiadao/paideia-state
+      - ergo-pad/danaides
+    pattern_regex: "AbstractScanner|scanBoxes|trackBox|extractObservation|indexBlock"
+    description: "On-chain state tracking — scanning frameworks, box tracking by token/address, state reconstruction"
+
+  - id: headless-dapp
+    output_file: content/patterns/headless-dapp.md
+    source_repos:
+      - DjedAlliance/Djed-Ergo
+    pattern_regex: "HeadlessDApp|headless|protocolState|executeAction"
+    description: "Headless dApp pattern — pure protocol logic separated from UI, composable and testable"
+
+  - id: constant-segregation
+    output_file: content/patterns/constant-segregation.md
+    source_repos:
+      - ergoplatform/sigmastate-interpreter
+      - fleet-sdk/fleet
+    pattern_regex: "substConstants|ConstantSegregation|ErgoTree.*constants"
+    description: "Constant segregation — substConstants pattern for contract templates without recompilation"

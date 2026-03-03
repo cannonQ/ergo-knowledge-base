@@ -1,0 +1,1039 @@
+# Auto-generated from ergo_glossary.yaml — do not edit directly.
+# Run: python3 scripts/generate_glossary_tiers.py
+
+terms:
+- term: eUTXO
+  aliases:
+  - extended UTXO
+  - extended utxo model
+  - eutxo
+  - eUTXO model
+  - extended unspent transaction output
+  definition: Ergo's extended UTXO model.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/eutxo/
+- term: Box
+  aliases:
+  - boxes
+  - ergo box
+  - utxo box
+  - UTXO
+  - unspent box
+  definition: Ergo's term for UTXOs.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/data-model/box/
+- term: Registers
+  aliases:
+  - register
+  - R0
+  - R1
+  - R2
+  - R3
+  - R4
+  definition: Typed data fields R0-R9 attached to each box.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/data-model/box/registers/
+- term: Transaction
+  aliases:
+  - tx
+  - ergo transaction
+  - transactions
+  definition: 'An atomic state transition on the Ergo blockchain: consumes input boxes and produces output
+    boxes.'
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/transactions/
+- term: Data input
+  aliases:
+  - data inputs
+  - read-only input
+  - read-only inputs
+  definition: Boxes referenced by a transaction for their data but not spent.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/tx/read-only-inputs/
+- term: ErgoTree
+  aliases:
+  - ergo tree
+  - ergotree
+  - guarding script
+  - guarding proposition
+  - proposition bytes
+  - spending predicate
+  definition: The low-level serialized representation of an ErgoScript contract.
+  category: development
+  docs_url: https://docs.ergoplatform.com/dev/scs/ergotree/
+- term: ErgoScript
+  aliases:
+  - ergo script
+  - ergoscript
+  - ergo scripting language
+  definition: Ergo's smart contract language, syntactically similar to Scala but simplified.
+  category: development
+  docs_url: https://docs.ergoplatform.com/dev/scs/ergoscript/
+- term: ErgoScript context
+  aliases:
+  - SELF
+  - INPUTS
+  - OUTPUTS
+  - HEIGHT
+  - script context
+  - blockchain context
+  definition: 'The data a script can access when it is evaluated: SELF (the box being spent), INPUTS (array
+    of all consumed boxes), OUTPUTS (array of created boxes), HEIGHT (current block height).'
+  category: development
+  docs_url: https://docs.ergoplatform.com/dev/scs/ergoscript/ergoscript-key-concepts/
+- term: Context extension
+  aliases:
+  - context variables
+  - context variable
+  - context ext
+  - getVar
+  definition: Additional data passed to a script during transaction validation, accessed via getVar[T](id)
+    in ErgoScript.
+  category: development
+- term: Sigma protocols
+  aliases:
+  - sigma protocol
+  - Σ-protocols
+  - sigma proofs
+  - sigma propositions
+  - sigma prop
+  - SigmaProp
+  definition: Zero-knowledge proof protocols at the heart of Ergo's cryptographic operations.
+  category: cryptography
+  docs_url: https://docs.ergoplatform.com/dev/scs/sigma/
+- term: Ring signatures
+  aliases:
+  - ring signature
+  - threshold signatures
+  - threshold sig
+  - multisig
+  - k-of-n
+  - atLeast
+  definition: Cryptographic patterns for proving "one of these keys signed" (ring) or "m-of-n signed"
+    (threshold).
+  category: cryptography
+  docs_url: https://docs.ergoplatform.com/dev/protocol/zkp/
+- term: NiPoPoW
+  aliases:
+  - nipopow
+  - nipopows
+  - non-interactive proofs of proof of work
+  - NiPoPoWs
+  - light client proofs
+  definition: Non-Interactive Proofs of Proof-of-Work.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/nipopows/
+- term: AVL tree
+  aliases:
+  - avl+ tree
+  - avl trees
+  - authenticated data structure
+  - authenticated dictionary
+  - AvlTree
+  definition: Authenticated data structure used for Ergo's state representation.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/avl/
+- term: Native tokens
+  aliases:
+  - first-class assets
+  - ergo tokens
+  - native assets
+  - token
+  - tokens
+  definition: Tokens are supported at the protocol level on Ergo and live in R2 of boxes as (tokenId,
+    amount) pairs.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/data-model/box/tokens/
+- term: Token ID rule
+  aliases:
+  - token minting rule
+  - nft minting
+  - token id
+  - minting transaction
+  - token emission
+  definition: A transaction can mint at most one new token type; the token ID is derived from the first
+    input box ID of the minting transaction.
+  category: protocol
+- term: Storage rent
+  aliases:
+  - demurrage
+  - storage fee
+  - storage rent fee
+  - box rent
+  definition: A fee mechanism charging for long-term UTXO storage on the blockchain, unique to Ergo among
+    major chains.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/mining/rent/
+- term: Atomic swaps
+  aliases:
+  - atomic swap
+  - cross-chain swap
+  - trustless swap
+  definition: Trustless exchange patterns enabled by UTXO-style scripting where two parties swap assets
+    without a trusted intermediary.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/eutxo/atomic/
+- term: Minimum transaction fee
+  aliases:
+  - tx fee
+  - transaction fee
+  - miner fee
+  - min fee
+  definition: Ergo has a protocol minimum fee (commonly 0.001 ERG).
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/tx/min-fee/
+- term: Minimum box value
+  aliases:
+  - min box value
+  - dust threshold
+  - box minimum erg
+  - min erg per box
+  definition: A box must contain at least a minimum amount of ERG to exist, scaled to its data size (registers
+    + tokens).
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/tx/min-box-value/
+- term: Scorex
+  aliases:
+  - scorex framework
+  - scorex modular framework
+  definition: Modular blockchain framework that Ergo's reference node implementation is built upon.
+  category: protocol
+- term: Sub-blocks
+  aliases:
+  - sub-block
+  - subblocks
+  - sub block
+  - microblocks
+  definition: A proposed protocol enhancement to increase effective throughput by producing intermediate
+    blocks between full blocks.
+  category: protocol
+- term: EIP
+  aliases:
+  - ergo improvement proposal
+  - ergo improvement proposals
+  - EIPs
+  definition: Ergo Improvement Proposal.
+  category: governance
+- term: Soft fork
+  aliases:
+  - soft-fork
+  - softfork
+  - protocol upgrade
+  - 6.0 soft fork
+  - EIP-50
+  definition: A backward-compatible protocol upgrade activated by miner voting.
+  category: protocol
+- term: Autolykos
+  aliases:
+  - autolykos2
+  - autolykos v2
+  - autolykos algorithm
+  - ergo mining algorithm
+  definition: Ergo's memory-hard proof-of-work mining algorithm.
+  category: mining
+  docs_url: https://docs.ergoplatform.com/mining/autolykos/
+- term: Difficulty adjustment
+  aliases:
+  - difficulty
+  - mining difficulty
+  - hashrate adjustment
+  definition: The mechanism that adjusts mining difficulty to target approximately 2-minute block intervals.
+  category: mining
+  docs_url: https://docs.ergoplatform.com/mining/difficulty/
+- term: Emission schedule
+  aliases:
+  - monetary emission
+  - block reward
+  - ergo emission
+  - EIP-27
+  - tail emission
+  - emission curve
+  definition: How new ERG enters circulation via block rewards.
+  category: mining
+  docs_url: https://docs.ergoplatform.com/mining/emission/
+- term: Multi-stage contracts
+  aliases:
+  - multi-stage transactions
+  - transaction chaining
+  - staged contracts
+  - chained transactions
+  - multi-stage protocol
+  definition: A design pattern where complex behavior is achieved by chaining transactions and evolving
+    boxes across stages.
+  category: pattern
+  docs_url: https://docs.ergoplatform.com/dev/scs/multi/
+- term: Singleton / State NFT
+  aliases:
+  - state nft
+  - singleton nft
+  - singleton token
+  - state token
+  - pool nft
+  - protocol nft
+  definition: A common eUTXO design pattern where a unique token (supply=1) marks the canonical state
+    box for a protocol (pool state, DAO state, config state).
+  category: pattern
+- term: State machine
+  aliases:
+  - box state machine
+  - state transition
+  - box lifecycle
+  - box replacement
+  - state box
+  - dapp state as boxes
+  definition: 'The core "stateful application" approach on Ergo: a contract enforces that when a state
+    box is spent, a new output box is created with the same state NFT, updated registers, and a script
+    that preserves invariants.'
+  category: pattern
+- term: Headless dApp
+  aliases:
+  - headless dapp
+  - headless dApp pattern
+  definition: Design pattern separating protocol logic (state reading + action execution) from UI into
+    a pure, portable layer.
+  category: pattern
+- term: Off-chain bot
+  aliases:
+  - execution bot
+  - offchain bot
+  - off-chain execution
+  - DEX bot
+  - chained transaction bot
+  definition: Software that monitors on-chain state and submits transactions to advance protocol state.
+  category: pattern
+- term: Constant segregation
+  aliases:
+  - segregated constants
+  - constant substitution
+  - substConstants
+  definition: ErgoTree feature where constants are stored separately from the script logic.
+  category: development
+- term: Invariant
+  aliases:
+  - contract invariant
+  - protocol invariant
+  - on-chain invariant
+  definition: A rule that must always hold in a smart contract (e.g., pool accounting, token conservation,
+    reserve ratios).
+  category: pattern
+- term: SigmaUSD
+  aliases:
+  - sigma usd
+  - sigmausd
+  - sigusd
+  - SigRSV
+  - sigrsv
+  - sigma reserve
+  definition: Ergo's first algorithmic stablecoin implementing the AgeUSD protocol.
+  category: defi
+  docs_url: https://docs.ergoplatform.com/uses/sigmausd/
+- term: Dexy
+  aliases:
+  - dexy stablecoin
+  - dexy usd
+  - dexyusd
+  - dexy gold
+  - dexygold
+  - dexy protocol
+  definition: Oracle-pegged stablecoin protocol designed by kushti and scalahub.
+  category: defi
+- term: GORT
+  aliases:
+  - gort token
+  - gold oracle reward token
+  definition: Gold Oracle Reward Token.
+  category: token
+- term: Spectrum
+  aliases:
+  - spectrum dex
+  - spectrum finance
+  - ergodex
+  - ergo dex
+  - ErgoDEX
+  definition: Decentralized exchange on Ergo (formerly ErgoDEX).
+  category: defi
+  docs_url: https://docs.ergoplatform.com/uses/dex/
+- term: AMM
+  aliases:
+  - automated market maker
+  - constant product amm
+  - liquidity pool
+  - pool reserves
+  - amm pool
+  - dex pool
+  definition: Automated Market Maker — on-chain swap mechanism using a pool's reserves and a pricing function
+    (e.g., constant product x*y=k).
+  category: defi
+- term: LP tokens
+  aliases:
+  - liquidity provider tokens
+  - lp token
+  - pool share token
+  - liquidity tokens
+  definition: Tokens representing a proportional share of liquidity in an AMM pool.
+  category: defi
+- term: Slippage
+  aliases:
+  - price slippage
+  - min output
+  - slippage tolerance
+  definition: The difference between expected and executed price in a DEX trade, due to pool curve mechanics
+    and trade size.
+  category: defi
+- term: Duckpools
+  aliases:
+  - duckpools
+  - duck pools
+  - duckpools lending
+  - duckpools protocol
+  definition: Pool-based lending and collateralized borrowing protocol on Ergo.
+  category: defi
+- term: SigmaFi
+  aliases:
+  - sigma fi
+  - sigmafi
+  - sigma finance
+  definition: DeFi platform offering P2P bond contracts and yield generation strategies on Ergo.
+  category: defi
+- term: SigmaO
+  aliases:
+  - sigma options
+  - sigmao
+  - sigma o
+  definition: Decentralized options trading platform on Ergo.
+  category: defi
+  docs_url: https://docs.ergoplatform.com/uses/deriv/
+- term: Phoenix Finance
+  aliases:
+  - phoenix
+  - hodlcoin
+  - hodl coin
+  - hodlerg
+  - hodlERG
+  - proof of hodl
+  definition: DeFi platform implementing the HodlCoin concept — a proof-of-hodl mechanism where value
+    accrues to long-term holders through a time-locked, monotonically-increasing floor price backed by
+    ERG reserves in the contract.
+  category: defi
+- term: Gluon
+  aliases:
+  - gluon protocol
+  - gluon stablecoin
+  definition: Stablecoin infrastructure protocol aiming to bring Djed-style cross-chain stablecoins to
+    Ergo.
+  category: defi
+- term: EXLE
+  aliases:
+  - ergolend
+  - exle
+  - ergo lend
+  definition: Decentralized lending and borrowing protocol integrated with Crux Finance for portfolio
+    tracking.
+  category: defi
+- term: ChainCash
+  aliases:
+  - chaincash
+  - chain cash
+  definition: Framework for creating decentralized, note-based monetary systems on UTXO blockchains.
+  category: defi
+- term: Mew Finance
+  aliases:
+  - mew
+  - mew dex
+  - mewfinance
+  definition: DeFi suite including a DEX, NFT marketplace, and other financial tools on Ergo.
+  category: defi
+- term: Collateral
+  aliases:
+  - overcollateralization
+  - collateral ratio
+  - collateralized
+  - liquidation ratio
+  definition: Assets locked to back a loan, stable asset, or position in a DeFi protocol.
+  category: defi
+- term: Liquidation
+  aliases:
+  - liquidate
+  - forced liquidation
+  - undercollateralized
+  - borrow position
+  definition: Forced closing of an undercollateralized borrow position to protect a lending protocol's
+    solvency.
+  category: defi
+- term: MEV
+  aliases:
+  - miner extractable value
+  - maximal extractable value
+  - frontrunning
+  definition: Value extractable by manipulating transaction ordering — including frontrunning, sandwich
+    attacks, and arbitrage.
+  category: defi
+- term: Rosen Bridge
+  aliases:
+  - rosen
+  - rosen bridge
+  - RSN
+  - rsn token
+  - rosen token
+  definition: Ergo-centric cross-chain bridge using a two-layer watcher/guard architecture.
+  category: infrastructure
+- term: RWT
+  aliases:
+  - rwt token
+  - rosen watcher token
+  - X-RWT
+  definition: Rosen Watcher Token.
+  category: token
+- term: Oracle pools
+  aliases:
+  - oracle pool
+  - ergo oracles
+  - oracle pool v2
+  - oracle pool 2.0
+  definition: Decentralized oracle framework for bringing external data on-chain.
+  category: infrastructure
+  docs_url: https://docs.ergoplatform.com/uses/oracles/
+- term: Full node
+  aliases:
+  - ergo node
+  - ergo full node
+  - reference node
+  - node
+  definition: A node that downloads and validates all blocks and transactions, maintaining the full UTXO
+    set.
+  category: infrastructure
+  docs_url: https://docs.ergoplatform.com/node/
+- term: Mempool
+  aliases:
+  - transaction pool
+  - unconfirmed transactions
+  - pending transactions
+  definition: The set of valid, unconfirmed transactions a node holds before they are mined.
+  category: infrastructure
+  docs_url: https://docs.ergoplatform.com/node/mempool/
+- term: Nautilus
+  aliases:
+  - nautilus wallet
+  - nautilus
+  definition: Community-driven browser extension wallet for Ergo.
+  category: tool
+- term: SAFEW
+  aliases:
+  - safew
+  - simple and fast ergo wallet
+  definition: Alternative browser extension wallet for Ergo implementing EIP-12 dApp connector.
+  category: tool
+- term: Addresses
+  aliases:
+  - ergo address
+  - address
+  - P2PK address
+  - P2S address
+  - P2SH address
+  definition: Encodings of spending conditions (scripts), not accounts with balances.
+  category: wallet
+  docs_url: https://docs.ergoplatform.com/dev/wallet/address/
+- term: Box selection
+  aliases:
+  - coin selection
+  - utxo selection
+  - input selection
+  definition: Wallet or SDK algorithm for choosing which boxes to spend to fund a transaction.
+  category: wallet
+  docs_url: https://docs.ergoplatform.com/dev/wallet/box-selection/
+- term: Danaides
+  aliases:
+  - danaides indexer
+  - danaides
+  definition: High-performance Python blockchain indexer developed by ErgoPad.
+  category: infrastructure
+- term: Machina Finance
+  aliases:
+  - ergomatic
+  - machina
+  - machina finance
+  definition: Off-chain execution bot platform (formerly Ergomatic) enabling automated interactions with
+    Ergo dApps.
+  category: infrastructure
+- term: Ergo Explorer
+  aliases:
+  - explorer
+  - ergo explorer
+  - blockchain explorer
+  definition: Block explorer for the Ergo blockchain providing transaction, address, token, and box lookup.
+  category: infrastructure
+- term: Ergo GraphQL
+  aliases:
+  - graphql
+  - ergo graphql
+  - graphql api
+  definition: GraphQL interface for querying Ergo blockchain data.
+  category: infrastructure
+- term: ErgoNames
+  aliases:
+  - ergonames
+  - ergo names
+  - ergo dns
+  definition: Decentralized domain name service mapping human-readable names to Ergo addresses.
+  category: infrastructure
+- term: Fleet SDK
+  aliases:
+  - fleet
+  - fleet-sdk
+  - fluent ergo toolset
+  - '@fleet-sdk/core'
+  definition: TypeScript/JavaScript SDK for building Ergo applications.
+  category: sdk
+  docs_url: https://docs.ergoplatform.com/dev/stack/frameworks/
+- term: AppKit
+  aliases:
+  - ergo-appkit
+  - ergo appkit
+  - appkit
+  definition: Java/Scala/Kotlin SDK for Ergo application development.
+  category: sdk
+  docs_url: https://docs.ergoplatform.com/dev/stack/frameworks/
+- term: sigma-rust
+  aliases:
+  - sigmarust
+  - sigma rust
+  - sigma-rust
+  definition: Rust implementation of Ergo's Sigma protocols and ErgoTree interpreter.
+  category: sdk
+- term: ergo-python-appkit
+  aliases:
+  - python appkit
+  - ergo python
+  - ergpy
+  - ergo-python-appkit
+  definition: Python SDK for Ergo using JPype bridge to the JVM AppKit.
+  category: sdk
+- term: Sigma.JS
+  aliases:
+  - sigmajs
+  - sigma js
+  - sigma.js compiler
+  definition: ErgoScript compiler cross-compiled to JavaScript via Scala.js.
+  category: sdk
+- term: Citadel
+  aliases:
+  - citadel client
+  definition: Local-first Rust/React desktop client with one crate per DeFi protocol (Spectrum, Dexy,
+    Duckpools, Rosen, SigmaFi, SigmaUSD, HodlCoin).
+  category: tool
+- term: EIP-12
+  aliases:
+  - eip12
+  - EIP-0012
+  - dapp connector
+  - dApp connector
+  - dApp connector protocol
+  - dapp-wallet web bridge
+  definition: dApp-Wallet web bridge standard for browser extension wallets.
+  category: standard
+  docs_url: https://docs.ergoplatform.com/dev/wallet/payments/dApp/
+- term: ErgoPay
+  aliases:
+  - ergopay
+  - EIP-20
+  - EIP-0020
+  - ergo pay
+  definition: Transaction signing protocol for mobile wallets using URI scheme (ergopay:<reducedTx>) or
+    dynamic requests (ergopay://<url>).
+  category: standard
+  docs_url: https://docs.ergoplatform.com/dev/wallet/payments/ergopay/ergo-pay/
+- term: ErgoAuth
+  aliases:
+  - ergoauth
+  - ergo auth
+  - EIP-28
+  - EIP-0028
+  definition: User authentication protocol via SigmaProp signature.
+  category: standard
+  docs_url: https://docs.ergoplatform.com/dev/wallet/payments/ergoauth/
+- term: EIP-4
+  aliases:
+  - eip4
+  - EIP-0004
+  - token standard
+  - asset standard
+  definition: Standard for token (asset) issuance on Ergo.
+  category: standard
+- term: EIP-6
+  aliases:
+  - eip6
+  - EIP-0006
+  - protocol specification
+  definition: Standard format for protocol specifications on Ergo.
+  category: standard
+- term: EIP-22
+  aliases:
+  - eip22
+  - EIP-0022
+  - auction contract standard
+  - auction house standard
+  definition: Auction contract standard for Ergo.
+  category: standard
+- term: EIP-24
+  aliases:
+  - eip24
+  - EIP-0024
+  - artwork standard
+  - nft artwork standard
+  - extended artwork standard
+  definition: Extended Assets standard for NFT artwork on Ergo.
+  category: standard
+- term: EIP-31
+  aliases:
+  - eip31
+  - EIP-0031
+  - babel fees
+  - babel fee
+  definition: Babel Fees protocol allowing users to pay transaction fees in tokens other than ERG.
+  category: standard
+  docs_url: https://docs.ergoplatform.com/dev/protocol/tx/babel-fees/
+- term: EIP-34
+  aliases:
+  - eip34
+  - EIP-0034
+  - nft collections standard
+  - collection standard
+  definition: NFT Collections standard on Ergo.
+  category: standard
+- term: EIP-41
+  aliases:
+  - eip41
+  - EIP-0041
+  - stealth address standard
+  definition: Stealth Addresses standard for Ergo.
+  category: standard
+- term: Paideia
+  aliases:
+  - paideia dao
+  - paideia platform
+  definition: DAO management platform on Ergo with modules for staking, voting, proposal lifecycle, treasury
+    management, and configurable on-chain governance.
+  category: governance
+- term: Ergo Foundation
+  aliases:
+  - EF
+  - ergo foundation
+  - foundation
+  definition: Non-profit entity supporting the development and adoption of the Ergo platform.
+  category: governance
+- term: Cyberverse
+  aliases:
+  - cyberverse nft
+  - cyberverse collection
+  - cyberverse nfts
+  definition: NFT collection on the Ergo blockchain comprising multiple sub-collections totaling 15,000+
+    tokens.
+  category: nft
+- term: SkyHarbor
+  aliases:
+  - skyharbor
+  - sky harbor
+  - skyharbor marketplace
+  definition: NFT marketplace on Ergo for buying, selling, and auctioning Ergo-native NFTs.
+  category: nft
+- term: Auction House
+  aliases:
+  - auction house
+  - ergo auction house
+  definition: NFT auction platform on Ergo.
+  category: nft
+- term: DORT
+  aliases:
+  - dort token
+  - dort
+  definition: Community token on Ergo.
+  category: token
+- term: CruxFinance
+  aliases:
+  - crux finance
+  - crux
+  - cruxfinance
+  definition: All-in-one platform for portfolio management, charting, and analytics within the Ergo ecosystem.
+  category: analytics
+- term: ErgoPad
+  aliases:
+  - ergopad
+  - ergo pad
+  definition: Launchpad and ecosystem development organization on Ergo.
+  category: infrastructure
+- term: ErgoMixer
+  aliases:
+  - ergo mixer
+  - ergomixer
+  definition: State-of-the-art non-interactive and non-custodial token mixer on Ergo.
+  category: privacy
+  docs_url: https://docs.ergoplatform.com/uses/mixer/
+- term: ZeroJoin
+  aliases:
+  - zero join
+  - zerojoin
+  - ergo mixing protocol
+  definition: Ergo's foundational coin-mixing scheme underlying ErgoMixer.
+  category: privacy
+- term: Stealth Addresses
+  aliases:
+  - stealth address
+  - one-time addresses
+  definition: Privacy technique generating a unique, unlinkable address for each payment to the same recipient.
+  category: privacy
+- term: Covert Addresses
+  aliases:
+  - covert address
+  - ergomixer covert
+  definition: Privacy feature in ErgoMixer allowing users to designate a receive address that functions
+    as a drop box — funds sent to this address are automatically routed through the mixer, breaking the
+    link between sender and receiver without the sender knowing mixing is occurring.
+  category: privacy
+- term: Sigmajoin
+  aliases:
+  - sigma join
+  - ergo coinjoin
+  - coinjoin ergo
+  definition: CoinJoin protocol specification for Ergo.
+  category: privacy
+- term: Satergo
+  aliases:
+  - satergo wallet
+  definition: Privacy-focused desktop wallet for Ergo with a built-in full node.
+  category: tool
+- term: Minotaur Wallet
+  aliases:
+  - minotaur
+  - minotaur multi-sig
+  - minotaur wallet
+  definition: Multi-platform Ergo wallet (Android, iOS, desktop) with native multi-signature support.
+  category: tool
+- term: Node modes
+  aliases:
+  - archival full node
+  - pruned full node
+  - digest node
+  - stateless node
+  - node configuration
+  definition: 'Ergo nodes support four operational modes: Archival Full Node (complete history, stateType=utxo,
+    blocksToKeep=-1), Pruned Full Node (full security, keeps only recent blocks), Digest Node (stateless,
+    uses authenticated UTXO digests, minimal storage), and Light SPV Client (header validation only, relies
+    on full nodes for state queries).'
+  category: node
+  docs_url: https://docs.ergoplatform.com/node/modes/
+- term: SPV
+  aliases:
+  - simplified payment verification
+  - light client
+  - light node
+  - light SPV
+  - spv client
+  definition: Simplified Payment Verification — verifying transactions using only block headers rather
+    than the full blockchain.
+  category: node
+- term: Bootstrapping
+  aliases:
+  - utxoBootstrap
+  - nipopowBootstrap
+  - utxo snapshot sync
+  - fast sync
+  definition: Techniques for accelerating initial node synchronization.
+  category: node
+- term: UTXO Set Snapshot
+  aliases:
+  - utxo snapshot
+  - state snapshot
+  - compressed utxo set
+  definition: A compressed representation of all unspent transaction outputs at a specific block height.
+  category: node
+- term: FleetSharp
+  aliases:
+  - fleet sharp
+  - fleet c#
+  - fleetsharp
+  definition: C#/.NET SDK for building Ergo transactions and interacting with the Ergo blockchain.
+  category: sdk
+- term: RustKit
+  aliases:
+  - rustkit
+  - ergo rustkit
+  definition: Community Rust SDK for Ergo aiming to align the Rust developer experience with the JVM AppKit
+    API.
+  category: sdk
+- term: ergo-lib-python
+  aliases:
+  - ergo lib python
+  - ergo python bindings
+  definition: Python bindings for ergo-lib (sigma-rust).
+  category: sdk
+- term: Mosaik
+  aliases:
+  - mosaik framework
+  - mosaik ui
+  definition: UI/frontend framework for Ergo dApps supporting mobile and web platforms.
+  category: sdk
+- term: Kiosk
+  aliases:
+  - kiosk framework
+  - ergo kiosk
+  definition: Scala framework for building Ergo dApps with a focus on contract security and correctness.
+  category: sdk
+- term: GetBlok Plasma
+  aliases:
+  - plasma
+  - getblok plasma
+  - plasma library
+  - plasma chains
+  definition: AppKit-based library for building Layer 2 / sidechain applications on Ergo using AVL tree-based
+    off-chain state ("Plasma chains").
+  category: sdk
+- term: FlowCards
+  aliases:
+  - flow cards
+  - flowcards framework
+  - declarative dapp
+  definition: High-level declarative framework for dApp development on Ergo.
+  category: sdk
+- term: Ergo Playgrounds
+  aliases:
+  - ergo playground
+  - ergoplaygrounds
+  - ergo test framework
+  definition: Scala-based testing framework for Ergo smart contracts.
+  category: sdk
+- term: ErgoRaffle
+  aliases:
+  - ergo raffle
+  - ergoraffle
+  definition: Smart contract-based crowdfunding and raffle platform on Ergo.
+  category: defi
+- term: Off the Grid
+  aliases:
+  - off-the-grid
+  - otg
+  - grid trading dapp
+  definition: Grid trading dApp on Ergo.
+  category: defi
+- term: Grid trading
+  aliases:
+  - grid orders
+  - grid strategy
+  - grid bot
+  definition: Trading strategy placing layered buy and sell orders at set price intervals above and below
+    a target.
+  category: defi
+- term: IDO
+  aliases:
+  - initial decentralized offering
+  - launchpad
+  - token launch
+  - ido platform
+  definition: Initial Decentralized Offering — a fundraising mechanism where new projects sell tokens
+    directly on-chain via a launchpad smart contract, without a centralized exchange.
+  category: defi
+- term: Token burning
+  aliases:
+  - burn tokens
+  - token burn
+  - burning tokens
+  definition: Permanently removing tokens from circulation by excluding them from a transaction's outputs.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/tokens/burn/
+- term: Sigmanauts
+  aliases:
+  - sigmanaut
+  - sigmanaut program
+  - ergo ambassadors
+  definition: Ergo's community advocate and contributor program.
+  category: governance
+- term: ERGOHACK
+  aliases:
+  - ergo hackathon
+  - ergohack
+  - ergo hack
+  definition: Ergo's recurring hackathon series bringing together developers to build on the Ergo blockchain.
+  category: governance
+- term: Fair launch
+  aliases:
+  - no premine
+  - fair launch ergo
+  - no ico
+  - no pre-allocation
+  definition: Ergo launched in 2019 with no pre-mining, no ICO, and no pre-allocation of coins to founders
+    or investors.
+  category: governance
+- term: DeCo Education
+  aliases:
+  - deco
+  - decentralized collaboration
+  - ergo education
+  - ergo courses
+  definition: Decentralized Collaboration — Ergo's community education and developer training initiative.
+  category: governance
+- term: Sigma Chains
+  aliases:
+  - sigma chain
+  - sigmachains
+  - ergo sidechains
+  - sidechains
+  definition: Framework for programmable sidechains connected to Ergo via two-way peg using NiPoPoWs.
+  category: protocol
+- term: Layer scaling
+  aliases:
+  - layer 0
+  - layer 1
+  - layer 2
+  - L0
+  - L1
+  - L2
+  definition: Ergo's three-layer scaling architecture.
+  category: protocol
+  docs_url: https://docs.ergoplatform.com/dev/protocol/scaling/
+- term: Lilium
+  aliases:
+  - lilium nft
+  - lilium minting
+  definition: NFT minting and collection management suite on Ergo.
+  category: nft
+- term: ErgoWatch
+  aliases:
+  - ergo watch
+  - ergowatch
+  definition: Network statistics and tokenomics dashboard for Ergo.
+  category: analytics
+- term: Sigmaspace
+  aliases:
+  - sigma space
+  - sigmaspace explorer
+  definition: Alternative blockchain explorer for Ergo with additional analytics and visualization features
+    beyond the standard Ergo Explorer.
+  category: infrastructure
+- term: YAAT
+  aliases:
+  - yet another airdrop tool
+  - yaat
+  - airdrop tool
+  - batch transfer
+  definition: Yet Another Airdrop Tool — utility for batch token transfers and airdrops on Ergo.
+  category: tool
+- term: TokenJay
+  aliases:
+  - tokenjay
+  - token jay
+  definition: Mobile-friendly tool for token minting, management, and burning on Ergo.
+  category: tool
+- term: Schnorr signatures
+  aliases:
+  - schnorr
+  - schnorr sig
+  - schnorr verification
+  definition: Digital signature scheme underlying Ergo's cryptographic operations.
+  category: cryptography
+- term: Sigmastate interpreter
+  aliases:
+  - sigmastate
+  - sigma interpreter
+  - ergoscript interpreter
+  - ergtree evaluator
+  definition: The core ErgoScript/ErgoTree validation engine.
+  category: development
