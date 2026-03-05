@@ -893,7 +893,7 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 
 ### Week 1: Scaffolding + Start Video Batches (Human, ~20 hours)
 - [x] Create repo with directory structure — ✅ Done. Full content/ tree: ecosystem/, patterns/, reference/, sdks/, examples/, topics/
-- [ ] Write frontmatter schema and document templates — Frontmatter is consistent across all 242 generated docs but no formal schema doc yet
+- [x] Write frontmatter schema and document templates — ✅ Done. `FRONTMATTER.md`: 20-field schema, 7 templates (concept, cookbook, reference, overview, contract, pattern, guide), enum values, conventions
 - [x] Curate `ergo_glossary.yaml` — ✅ Done (126 terms, 17 categories, 544 aliases)
 - [x] Integrate LangSpec.md — ✅ Done. Kept monolithic at `content/reference/ergoscript/language-spec.md` (~13K tokens) with frontmatter
 - [ ] Write 4 remaining gold-standard seed documents (eutxo-model.md, boxes-and-registers.md, sigma-protocols.md, storage-rent.md)
