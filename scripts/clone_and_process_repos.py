@@ -136,12 +136,13 @@ def is_skipped(path: str) -> bool:
     return any(part in SKIP_DIRS for part in path.split("/"))
 
 
-def find_ergoscript_paths(tree: list[dict]) -> list[str]:
-    """Return paths of ErgoScript files (.es, .ergo) from the tree."""
+def find_ergoscript_paths(tree: list[dict], extra_exts: set[str] | None = None) -> list[str]:
+    """Return paths of ErgoScript files (.es, .ergo, + any extra_exts) from the tree."""
+    exts = ERGOSCRIPT_EXTENSIONS | (extra_exts or set())
     return [
         item["path"] for item in tree
         if not is_skipped(item["path"])
-        and Path(item["path"]).suffix in ERGOSCRIPT_EXTENSIONS
+        and Path(item["path"]).suffix in exts
     ]
 
 
@@ -263,6 +264,25 @@ def load_glossary_terms() -> str:
 
 def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+# Generic directory names to strip when building contract doc filenames
+_GENERIC_DIRS = {"contracts", "contract", "src", "main", "scala", "java",
+                 "scripts", "ergoscript", "ergo", "resources", "test", "bridge"}
+
+
+def _contract_slug(path: str) -> str:
+    """Generate a concise slug from a contract file path.
+
+    Strips generic directory names, keeps up to 2 meaningful parent dirs + stem.
+    e.g. 'contracts/bank/bank.es' → 'bank-bank'
+         'paideia_contracts/contracts/staking/ergoscript/1.0/addStakeProxy.es' → 'staking-1-0-addstakeproxy'
+         'src/main/scala/rosen/bridge/scripts/Collateral.es' → 'rosen-collateral'
+    """
+    p = Path(path)
+    dirs = [d for d in p.parent.parts if d.lower() not in _GENERIC_DIRS]
+    parts = dirs[-2:] + [p.stem]  # last 2 meaningful parents + filename
+    return slug("-".join(parts))
 
 
 def write_doc(path: Path, frontmatter: dict, body: str) -> None:
@@ -421,7 +441,7 @@ def process_repo(client: anthropic.Anthropic, entry: dict,
 
     # 1. Fetch repo metadata and file tree
     print(f"  fetching repo tree...")
-    branch = get_default_branch(org, repo)
+    branch = entry.get("branch") or get_default_branch(org, repo)
     tree = fetch_repo_tree(org, repo, branch)
     print(f"  branch={branch}  files={len(tree)}")
 
@@ -434,7 +454,8 @@ def process_repo(client: anthropic.Anthropic, entry: dict,
     if docs:
         readme = readme + "\n\n" + docs
 
-    es_paths = find_ergoscript_paths(tree) if "contracts" in extract else []
+    extra_exts = set(entry.get("contract_extensions", []))
+    es_paths = find_ergoscript_paths(tree, extra_exts) if "contracts" in extract else []
     pattern_matches = find_pattern_matches(
         org, repo, branch, tree, patterns, languages
     ) if patterns else []
@@ -454,7 +475,7 @@ def process_repo(client: anthropic.Anthropic, entry: dict,
         contract_summaries.append({"file": path, "summary": summary})
 
         # Write individual contract doc
-        contract_slug = slug(path.replace("/", "-").replace(".es", "").replace(".ergo", ""))
+        contract_slug = _contract_slug(path)
         fm = {
             "title": f"{project_name} — {Path(path).name}",
             "description": f"ErgoScript contract analysis: {path}",
@@ -468,7 +489,9 @@ def process_repo(client: anthropic.Anthropic, entry: dict,
             "contract_file": path,
             "project": slug(f"{org}-{repo}"),
         }
-        write_doc(output_dir / "contracts" / f"{contract_slug}.md", fm, summary)
+        # Avoid doubled /contracts/contracts/ when output_dir already ends in "contracts"
+        contracts_dir = output_dir if output_dir.name == "contracts" else output_dir / "contracts"
+        write_doc(contracts_dir / f"{contract_slug}.md", fm, summary)
 
     # 4. Generate project overview
     print(f"  generating overview...")
@@ -598,7 +621,8 @@ def main() -> None:
         description="Fetch ecosystem repos via GitHub API and generate docs"
     )
     parser.add_argument("--catalog", default=str(CATALOG_PATH), help="Path to ecosystem_repos.yaml")
-    parser.add_argument("--repo", help="Process only this org/repo (e.g. arkadianet/citadel)")
+    parser.add_argument("--repo", action="append", dest="repos",
+                        help="Process only this org/repo (repeatable, e.g. --repo a/b --repo c/d)")
     parser.add_argument("--priority", choices=["high", "medium", "low"],
                         help="Process only repos with this priority level")
     parser.add_argument("--group", help="Process only repos in this group (e.g. defi, sdk)")
@@ -621,11 +645,14 @@ def main() -> None:
     patterns: list[dict] = catalog.get("cross_cutting_patterns", [])
 
     # Apply filters
-    if args.repo:
-        org, repo = args.repo.split("/", 1)
-        repos = [r for r in repos if r["org"] == org and r["repo"] == repo]
+    if args.repos:
+        wanted = set()
+        for slug in args.repos:
+            org, repo = slug.split("/", 1)
+            wanted.add((org, repo))
+        repos = [r for r in repos if (r["org"], r["repo"]) in wanted]
         if not repos:
-            sys.exit(f"Repo {args.repo} not found in catalog")
+            sys.exit(f"None of {args.repos} found in catalog")
     if args.priority:
         repos = [r for r in repos if r.get("priority") == args.priority]
     if args.group:
