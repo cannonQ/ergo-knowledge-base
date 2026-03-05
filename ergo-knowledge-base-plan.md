@@ -4,7 +4,7 @@
 
 The short answer: **humans build the scaffolding and babysit the video pipeline (~30% of effort), machines fill in the building (~70%).** The human work splits into two tracks: (1) upfront scaffolding — repo structure, Telegram processing script, ecosystem code extraction pipeline, templates, glossary — and (2) the semi-automated video pipeline that requires 3-4 hours of human attention per batch of 50 videos (speaker assignment review, spot audits) across 9 batches. Once scaffolding is in place, LLM pipelines and GitHub Actions handle the Telegram summarization, ecosystem contract documentation, embedding generation, topic extraction, and ongoing indexing.
 
-The critical insight is that every hour spent on scaffolding saves 50+ hours of manual documentation work. A well-designed template means an LLM can process 100 Telegram months in the time it would take a human to manually summarize 2. The video pipeline — already built — handles the transcription and summarization, though speaker verification keeps humans in the loop at ~3-4 hours per 50-video batch. An existing ErgoScript language spec (Ahrobe's LangSpec.md, ~1,350 lines) gives the reference section a significant head start. And the ecosystem code catalog — ~30-40 open source repos covering every major Ergo dApp — gets automatically processed into documented contract patterns and integration guides for $3-8 in LLM costs.
+The critical insight is that every hour spent on scaffolding saves 50+ hours of manual documentation work. A well-designed template means an LLM can process 100 Telegram months in the time it would take a human to manually summarize 2. The video pipeline — already built — handles the transcription and summarization, though speaker verification keeps humans in the loop at ~3-4 hours per 50-video batch. An existing ErgoScript language spec (Ahrobe's LangSpec.md, ~1,350 lines) gives the reference section a significant head start. And the ecosystem code catalog — 51 open source repos covering every major Ergo dApp — has been automatically processed into 242 documented contract analyses, 14 cross-cutting pattern guides, and integration references for ~$5 in LLM costs.
 
 ---
 
@@ -351,12 +351,12 @@ anon_real, Mark Glasgow (glasgowm148), Bruno Woltzenlogel Paleo.
 | `generate_glossary_tiers.py` | Master glossary → compact tier + alias map (YAML + JSON). Validates alias collisions, prints token counts. | ~130 | ✅ Done |
 | `process_telegram.py` | Parse TG JSON → thread reconstruction → weekly segments → LLM summarization → monthly summaries | ~400 | ✅ Done (102 general + 51 dev months) |
 | `adapt_video_output.py` | Lightweight adapter to add repo-standard frontmatter to existing video pipeline output | ~80 | — |
-| `clone_and_process_repos.py` | Clone ecosystem repos → extract contracts + patterns → LLM documentation generation → structured output | ~300 | — |
-| `generate_embeddings.py` | Parse all Markdown → chunk by headers → attach metadata → embed with BGE-M3 → upsert to LanceDB | ~300 | — |
-| `generate_llms_txt.py` | Walk repo → collect frontmatter → generate llms.txt and llms-full.txt | ~150 | — |
-| `build_topic_index.py` | Run BERTopic across Telegram segments → generate cross-month topic index | ~200 | — |
+| `clone_and_process_repos.py` | GitHub API → extract contracts + patterns → LLM documentation generation → structured output | ~715 | ✅ Done (51 repos, 242 docs, 14 patterns) |
+| `generate_embeddings.py` | Parse all Markdown → chunk by headers → attach metadata → embed with BGE-M3 → upsert to LanceDB | ~314 | ✅ Done (dry-run verified: 1,566 chunks, ~416K tokens; needs `ollama pull bge-m3` for actual run) |
+| `generate_llms_txt.py` | Walk repo → collect frontmatter → generate llms.txt and llms-full.txt | ~219 | ✅ Done (242 docs, llms.txt + llms-full.txt ~400K tokens) |
+| `build_topic_index.py` | Tag-based topic index + Telegram topic aggregation → cross-document topic index | ~248 | ✅ Done (111 tags, 4,587 Telegram topics indexed) |
 
-**Total: ~1,560 lines of Python** (~530 already written). Video processing is already handled by existing scripts. Telegram pipeline is complete. The `clone_and_process_repos.py` is the next major script to write.
+**Total: ~2,106 lines of Python** (~1,896 written, ~80 remaining for video adapter). Video processing is already handled by existing scripts. Telegram pipeline is complete. Ecosystem pipeline is complete. Embedding pipeline is ready to run once Ollama/BGE-M3 is set up.
 
 ### 5. MCP Server
 
@@ -556,7 +556,7 @@ These aren't separate repos but patterns to extract FROM the repos above. The kn
 
 #### Processing Pipeline for Ecosystem Code
 
-**`clone_and_process_repos.py`** — New script (~300 lines). For each repo in the catalog:
+**`clone_and_process_repos.py`** — ✅ Complete (715 lines). Uses GitHub API (no git clone). For each repo in the catalog:
 
 1. Clone or pull latest from GitHub
 2. Find all `.es` (ErgoScript), `.ergo` files — extract with full file path context
@@ -583,7 +583,7 @@ complexity (beginner/intermediate/advanced)
 6. Generate per-project overview doc summarizing architecture
 7. Output to `content/ecosystem/{project}/` with proper frontmatter
 
-**Scale:** ~30-40 repos, ~200-300 contract files total. LLM processing cost: **$3-8.** Human review of generated docs: ~5-8 hours (focus on verifying contract descriptions are accurate).
+**Scale:** 51 repos, 242 generated docs, 14 cross-cutting patterns, ~400K tokens. LLM processing cost: **~$5.** Human review of generated docs: ~5-8 hours (focus on verifying contract descriptions are accurate).
 
 ---
 
@@ -668,7 +668,7 @@ Format: [YYYY-MM-DDThh:mm] @username (msg#ID): key quote
 7. Writes all output with proper frontmatter to `content/ecosystem/{project}/`
 8. The Citadel repo gets special treatment — its one-crate-per-protocol architecture becomes the canonical reference for multi-protocol integration
 
-**Scale:** ~30-40 repos, ~200-300 contract files. **LLM cost: $3-8.** The contracts are short (most ErgoScript files are 50-300 lines), so token costs are modest.
+**Scale:** 51 repos processed, 242 docs generated, 14 cross-cutting pattern guides. **LLM cost: ~$5.** The contracts are short (most ErgoScript files are 50-300 lines), so token costs are modest.
 
 **Human review needed:** ~5-8 hours. Focus on:
 - Verifying contract descriptions are technically accurate (the LLM can misread ErgoScript validation logic)
@@ -892,32 +892,32 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 *Video processing runs as a parallel workstream across the entire timeline: ~9 batches of 50, each taking 3-4 hours of human attention. Plan 2-3 batches per week alongside other work.*
 
 ### Week 1: Scaffolding + Start Video Batches (Human, ~20 hours)
-- [ ] Create repo with directory structure
-- [ ] Write frontmatter schema and document templates
-- [x] Curate `ergo_glossary.yaml` (this is the most important artifact)
-- [ ] Integrate LangSpec.md — add frontmatter, decide on monolithic vs. split approach
-- [ ] Write 4 remaining gold-standard seed documents
-- [ ] Set up LanceDB locally, test basic embedding + retrieval
+- [x] Create repo with directory structure — ✅ Done. Full content/ tree: ecosystem/, patterns/, reference/, sdks/, examples/, topics/
+- [ ] Write frontmatter schema and document templates — Frontmatter is consistent across all 242 generated docs but no formal schema doc yet
+- [x] Curate `ergo_glossary.yaml` — ✅ Done (126 terms, 17 categories, 544 aliases)
+- [x] Integrate LangSpec.md — ✅ Done. Kept monolithic at `content/reference/ergoscript/language-spec.md` (~13K tokens) with frontmatter
+- [ ] Write 4 remaining gold-standard seed documents (eutxo-model.md, boxes-and-registers.md, sigma-protocols.md, storage-rent.md)
+- [ ] Set up LanceDB locally, test basic embedding + retrieval — `generate_embeddings.py` written and dry-run verified (1,566 chunks). Needs `ollama pull bge-m3`
 - [ ] Write thin adapter script if needed to conform video output to repo frontmatter
 - [ ] **Video: process batches 1-2** (~6-8 hrs human time)
 
 ### Week 2: Telegram Pipeline + Ecosystem Script (Human + LLM pair programming, ~15 hours)
 - [x] ~~Write `process_telegram.py`~~ — ✅ Complete (102 general + 51 dev months processed)
-- [ ] Write `clone_and_process_repos.py` — test on 2-3 repos (Citadel, Dexy, Fleet SDK)
-- [ ] Curate `ecosystem_repos.yaml` — the full catalog of ~30-40 repos
-- [ ] Write `generate_embeddings.py` and `generate_llms_txt.py`
-- [ ] Write `build_topic_index.py`
-- [ ] Validate output quality, iterate prompts
+- [x] Write `clone_and_process_repos.py` — ✅ Done. GitHub API-based (no git clone), tested on all 51 repos. 715 lines. Features: contract_extensions for .md/.txt contracts, branch overrides, multi-repo CLI flag, cross-cutting pattern synthesis
+- [x] Curate `ecosystem_repos.yaml` — ✅ Done. 51 repos (exceeded ~30-40 target), 14 cross-cutting patterns, covering DeFi, DAOs, wallets, bridges, NFTs, MCP servers
+- [x] Write `generate_embeddings.py` and `generate_llms_txt.py` — ✅ Done. llms.txt (242 docs, ~400K tokens), embeddings pipeline dry-run verified (1,566 chunks)
+- [x] Write `build_topic_index.py` — ✅ Done. 111 tags, 93 co-occurrence pairs, 4,587 Telegram topics indexed
+- [ ] Validate output quality, iterate prompts — Spot-checks during dev, no formal pass yet
 - [ ] **Video: process batches 3-5** (~9-12 hrs human time)
 
 ### Week 3: Let the Machines Rip (Human: ~8 hours monitoring + video)
 - [x] ~~**Run Telegram pipeline on full corpus**~~ — ✅ Complete
-- [ ] **Run ecosystem code pipeline on all ~30-40 repos** — generates contract docs + pattern docs
+- [x] **Run ecosystem code pipeline on all 51 repos** — ✅ Done. 242 markdown docs, 14 pattern docs, ~400K tokens total. Pushed to cannonQ/ergo-knowledge-base
 - [ ] Spot-check outputs, fix any systematic prompt issues
 - [ ] Ingest completed video transcripts as they finish
-- [ ] Run full embedding generation across all content
+- [ ] Run full embedding generation across all content — script ready, needs Ollama + BGE-M3 setup
 - [ ] Human review: scan 10-15 Telegram summaries, 5 video transcripts, 10 ecosystem contract docs
-- [ ] Review and polish the cross-cutting pattern docs (EIP-12, ErgoPay, tx building, etc.)
+- [x] Generate all 14 cross-cutting pattern docs (EIP-12, ErgoPay, tx building, headless dApp, singleton NFT, proxy contracts, oracle data, token minting, AMM/LP, Plasma/AVL, etc.) — ✅ Done
 - [ ] **Video: process batches 6-7** (~6-8 hrs human time)
 
 ### Week 4: Migration + MCP (Human: ~15 hours + video)
@@ -926,6 +926,7 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 - [ ] Write the missing SDK comparison guide (human + LLM)
 - [ ] Build MCP server, test with Claude Desktop
 - [ ] Set up GitHub Actions workflows
+- [ ] Fork all 51 ecosystem repos for preservation (strategy TBD: personal account vs dedicated org)
 - [ ] **Video: process batches 8-9** (~6-8 hrs human time)
 
 ### Week 5: Polish + Launch (Human: ~10 hours)
@@ -956,7 +957,7 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 | Video adapter script | 1-2 | 0 | $0 |
 | Telegram processing (8 years) | 3-5 (review) | ~100 monthly summaries | $2-5 |
 | Video processing (450 videos, 9 batches) | **27-36** (speaker review, spot audit) | ~450 transcripts | ~$50-70 |
-| Ecosystem code processing (~30-40 repos) | 5-8 (review contract docs + patterns) | ~200-300 contract docs + 8 pattern guides | $3-8 |
+| Ecosystem code processing (51 repos) | 5-8 (review contract docs + patterns) | 242 contract/overview docs + 14 pattern guides | ~$5 |
 | Docs migration | 6-8 (review) | ~50-100 migrated docs | $1-3 |
 | MCP server | 6-8 | 0 | $0 |
 | GitHub Actions | 2-3 | 0 | $0 |
@@ -965,4 +966,4 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 
 Video processing remains the single largest human time commitment (~27-36 hours across 5 weeks). Ecosystem code processing adds ~5-8 hours of review but produces the most differentiated content in the entire knowledge base — production contract patterns from live dApps that no other Ergo resource consolidates.
 
-The machines process the vast majority of content by volume: 450 video transcripts + 100 Telegram summaries + 200-300 ecosystem contract docs + 8 cross-cutting pattern guides + full corpus embedding. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
+The machines process the vast majority of content by volume: 450 video transcripts + 153 Telegram summaries (102 general + 51 dev) + 242 ecosystem contract/overview docs + 14 cross-cutting pattern guides + full corpus embedding. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time, mostly complete), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
