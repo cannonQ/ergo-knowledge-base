@@ -62,6 +62,10 @@ ergo-knowledge-base/
 │   │       ├── graphql-queries.md
 │   │       └── explorer-api.md
 │   ├── guides/                       # Long-form tutorials
+│   │   ├── ergoscript-fundamentals/  # ✅ DeCo Education adapted series (MIT, attributed)
+│   │   │   ├── 01-boxes-registers-context.md   # Syntax, types, SigmaProp, SELF/INPUTS/OUTPUTS
+│   │   │   ├── 02-guard-script-framework.md    # Box-focused contract design methodology
+│   │   │   └── 03-offchain-appkit.md           # Transaction building with Ergo AppKit
 │   │   ├── first-dapp/
 │   │   ├── building-a-dex/
 │   │   └── writing-an-offchain-bot/
@@ -440,13 +444,26 @@ async def glossary() -> str:
 **Why humans:** You need ~5-10 "gold standard" documents written by hand to serve as examples for the LLM processing pipeline and to validate the frontmatter schema actually works. Write these yourself:
 
 - `reference/ergoscript/language-spec.md` — **Already exists.** Ahrobe's LangSpec.md (~1,350 lines) covers all ErgoScript types, methods, predefined functions, and known limitations. This is comprehensive and close to the right format — needs frontmatter added and possibly splitting into per-type files for granular retrieval (e.g. `types/box.md`, `types/coll.md`, `global-functions.md`). Can serve as-is for `llms-full.txt` ingestion.
-- `concepts/eutxo-model.md` — The definitive eUTXO explanation
+- `concepts/eutxo-model.md` — ✅ Done. The definitive eUTXO explanation (~2,500 tokens). Covers UTXO vs accounts, boxes, data inputs, context variables, multi-stage protocols, Ergo vs Cardano.
+- `concepts/boxes-and-registers.md` — ✅ Done. Box structure, R0-R9, type system, token mechanics, EIP-4 conventions, box identity, minimum box value (~2,200 tokens).
+- `concepts/sigma-protocols.md` — ✅ Done. SigmaProp, Schnorr/DH tuples, AND/OR/threshold composition, zero-knowledge proofs, ring signatures, vs Ethereum (~2,300 tokens).
+- `concepts/storage-rent.md` — ✅ Done. 4-year rule, fee calculation, token protection, dApp implications, miner economics, activation history (~2,000 tokens).
 - `cookbook/tokens/mint-token.md` — Token minting with Fleet SDK
 - `cookbook/apis/node-rest-basics.md` — The "grab this and go" API doc
 - `sdks/fleet-sdk/getting-started.md` — SDK quickstart
 - `reference/node-api/endpoints/utxo-by-id.md` — One API endpoint as template
 
 These become the style guide. Every LLM-generated document gets compared against them.
+
+**DeCo Education Adapted Guides** (✅ Complete):
+
+Adapted from [DeCo Education's ErgoScript Developer Course](https://github.com/DeCo-Education/ErgoScript-Developer-Course) (MIT License, by lgd and kii) with full attribution. These guides bridge the gap between concept docs and production code:
+
+- `guides/ergoscript-fundamentals/01-boxes-registers-context.md` — ✅ Done. Syntax, types, SigmaProp, blockchain context, global functions, pin-lock exercise. Adapted from DeCo Week 1.
+- `guides/ergoscript-fundamentals/02-guard-script-framework.md` — ✅ Done. Box-focused contract design methodology (unique to DeCo), worked example with personal record box, blank template. Adapted from DeCo Week 2.
+- `guides/ergoscript-fundamentals/03-offchain-appkit.md` — ✅ Done. 10-step AppKit transaction recipe, alcohol sale walkthrough, context variables, real-world considerations. Adapted from DeCo Week 3.
+
+All concept docs cross-reference these guides, and guides cross-reference each other and the concept docs.
 
 **Decision point on LangSpec.md:** It works well as a single monolithic reference (easy for an LLM to ingest whole), but RAG retrieval benefits from smaller chunks. The recommended approach is to keep the full file AND generate per-type split files — the embedding pipeline handles both, and the `llms.txt` index can link to whichever granularity the agent needs. The LLM can do the splitting automatically using the existing file as input.
 
@@ -896,7 +913,8 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 - [x] Write frontmatter schema and document templates — ✅ Done. `FRONTMATTER.md`: 20-field schema, 7 templates (concept, cookbook, reference, overview, contract, pattern, guide), enum values, conventions
 - [x] Curate `ergo_glossary.yaml` — ✅ Done (126 terms, 17 categories, 544 aliases)
 - [x] Integrate LangSpec.md — ✅ Done. Kept monolithic at `content/reference/ergoscript/language-spec.md` (~13K tokens) with frontmatter
-- [ ] Write 4 remaining gold-standard seed documents (eutxo-model.md, boxes-and-registers.md, sigma-protocols.md, storage-rent.md)
+- [x] Write 4 gold-standard seed documents — ✅ Done. `eutxo-model.md` (~2,500 tokens), `boxes-and-registers.md` (~2,200 tokens), `sigma-protocols.md` (~2,300 tokens), `storage-rent.md` (~2,000 tokens). All cross-referenced with each other and DeCo guides.
+- [x] Adapt DeCo Education ErgoScript Developer Course into 3-part guide series — ✅ Done. MIT license, full attribution. `01-boxes-registers-context.md`, `02-guard-script-framework.md`, `03-offchain-appkit.md` in `content/guides/ergoscript-fundamentals/`.
 - [ ] Set up LanceDB locally, test basic embedding + retrieval — `generate_embeddings.py` written and dry-run verified (1,566 chunks). Needs `ollama pull bge-m3`
 - [ ] Write thin adapter script if needed to conform video output to repo frontmatter
 - [ ] **Video: process batches 1-2** (~6-8 hrs human time)
@@ -952,7 +970,7 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 |-------|-------------|-----------------|------|
 | Repo structure + templates | 8-10 | 0 | $0 |
 | Glossary + ecosystem catalog curation | 4-6 | 0 | $0 |
-| Seed documents (4 new + LangSpec integration) | 4-6 | LangSpec split (if desired) | $0 |
+| Seed documents (4 concepts + 3 DeCo guides + LangSpec) | 4-6 | LangSpec split (if desired) | $0 — ✅ 4 concepts + 3 guides done |
 | Processing scripts (TG + ecosystem + utilities) | 10-13 | 0 | $0 |
 | Video adapter script | 1-2 | 0 | $0 |
 | Telegram processing (8 years) | 3-5 (review) | ~100 monthly summaries | $2-5 |
@@ -966,4 +984,4 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 
 Video processing remains the single largest human time commitment (~27-36 hours across 5 weeks). Ecosystem code processing adds ~5-8 hours of review but produces the most differentiated content in the entire knowledge base — production contract patterns from live dApps that no other Ergo resource consolidates.
 
-The machines process the vast majority of content by volume: 450 video transcripts + 153 Telegram summaries (102 general + 51 dev) + 242 ecosystem contract/overview docs + 14 cross-cutting pattern guides + full corpus embedding. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time, mostly complete), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
+The machines process the vast majority of content by volume: 450 video transcripts + 153 Telegram summaries (102 general + 51 dev) + 242 ecosystem contract/overview docs + 14 cross-cutting pattern guides + full corpus embedding. Human-authored content so far: 4 concept docs + 3 DeCo-adapted guides (1,712 lines) + LangSpec integration + FRONTMATTER.md schema. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time, mostly complete), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
