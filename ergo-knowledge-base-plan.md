@@ -164,44 +164,13 @@ ergo-knowledge-base/
 │       ├── babel-fees.md             # EIP-31 — pay tx fees in non-ERG tokens
 │       └── grid-trading.md           # On-chain grid order contracts
 │
-├── forum/                           # ✅ ErgoForum archive (Discourse scrape, curated 677 topics)
-│   ├── .gitignore                    # Excludes raw/ JSON cache
-│   ├── forum-index.md                # Category + glossary-tag clustered index (top 25/category)
-│   └── topics/                       # Markdown per topic, organized by category
-│       ├── announcements/
-│       ├── dev/
-│       ├── community/
-│       ├── mining/
-│       └── uncategorized/
 │
-├── blog/                            # ✅ Ergo Platform blog archive (Strapi CMS, 695 posts)
-│   ├── .gitignore                    # Excludes raw/ JSON cache
-│   ├── blog-index.md                 # Tag + year + glossary-tag clustered index (top 10/tag)
-│   ├── posts/                        # Full-content posts by blog tag
-│   │   ├── core/
-│   │   ├── tooling/
-│   │   ├── ecosystem/
-│   │   ├── events/
-│   │   ├── mining/
-│   │   └── ...                       # 20 tag-based subdirectories
-│   └── stubs/                        # External-URL-only posts (mostly Medium)
-│       ├── announcements/
-│       ├── events/
-│       └── ...
-│
-├── telegram/                         # LLM-processed chat archives
-│   ├── summaries/
-│   │   ├── main-chat/                # 2017-01.md through 2026-02.md (102 months)
-│   │   └── dev-chat/                 # 2021-01.md through 2026-02.md (51 months)
-│   ├── topics/
-│   │   └── topic-index.md            # Cross-month topic map
-│   └── segments/                     # Weekly conversation chunks (Tier 2)
-│
-├── video-content/                    # LLM-processed transcripts
-│   ├── amas/
-│   ├── dev-updates/
-│   ├── presentations/
-│   └── index.md
+│   # ── Community archives live in ergo-transcripts repo ──
+│   # Telegram: 153 monthly summaries (102 general + 51 dev, 2017–2026)
+│   # Video:    ~450 transcripts (processing ongoing)
+│   # Forum:    677 curated ErgoForum topics (Discourse scrape)
+│   # Blog:     701 ergoplatform.org posts (397 full + 304 stubs)
+│   # MCP server indexes both repos for unified search
 │
 ├── mcp-server/                       # MCP server source
 │   ├── server.py
