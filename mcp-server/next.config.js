@@ -5,8 +5,12 @@ const nextConfig = {
     config.externals.push({ "@lancedb/lancedb": "@lancedb/lancedb" });
     return config;
   },
-  // Increase serverless function timeout for vector search
   serverExternalPackages: ["@lancedb/lancedb"],
+  // Include vectordb + content dirs in the serverless function bundle
+  // These live outside mcp-server/ in the repo root
+  outputFileTracingIncludes: {
+    "/api/mcp": ["../vectordb/**/*", "../content/**/*"],
+  },
 };
 
 module.exports = nextConfig;
