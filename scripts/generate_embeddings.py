@@ -6,31 +6,31 @@ Pipeline:
   1. Walk content/ and parse all markdown files
   2. Chunk by headers (H2 boundaries), respecting code blocks
   3. Prepend metadata header to each chunk for context
-  4. Embed via BGE-M3 (Ollama) or fallback to sentence-transformers
+  4. Embed via OpenAI text-embedding-3-small (default) or Ollama/sentence-transformers
   5. Upsert to LanceDB with content-hash deduplication
 
 Requirements:
-  pip install lancedb ollama
-  # OR: pip install lancedb sentence-transformers
-  # Ollama: ollama pull bge-m3
+  pip install lancedb openai
+  export OPENAI_API_KEY="sk-..."
 
 Usage:
-  python3 scripts/generate_embeddings.py
-  python3 scripts/generate_embeddings.py --rebuild          # Drop and recreate table
-  python3 scripts/generate_embeddings.py --model sentence   # Use sentence-transformers
+  python3 scripts/generate_embeddings.py --dry-run               # Preview chunks
+  python3 scripts/generate_embeddings.py --rebuild                # Embed with OpenAI
+  python3 scripts/generate_embeddings.py --model ollama           # Use Ollama BGE-M3
   python3 scripts/generate_embeddings.py --include-telegram ~/ergo-telegram/output
 """
 
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.resolve()
 CONTENT_DIR = REPO_ROOT / "content"
-DB_DIR = REPO_ROOT / ".lance"
+DB_DIR = REPO_ROOT / "vectordb"
 TABLE_NAME = "ekb_chunks"
 
 # Chunking params
@@ -38,7 +38,7 @@ TARGET_CHUNK_TOKENS = 768     # ~512-1024 token window
 MAX_CHUNK_TOKENS = 1200
 OVERLAP_LINES = 3             # lines of overlap between chunks
 
-# Embedding dimensions (BGE-M3 = 1024)
+# Embedding dimensions (OpenAI text-embedding-3-small truncated to 1024)
 EMBED_DIM = 1024
 
 
@@ -187,21 +187,57 @@ def collect_chunks(content_dir: Path) -> list[dict]:
     return all_chunks
 
 
+def embed_openai(texts: list[str], model: str = "text-embedding-3-small",
+                 dimensions: int = EMBED_DIM) -> list[list[float]]:
+    """Embed texts using OpenAI's embedding API."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        sys.exit("openai package required: pip install openai")
+
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        sys.exit("OPENAI_API_KEY environment variable required")
+
+    client = OpenAI(api_key=api_key)
+    embeddings = []
+    batch_size = 100  # OpenAI supports up to 2048 per request
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        response = client.embeddings.create(
+            model=model,
+            input=batch,
+            dimensions=dimensions,
+        )
+        batch_embeddings = [item.embedding for item in response.data]
+        embeddings.extend(batch_embeddings)
+        done = min(i + batch_size, len(texts))
+        print(f"  embedded {done}/{len(texts)}")
+
+    return embeddings
+
+
 def embed_ollama(texts: list[str], model: str = "bge-m3") -> list[list[float]]:
-    """Embed texts using Ollama's API."""
+    """Embed texts using Ollama's API (may produce NaN errors with BGE-M3)."""
     try:
         import ollama
     except ImportError:
         sys.exit("ollama package required: pip install ollama\nAlso: ollama pull bge-m3")
 
     embeddings = []
-    batch_size = 32
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        result = ollama.embed(model=model, input=batch)
-        embeddings.extend(result["embeddings"])
-        if (i + batch_size) % 100 == 0:
-            print(f"  embedded {min(i + batch_size, len(texts))}/{len(texts)}")
+    failed = 0
+    for i, text in enumerate(texts):
+        try:
+            result = ollama.embed(model=model, input=[text])
+            embeddings.append(result["embeddings"][0])
+        except Exception:
+            embeddings.append([0.0] * EMBED_DIM)
+            failed += 1
+        if (i + 1) % 200 == 0:
+            print(f"  embedded {i + 1}/{len(texts)}")
+    if failed:
+        print(f"  WARNING: {failed} chunks failed to embed (zero-vector fallback)")
     return embeddings
 
 
@@ -212,8 +248,8 @@ def embed_sentence_transformers(texts: list[str]) -> list[list[float]]:
     except ImportError:
         sys.exit("sentence-transformers required: pip install sentence-transformers")
 
-    model = SentenceTransformer("BAAI/bge-m3")
-    embeddings = model.encode(texts, show_progress_bar=True, batch_size=32)
+    st_model = SentenceTransformer("BAAI/bge-m3")
+    embeddings = st_model.encode(texts, show_progress_bar=True, batch_size=32)
     return embeddings.tolist()
 
 
@@ -223,8 +259,9 @@ def main() -> None:
     parser.add_argument("--db-dir", default=str(DB_DIR))
     parser.add_argument("--rebuild", action="store_true",
                         help="Drop and recreate the table")
-    parser.add_argument("--model", choices=["ollama", "sentence"], default="ollama",
-                        help="Embedding backend (default: ollama)")
+    parser.add_argument("--model", choices=["openai", "ollama", "sentence"],
+                        default="openai",
+                        help="Embedding backend (default: openai)")
     parser.add_argument("--include-telegram", default=None,
                         help="Path to Telegram output dir to include summaries")
     parser.add_argument("--dry-run", action="store_true",
@@ -259,7 +296,9 @@ def main() -> None:
     # Embed
     texts = [c["text"] for c in chunks]
     print(f"\nEmbedding {len(texts)} chunks with {args.model}...")
-    if args.model == "ollama":
+    if args.model == "openai":
+        vectors = embed_openai(texts)
+    elif args.model == "ollama":
         vectors = embed_ollama(texts)
     else:
         vectors = embed_sentence_transformers(texts)
