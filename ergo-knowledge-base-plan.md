@@ -103,9 +103,11 @@ ergo-knowledge-base/
 │   │   ├── stealth-addresses.md      # EIP-41
 │   │   ├── covert-addresses.md
 │   │   └── sigma-protocols-zkp.md
-│   ├── sdks/                         # Per-SDK docs, consistent template
+│   ├── sdks/                         # Per-SDK docs + examples, nested by SDK
 │   │   ├── fleet-sdk/                # TypeScript/JS — primary web SDK
+│   │   │   └── examples/             # Runnable code snippets
 │   │   ├── appkit/                   # JVM (Java/Scala/Kotlin/Android)
+│   │   │   └── examples/
 │   │   ├── sigma-rust/               # Rust + WASM
 │   │   ├── fleetsharp/               # C#/.NET
 │   │   ├── rustkit/                  # Community Rust SDK
@@ -200,13 +202,6 @@ ergo-knowledge-base/
 │   ├── dev-updates/
 │   ├── presentations/
 │   └── index.md
-│
-├── examples/                         # Runnable code, separate from prose
-│   ├── ergoscript/
-│   ├── fleet-sdk/
-│   ├── appkit/
-│   ├── python/
-│   └── rust/
 │
 ├── mcp-server/                       # MCP server source
 │   ├── server.py
