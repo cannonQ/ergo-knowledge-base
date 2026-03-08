@@ -51,6 +51,46 @@ repos:
     description: "Rust sigma-state implementation — WASM bindings, wallet features, ErgoTree interpreter"
 
   - org: ergoplatform
+    repo: ergo-node-interface-rust
+    priority: high
+    group: sdk
+    language: [rust]
+    extract: [readme, docs]
+    patterns: [NodeInterface, send_transaction, current_block_height, register_scan]
+    output_dir: content/sdks/ergo-node-interface-rust
+    description: "Rust library for interacting with Ergo Node — scanning, submitting txs, querying state (EMURGO/Ergo Platform)"
+
+  - org: ergoplatform
+    repo: ergo_avltree_rust
+    priority: high
+    group: core-protocol
+    language: [rust]
+    extract: [readme, docs]
+    patterns: [AVLTree, authenticated_tree_ops, lookup, insert, remove]
+    output_dir: content/reference/avl-tree-rust
+    description: "Rust implementation of Ergo's AVL+ tree — authenticated data structures for on-chain verification"
+
+  - org: ergoplatform
+    repo: ergo-utilities-rust
+    priority: high
+    group: sdk
+    language: [rust]
+    extract: [readme, docs]
+    patterns: [TxBuilder, BoxSpec, ExplorerApi]
+    output_dir: content/sdks/ergo-utilities-rust
+    description: "General utilities for off-chain Ergo code in Rust — headless dApp patterns, tx building helpers"
+
+  - org: ergoplatform
+    repo: ergoscript-by-example
+    priority: high
+    group: reference
+    language: [markdown]
+    extract: [docs, readme]
+    patterns: []
+    output_dir: content/reference/ergoscript-by-example
+    description: "13 annotated ErgoScript contract examples — pin lock, escrow, token sale, swaps, stealth addresses, timed funds"
+
+  - org: ergoplatform
     repo: eips
     priority: high
     group: core-protocol

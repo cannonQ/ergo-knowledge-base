@@ -5,145 +5,171 @@ tags: [amm-lp-mechanics, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [spectrum-finance/ergo-dex, kushti/dexy-stable]
 ---
-# Developer Guide: AMM / LP Mechanics on Ergo
+# Ergo AMM / LP Mechanics: Comprehensive Developer Guide
 
 ## Overview
 
-Automated Market Makers (AMMs) on Ergo implement Constant Function Market Maker (CFMM) logic — most commonly the constant product formula `x * y = k` — using the eUTXO model. Unlike account-based AMMs (e.g., Uniswap on Ethereum), Ergo's AMM encodes all pool state directly in **Boxes**, with invariants enforced by **ErgoScript** contracts rather than mutable storage.
+### What This Pattern Is
 
-This pattern exists because:
+Automated Market Maker (AMM) with Liquidity Provider (LP) mechanics is the foundational primitive of decentralized exchange on Ergo. Specifically, Ergo's ecosystem (led by Spectrum Finance, formerly ErgoDex) implements **Constant Function Market Maker (CFMM)** pools — most commonly the constant product formula `x * y = k` — entirely within Ergo's eUTXO model.
 
-- Ergo has no mutable global state; all state lives in UTXO boxes
-- ErgoScript's Sigma protocols enable trustless, non-custodial pool logic
-- Native tokens (Token ID rule) allow LP tokens to be first-class assets minted and burned on-chain
-- The eUTXO model enables atomic, composable multi-step swaps and deposits in a single transaction
+Unlike account-based AMMs (Uniswap on Ethereum), Ergo AMMs encode all pool state and invariants inside **Boxes** with **ErgoScript** guards, using **Registers** for auxiliary data and **Native tokens** for LP tokens and pool assets. Every interaction — swap, deposit, redeem — is an on-chain **Transaction** that must satisfy the pool's ErgoScript guard without any mutable state.
 
-**Use this pattern when you are building:**
-- DEX swap interfaces
-- Liquidity provision and withdrawal flows
-- LP token-based yield protocols
-- On-chain price oracles derived from pool state
-- Multi-hop routing across pool boxes
+### Why It Exists
 
-**Canonical implementation:** [Spectrum Finance (formerly ErgoDex)](https://github.com/spectrum-finance/ergo-dex)
+| Problem | CFMM Solution on Ergo |
+|---|---|
+| Trustless price discovery | Invariant enforced by ErgoScript; no admin keys |
+| Permissionless liquidity | Anyone can deposit and receive LP tokens |
+| No oracles required for basic swaps | Price emerges from reserve ratio |
+| eUTXO statelessness | Pool state box acts as a **Singleton / State NFT** container |
+
+### When to Use It
+
+- Building a DEX, aggregator, or any protocol that needs on-chain price discovery
+- Implementing yield strategies that interact with liquidity pools
+- Writing off-chain order-matching bots that compose swap/deposit/redeem transactions
+- Any multi-stage contract pattern where a pool box is consumed and recreated each block
 
 ---
 
 ## How It Works
 
-### 1. Pool State Box
+### Core Concepts
 
-The entire AMM pool is represented as a single **pool state box** — a singleton box identified by a **Singleton / State NFT** (a token with a supply of exactly 1). The box holds:
+#### The Pool State Box
 
-| Location | Content |
+Every CFMM pool is represented by a single **Box** (enforced as a singleton via a **State NFT** / pool NFT token) that holds:
+
+| Slot | Contents |
 |---|---|
-| `SELF.tokens(0)` | Pool NFT (1 token, unique pool identity) |
-| `SELF.tokens(1)` | LP token reserves (unminted LP tokens) |
-| `SELF.tokens(2)` | Token X reserves |
-| `SELF.tokens(3)` | Token Y reserves (or ERG value in ERG/token pools) |
+| `value` (nanoERG) | Minimum box value + ERG reserve (if ERG/token pool) |
+| `tokens[0]` | Pool NFT (Token ID rule: 1 token, quantity 1, proves singleton) |
+| `tokens[1]` | LP token reserve (unissued LP tokens remaining) |
+| `tokens[2]` | Asset X reserve |
+| `tokens[3]` | Asset Y reserve (omitted for ERG/token pools) |
 | `R4` | Fee numerator |
 | `R5` | Fee denominator |
 
-The pool NFT enforces **singleton** identity: only one UTXO in the blockchain can hold this NFT at any time. Scripts reference `SELF.tokens(0)._1` as the canonical pool ID.
+The pool's **ErgoTree** (compiled ErgoScript) is the immutable guard that validates every state transition.
 
-### 2. LP Token Minting and the Emission Model
-
-LP tokens represent proportional ownership of the pool. Spectrum Finance uses a **burn model**:
-
-- `emissionLP` = `Long.MaxValue` — the total possible LP supply
-- At pool creation, `burnLP` tokens are permanently destroyed (sent to a provably unspendable address), preventing the pool from ever being fully drained
-- `supplyLP = emissionLP - lockedLP` — tokens currently circulating with LPs
-- Unminted LP tokens sit **inside** the pool box as `tokens(1)`
-
-This means LP tokens are not minted in the traditional sense; they are pre-minted at pool genesis and **released** from the pool box when liquidity is added, or **recollected** by the pool when liquidity is removed.
-
-### 3. Constant Product Swap Math
-
-For a swap of `Δx` input tokens X:
+#### The Constant Product Invariant
 
 ```
-feeAmount = Δx * feeNum / feeDenom
-effectiveInput = Δx - feeAmount  (fee stays in pool, growing reserves)
-Δy = (effectiveInput * y) / (x + effectiveInput)
+x * y = k
 ```
 
-Where `x`, `y` are current pool reserves. The invariant after the swap:
+Where `x` and `y` are reserve amounts. The invariant after a swap with fee:
 
 ```
-(x + Δx) * (y - Δy) >= x * y
+(x + dx * feeNum / feeDenom) * (y - dy) >= x * y
 ```
 
-The strict inequality captures the fee: fees accrue to LPs by growing the pool reserves relative to outstanding LP supply.
+This means the protocol fee (`1 - feeNum/feeDenom`) stays in the pool, accruing to LPs.
 
-In Spectrum's implementation, fee is applied as:
+### Step-by-Step Flow
 
-```
-(x + Δx * feeNum / feeDenom) * (y - Δy) = x * y
-→ Δy = y * Δx * feeNum / (x * feeDenom + Δx * feeNum)
-```
-
-### 4. Liquidity Deposit Flow
+#### Flow 1: Pool Initialization
 
 ```
-User sends:
-  DepositBox { tokenX: inX, tokenY: inY, R4: refundPK, R5: poolNFT }
-  PoolBox(t)  { nft, lpTokens: lp, tokenX: x, tokenY: y }
-
-Transaction produces:
-  PoolBox(t+1) { nft, lpTokens: lp - mintedLP, tokenX: x + inX, tokenY: y + inY }
-  RewardBox    { lpTokens: mintedLP → user }
-  ChangeBox    { excess tokenX or tokenY → user }
+1. Creator issues Pool NFT (1 token, guaranteed unique by Token ID rule: 
+   NFT ID = first input box ID of the creation tx)
+2. Creator issues LP token supply (e.g., Long.MaxValue = 9,223,372,036,854,775,807)
+3. Initial deposit transaction:
+   - Input:  [Creator box with X, Y, LP tokens, Pool NFT]
+   - Output: [Pool state box], [Creator LP token reward box]
+4. Pool box locks: NFT + remaining LP tokens + X reserves + Y reserves
+5. burnLP tokens (e.g., 1000) are permanently locked — prevents zero-liquidity attacks
 ```
 
-The minted LP amount is the minimum of the two proportional contributions:
+#### Flow 2: Swap (X → Y)
 
 ```
-mintedLP = min(inX * supplyLP / x,  inY * supplyLP / y)
+1. User submits an Order box (off-chain bot picks it up)
+2. Off-chain executor (matcher) constructs a Transaction:
+   - Input[0]: Pool state box  (consumed, recreated)
+   - Input[1]: User order box  (contains dX amount of token X)
+   - Output[0]: New pool state box (x' = x + dX_with_fee, y' = y - dY)
+   - Output[1]: User reward box (receives dY of token Y)
+   - Output[2]: Executor reward box (protocol/execution fee)
+3. ErgoScript on pool box verifies:
+   - Pool NFT preserved
+   - x' * y' >= x * y  (invariant holds)
+   - dY correctly computed from invariant
+   - LP token count unchanged
 ```
 
-The `min` enforces that the user deposits in the correct ratio; the excess of whichever token is oversupplied is returned as change.
-
-### 5. Liquidity Withdrawal Flow
+#### Flow 3: Liquidity Deposit
 
 ```
-User sends:
-  RedeemBox  { lpTokens: inLP, R4: refundPK, R5: poolNFT }
-  PoolBox(t) { nft, lpTokens: lp, tokenX: x, tokenY: y }
-
-Transaction produces:
-  PoolBox(t+1) { nft, lpTokens: lp + inLP, tokenX: x - outX, tokenY: y - outY }
-  UserBox      { tokenX: outX, tokenY: outY }
+1. User constructs a Deposit order box containing dX and dY
+2. Executor constructs Transaction:
+   - Input[0]: Pool state box
+   - Input[1]: Deposit order box
+   - Output[0]: New pool state box (reserves increased)
+   - Output[1]: User LP token reward box
+   - Output[2]: Change box (unused portion of smaller asset)
+3. LP tokens minted to user = min(dX * supplyLP / x, dY * supplyLP / y)
+4. ErgoScript verifies the LP amount is fair relative to pool ratio
 ```
 
-Withdrawal amounts:
+#### Flow 4: Liquidity Redemption
 
 ```
-outX = inLP * x / supplyLP
-outY = inLP * y / supplyLP
+1. User submits Redeem order box containing LP tokens
+2. Executor constructs Transaction:
+   - Input[0]: Pool state box
+   - Input[1]: Redeem order box (contains LP tokens)
+   - Output[0]: New pool state box (reserves decreased, LP tokens returned)
+   - Output[1]: User reward box (proportional X and Y)
+3. Returned amounts: dX = lpIn * x / supplyLP, dY = lpIn * y / supplyLP
 ```
 
-### 6. Order Box Pattern
+#### Multi-Stage Contract Architecture
 
-Because Ergo transactions are assembled off-chain, users do not interact with the pool directly. Instead they submit **order boxes** (Deposit, Swap, Redeem) that sit in the mempool or on-chain. An off-chain **executor** (bot) assembles the transaction combining the order box and pool box, collecting a small **execution fee** for their service. The ErgoScript in both the order box and the pool box must simultaneously validate.
-
-### 7. Fee Extraction
-
-Protocol fees are not extracted per-transaction. They accumulate as reserve growth. Separate **fee boxes** can be defined in the protocol for treasury extraction, validated by the pool script checking that output reserves satisfy a modified invariant that permits a small protocol cut.
+```
+┌─────────────────────────────────────────────────────┐
+│                   CFMM Transaction                   │
+│                                                      │
+│  Inputs:          Outputs:                           │
+│  ┌──────────┐     ┌──────────┐                      │
+│  │ Pool Box │────▶│ Pool Box │  (same ErgoTree,      │
+│  │ (State)  │     │ (State') │   new reserves)       │
+│  └──────────┘     └──────────┘                      │
+│  ┌──────────┐     ┌──────────┐                      │
+│  │  Order   │────▶│  User    │  (reward)             │
+│  │  Box     │     │  Box     │                       │
+│  └──────────┘     └──────────┘                      │
+│                   ┌──────────┐                      │
+│                   │ Executor │  (fee)                │
+│                   │  Box     │                       │
+│                   └──────────┘                      │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Implementation
 
-### Scala: Core CFMM Pool Model
+### Part 1: Core Pool Math (Scala — from Spectrum Finance)
 
 ```scala
 // spectrum-finance/ergo-dex: CfmmPool.scala
 package io.ergodex.core.cfmm
 
+/**
+ * PoolConfig encapsulates immutable pool parameters.
+ *
+ * @param feeNum           Fee numerator (e.g., 995 means 0.5% fee when denom=1000)
+ * @param feeDenom         Fee denominator (e.g., 1000)
+ * @param emissionLP       Total LP token supply ever emitted (Long.MaxValue typical)
+ * @param burnLP           LP tokens permanently burned at init (prevents sqrt(0) attack)
+ * @param minInitialDeposit Minimum initial liquidity required
+ */
 final case class PoolConfig(
   feeNum: Int,
   feeDenom: Int,
@@ -152,66 +178,45 @@ final case class PoolConfig(
   minInitialDeposit: Long
 )
 
+/**
+ * CfmmPool is the pure functional model of pool state.
+ * x, y  = current reserves of asset X and Y
+ * lp    = LP tokens currently held IN the pool box (unissued)
+ *
+ * supplyLP = tokens already issued to liquidity providers
+ *          = emissionLP - lp
+ *
+ * IMPORTANT: Use BigInt for intermediate calculations to avoid
+ * Long overflow — reserves can be near Long.MaxValue.
+ */
 final case class CfmmPool(x: Long, y: Long, lp: Long, config: PoolConfig) {
 
-  // LP tokens currently held by liquidity providers
   val supplyLP: Long = config.emissionLP - lp
 
-  /** Deposit inX of token X and inY of token Y.
-   *  Returns updated pool state and the LP tokens minted.
+  /**
+   * Compute new pool state after a deposit of (inX, inY).
+   * LP tokens issued = min(inX * supplyLP / x, inY * supplyLP / y)
+   * This is the "minimum of two ratios" formula ensuring the pool
+   * ratio is maintained — excess of the larger-ratio asset is returned
+   * as change to the depositor.
    */
   def deposit(inX: Long, inY: Long): CfmmPool = {
-    // LP minted is bounded by whichever token is the limiting factor
     val unlocked = math.min(
-      inX * supplyLP / x,
-      inY * supplyLP / y
+      // Use BigInt to prevent overflow in multiplication
+      (BigInt(inX) * supplyLP / x).toLong,
+      (BigInt(inY) * supplyLP / y).toLong
     )
+    // New reserves: full deposit amounts added (change handled in order contract)
+    // New LP in pool: reduced by unlocked amount (those go to user)
     CfmmPool(x + inX, y + inY, lp - unlocked, config)
   }
 
-  /** Redeem inLP LP tokens for underlying X and Y. */
-  def redeem(inLP: Long): (Long, Long, CfmmPool) = {
-    val outX = inLP * x / supplyLP
-    val outY = inLP * y / supplyLP
-    (outX, outY, CfmmPool(x - outX, y - outY, lp + inLP, config))
-  }
-
-  /** Swap `input` amount of `token` ("x" or "y"), return output amount. */
-  def swap(token: String, input: Long): CfmmPool = {
-    token match {
-      case "x" =>
-        val dy = outputAmount(x, y, input)
-        CfmmPool(x + input, y - dy, lp, config)
-      case "y" =>
-        val dx = outputAmount(y, x, input)
-        CfmmPool(x - dx, y + input, lp, config)
-    }
-  }
-
-  /** Output amount for a given input, applying the fee. */
-  def outputAmount(reserveIn: Long, reserveOut: Long, input: Long): Long = {
-    val feeNum   = config.feeNum
-    val feeDenom = config.feeDenom
-    // Δout = reserveOut * input * feeNum / (reserveIn * feeDenom + input * feeNum)
-    val numerator   = BigInt(reserveOut) * input * feeNum
-    val denominator = BigInt(reserveIn) * feeDenom + BigInt(input) * feeNum
-    (numerator / denominator).toLong
-  }
-
-  /** Minimum input needed to receive at least `output` of the other token. */
-  def inputAmount(token: String, output: Long): Long = {
-    val (reserveIn, reserveOut) = if (token == "x") (x, y) else (y, x)
-    val feeNum   = config.feeNum
-    val feeDenom = config.feeDenom
-    // Δin = reserveIn * output * feeDenom / ((reserveOut - output) * feeNum) + 1
-    val numerator   = BigInt(reserveIn) * output * feeDenom
-    val denominator = BigInt(reserveOut - output) * feeNum
-    (numerator / denominator + 1).toLong
-  }
-}
-
-object CfmmPool {
-  def init(inX: Long, inY: Long, config: PoolConfig): CfmmPool = {
-    require(inX >= config.minInitialDeposit && inY >= config.minInitialDeposit)
-    val initialLP = math.min(
-      inX * (config.em
+  /**
+   * Compute new pool state after redeeming lpIn LP tokens.
+   * Returns proportional share: dX = lpIn * x / supplyLP
+   *                             dY = lpIn * y / supplyLP
+   */
+  def redeem(lpIn: Long): CfmmPool = {
+    val retX = (BigInt(lpIn) * x / supplyLP).toLong
+    val retY = (BigInt(lpIn) * y / supplyLP).toLong
+    CfmmPool(x - retX, y - retY, lp + lp

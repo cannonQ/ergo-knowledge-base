@@ -5,109 +5,118 @@ tags: [token-minting-eip4, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [fleet-sdk/fleet, fleet-sdk/fleet-by-example, arkadianet/citadel, LiliumErgo/scala-api]
 ---
-# Developer Guide: Token Minting (EIP-4) on Ergo
+# Developer Guide: Token Minting with EIP-4 on Ergo
 
 ## Overview
 
-EIP-4 defines the **standard for token issuance on Ergo** — covering both fungible tokens (FTs) and non-fungible tokens (NFTs). It specifies how metadata is stored in **Registers**, how the **Token ID rule** binds a token's identity to a specific UTXO, and how wallets and dApps interpret on-chain token data.
+EIP-4 (Ergo Improvement Proposal 4) defines the **Asset Standard** for Ergo — the canonical specification for issuing both **fungible tokens** (FTs) and **non-fungible tokens** (NFTs) on the Ergo blockchain. It standardises how token metadata is stored in box **Registers**, how tokens are identified, and how wallets and dApps interpret on-chain asset information.
 
 ### Why It Exists
 
-Ergo's **Native tokens** are first-class citizens of the eUTXO model — they live inside **Boxes** alongside ERG, not in separate contracts. However, the base protocol only tracks `(tokenId, amount)` pairs. EIP-4 layers a **metadata convention** on top, using a Box's Registers (R4–R9) to attach human-readable names, descriptions, decimal precision, and asset type information.
+Ergo supports **Native tokens** at the protocol level via the eUTXO model. Every **Box** can carry multiple token types, each identified by a unique **Token ID**. However, the base protocol says nothing about *names*, *decimals*, *artwork*, or *descriptions*. EIP-4 fills this gap, giving the ecosystem a shared schema so that wallets (Nautilus, SAFEW), explorers (explorer.ergoplatform.com), and dApps can display asset metadata consistently without relying on off-chain registries.
 
-Without EIP-4, wallets and indexers have no agreed way to display "ERGODEX" vs a raw 64-character hex ID.
+### The Token ID Rule
 
-### When to Use It
+The **Token ID rule** is a core protocol invariant: **a token's ID is always equal to the Box ID of the first input box in the minting transaction.** This is enforced at the consensus layer — you cannot fabricate a Token ID. Because a Box ID is a hash of the box's content and its creation context, Token IDs are globally unique and unforgeable. This is the mechanism that underpins NFT uniqueness on Ergo without requiring any additional smart-contract logic.
 
-| Use Case | Pattern |
+### When to Use This Pattern
+
+| Scenario | Use EIP-4? |
 |---|---|
-| Launch a DAO governance token | Fungible token with decimals |
-| Issue a unique artwork or collectible | NFT (amount = 1, no decimals) |
-| Create a **Singleton / State NFT** for a multi-stage contract | NFT with amount = 1, used as a contract anchor |
-| Issue game items with supply > 1 but no fractions | Semi-fungible / collection token |
-| Bootstrap a DEX liquidity pool token | Fungible token with known supply |
+| Launching a fungible token (DAO governance, reward token) | ✅ |
+| Minting a unique NFT (art, game item, identity) | ✅ |
+| Creating a **Singleton / State NFT** to guard a multi-stage contract | ✅ |
+| Transferring existing tokens between boxes | ❌ (no minting involved) |
+| Wrapping a native token with extra on-chain logic | Partial — mint first, then lock |
 
 ---
 
 ## How It Works
 
-### The Token ID Rule
+### 1. Understand the eUTXO Minting Invariant
 
-The **Token ID rule** is the protocol-level guarantee that makes token issuance trustless:
+In Ergo's eUTXO model, tokens are created according to a strict ledger rule:
 
-> **A token's ID is always equal to the Box ID of the first input in the minting transaction.**
+> For every token that appears in the **outputs** of a transaction but not in the **inputs**, the token's ID **must equal the Box ID of the first input**.
 
-This is enforced by the Ergo node consensus, not by a contract. It means:
-- Token IDs are globally unique (Box IDs are globally unique).
-- No one can mint a second batch under the same Token ID after the first input UTXO is spent.
-- To re-issue more supply, you must mint a *new* token with a *new* Token ID.
+This means:
+- Only **one new token type** can be minted per transaction.
+- The **amount** minted can be any value from `1` to `Long.MaxValue` (`9,223,372,036,854,775,807`).
+- For an NFT, you mint exactly `1` unit.
 
-### The Minting Transaction Structure
+### 2. Prepare the Metadata Registers
 
-```
-┌─────────────────────────────────────┐
-│  INPUTS                             │
-│  [0] Funding Box (UTxO to spend)    │  ← Box ID becomes Token ID
-│  [1..n] Additional inputs (optional)│
-└─────────────────────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────┐
-│  OUTPUTS                            │
-│  [0] Minting Box                    │
-│      • tokens: [(TokenId, amount)]  │
-│      • R4: name (Coll[Byte])        │
-│      • R5: description (Coll[Byte]) │
-│      • R6: decimals (Coll[Byte])    │
-│      • R7: asset type (optional)    │
-│      • R8: artwork data (optional)  │
-│      • R9: artwork hash (optional)  │
-│  [1] Change Box (ERG remainder)     │
-└─────────────────────────────────────┘
-```
+EIP-4 allocates the **non-mandatory Registers** R4–R8 on the minting output box for metadata:
 
-### Step-by-Step Flow
-
-1. **Select a UTXO** from the wallet. Its Box ID will become the Token ID.
-2. **Build the output Box** with:
-   - A token entry `(inputBoxId, desiredAmount)`
-   - EIP-4 metadata in Registers R4–R9
-3. **Include the Minimum box value** of ERG (currently 0.001 ERG) to satisfy **Storage rent** dust rules.
-4. **Sign** the transaction with the spending key for the input UTXO.
-5. **Submit** to the Ergo network. Once confirmed, the Token ID is permanently established.
-
-### EIP-4 Register Layout
-
-| Register | Type | Purpose |
+| Register | Type | Content |
 |---|---|---|
-| R4 | `Coll[Byte]` | Token name (UTF-8) |
-| R5 | `Coll[Byte]` | Token description (UTF-8) |
-| R6 | `Coll[Byte]` | Number of decimals as UTF-8 string (e.g., `"2"`) |
-| R7 | `Coll[Byte]` | Asset type (e.g., `"001"` = picture, `"002"` = audio) |
-| R8 | `Coll[Byte]` | Content bytes or IPFS link |
-| R9 | `Coll[Byte]` | SHA-256 hash of content |
+| **R4** | `Coll[Byte]` | Token name (UTF-8 encoded) |
+| **R5** | `Coll[Byte]` | Token description (UTF-8 encoded) |
+| **R6** | `Coll[Byte]` | Number of decimals (UTF-8 string of an integer, e.g. `"2"`) |
+| **R7** | `Coll[Byte]` | *(NFT only)* Asset type tag |
+| **R8** | `Coll[Byte]` | *(NFT only)* Checksum / content hash of the off-chain asset |
 
-> **Registers must be densely packed.** You cannot set R6 without also setting R4 and R5. The `areRegistersDenselyPacked` check in fleet-sdk enforces this.
+> **Registers must be densely packed.** You cannot set R6 without setting R4 and R5. The protocol rejects transactions where registers have gaps (e.g., R4 set but R5 skipped, then R6 set).
+
+### 3. Build the Minting Output Box
+
+The output box that receives the new tokens must:
+1. Carry the full minted supply in its token list.
+2. Hold at least the **Minimum box value** in nanoERG (currently `0.001 ERG` = `1,000,000` nanoERG) to be protected from **Storage rent** eviction.
+3. Have its Registers set according to EIP-4.
+4. Be assigned to the recipient's **ErgoTree** (the compiled guard script).
+
+### 4. Select the First Input
+
+Because the **Token ID** will equal the first input's Box ID, you must be deliberate about which UTxO occupies `input[0]`. Typically this is simply the largest available UTXO in the user's wallet, but in programmatic minting (e.g., a launchpad contract) you may need to pin a specific box.
+
+### 5. Sign and Submit
+
+The transaction is signed with the Sigma protocol proof for the input guards (usually a simple **proveDlog** / P2PK guard) and submitted to a node or via the Ergo Transaction API.
+
+### Flow Diagram
+
+```
+Wallet UTxOs
+     │
+     ▼
+[Input Box 0]  ← Box ID becomes Token ID
+[Input Box 1]  (optional, for fee coverage)
+     │
+     │  Transaction
+     ▼
+[Output Box 0] ← minting box
+  value: ≥ minBoxValue nanoERG
+  tokens: [(newTokenId, amount)]
+  R4: name bytes
+  R5: description bytes
+  R6: decimals bytes
+  R7: asset type (NFT only)
+  R8: content hash (NFT only)
+[Output Box 1] ← change box (ERG remainder)
+```
 
 ---
 
 ## Implementation
 
-### TypeScript — fleet-sdk
+### TypeScript — Fleet SDK
 
-The [fleet-sdk](https://github.com/fleet-sdk/fleet) `OutputBuilder` provides a first-class `mintToken()` API that handles the Token ID rule automatically.
+Fleet SDK (`@fleet-sdk/core`) is the primary TypeScript/JavaScript library for building Ergo transactions. Its `OutputBuilder` has first-class support for EIP-4 minting via the `.mintToken()` method.
 
-#### 1. Install dependencies
+#### Installation
 
 ```bash
-npm install @fleet-sdk/core @fleet-sdk/common
+npm install @fleet-sdk/core
+# or
+yarn add @fleet-sdk/core
 ```
 
-#### 2. Mint a Fungible Token
+#### Fungible Token Minting
 
 ```typescript
 import {
@@ -115,123 +124,96 @@ import {
   OutputBuilder,
   SAFE_MIN_BOX_VALUE,
   RECOMMENDED_MIN_FEE_VALUE,
-  ErgoAddress
+  SConstant,
+  SColl,
+  SByte
 } from "@fleet-sdk/core";
 
 /**
- * Mints a fungible token following EIP-4.
+ * Mint a fungible EIP-4 token.
  *
- * The Token ID is automatically derived from inputs[0].boxId by fleet-sdk.
- * Registers R4, R5, R6 are set from the NewToken metadata fields.
+ * @param inputs       - UTxOs owned by the sender (first input provides the Token ID)
+ * @param recipientErgoTree - ErgoTree hex of the recipient
+ * @param creationHeight - Current blockchain height
  */
-async function mintFungibleToken(
-  inputs: Box<bigint>[],     // Wallet UTXOs — inputs[0].boxId becomes Token ID
-  changeAddress: string,
-  height: number
+function mintFungibleToken(
+  inputs: Array<{ boxId: string; value: bigint; ergoTree: string }>,
+  recipientErgoTree: string,
+  creationHeight: number
 ) {
-  const unsignedTx = new TransactionBuilder(height)
-    .from(inputs)
-    .to(
-      new OutputBuilder(SAFE_MIN_BOX_VALUE, ErgoAddress.fromBase58(changeAddress))
-        .mintToken({
-          // tokenId is intentionally omitted — fleet derives it from inputs[0]
-          amount: 1_000_000n,   // Total supply (raw, before decimals)
-          name: "MyToken",
-          decimals: 2,          // Stored as UTF-8 "2" in R6
-          description: "A fungible token following EIP-4"
-        })
-    )
-    .sendChangeTo(changeAddress)
-    .payMinFee()
+  // ── 1. Describe the new token ────────────────────────────────────────────
+  //
+  // NewToken<bigint> from fleet's token.ts:
+  //   tokenId?    – omit here; Fleet derives it from inputs[0].boxId
+  //   name?       – UTF-8 display name
+  //   decimals?   – number of decimal places for UI display
+  //   description?– human-readable description
+  //
+  const mintingBox = new OutputBuilder(
+    SAFE_MIN_BOX_VALUE, // minimum nanoERG to prevent Storage rent eviction
+    recipientErgoTree,
+    creationHeight
+  ).mintToken({
+    amount: 1_000_000n,      // total supply (bigint enforced by Fleet)
+    name: "MyToken",
+    decimals: 2,             // UI: 1_000_000 raw = 10,000.00 display units
+    description: "A fungible EIP-4 token example"
+  });
+  // Fleet internally encodes name → R4, description → R5, decimals → R6
+  // as Coll[Byte] (SigmaProp serialisation of UTF-8 byte arrays).
+
+  // ── 2. Build the transaction ─────────────────────────────────────────────
+  const unsignedTx = new TransactionBuilder(creationHeight)
+    .from(inputs)                           // inputs[0].boxId → Token ID
+    .to(mintingBox)
+    .sendChangeTo(recipientErgoTree)        // ERG change
+    .payFee(RECOMMENDED_MIN_FEE_VALUE)      // 0.001 ERG minimum transaction fee
     .build();
 
   return unsignedTx;
 }
 ```
 
-#### 3. Mint an NFT (amount = 1, decimals = 0)
+#### NFT Minting (Picture NFT — EIP-4 Type 0x01)
 
 ```typescript
 import {
   TransactionBuilder,
   OutputBuilder,
   SAFE_MIN_BOX_VALUE,
-  ErgoAddress,
+  RECOMMENDED_MIN_FEE_VALUE,
+  SConstant,
   SColl,
   SByte,
-  stringify
+  SInt
 } from "@fleet-sdk/core";
 
 /**
- * Mints an EIP-4 NFT with artwork metadata.
- * R7 = "001" signals a picture NFT to wallets/marketplaces.
+ * Asset type tags defined in EIP-4:
+ *  0x01 0x01 → Picture NFT  (JPEG/PNG/etc.)
+ *  0x01 0x02 → Audio NFT
+ *  0x01 0x03 → Video NFT
+ *  0x02 0x01 → Membership NFT (threshold signature)
  */
-async function mintNFT(
-  inputs: Box<bigint>[],
-  changeAddress: string,
-  height: number,
-  artworkIpfsUrl: string,
-  artworkSha256Hex: string   // 32-byte SHA-256 of the artwork content
+const PICTURE_NFT_TYPE = Uint8Array.from([0x01, 0x01]);
+
+/**
+ * Mint a picture NFT following EIP-4.
+ *
+ * @param contentHash - SHA-256 hash of the off-chain image as a hex string
+ */
+function mintPictureNFT(
+  inputs: Array<{ boxId: string; value: bigint; ergoTree: string }>,
+  recipientErgoTree: string,
+  creationHeight: number,
+  contentHash: string // 32-byte SHA-256 hex
 ) {
-  // Convert hex string to Uint8Array for register encoding
-  const hashBytes = Uint8Array.from(
-    Buffer.from(artworkSha256Hex, "hex")
+  const contentHashBytes = Uint8Array.from(
+    Buffer.from(contentHash, "hex")
   );
 
-  const unsignedTx = new TransactionBuilder(height)
-    .from(inputs)
-    .to(
-      new OutputBuilder(
-        SAFE_MIN_BOX_VALUE,
-        ErgoAddress.fromBase58(changeAddress)
-      )
-        .mintToken({
-          amount: 1n,                  // NFT: exactly 1 token
-          name: "My NFT Artwork",
-          decimals: 0,
-          description: "A unique digital artwork on Ergo"
-        })
-        // R7: asset type "001" = picture (per EIP-4 spec)
-        .setAdditionalRegisters({
-          R7: SColl(SByte, Buffer.from("001", "utf-8")).toHex(),
-          R8: SColl(SByte, Buffer.from(artworkIpfsUrl, "utf-8")).toHex(),
-          R9: SColl(SByte, hashBytes).toHex()
-        })
-    )
-    .sendChangeTo(changeAddress)
-    .payMinFee()
-    .build();
-
-  return unsignedTx;
-}
-```
-
-#### 4. Mint a Singleton / State NFT for a Multi-Stage Contract
-
-A **Singleton NFT** is an NFT whose Token ID is used as the persistent identity of a contract's state box. The contract's ErgoScript checks that this token is present in the self box to authenticate the state.
-
-```typescript
-/**
- * Mints a Singleton NFT intended to live in a contract's state box forever.
- * The tokenId returned must be hardcoded into the contract's ErgoScript.
- */
-async function mintSingletonNFT(
-  inputs: Box<bigint>[],
-  contractErgoTree: string,  // The multi-stage contract's ErgoTree
-  changeAddress: string,
-  height: number
-) {
-  // The Token ID will be inputs[0].boxId after signing
-  const predictedTokenId = inputs[0].boxId;
-  console.log("Predicted Singleton Token ID:", predictedTokenId);
-
-  const unsignedTx = new TransactionBuilder(height)
-    .from(inputs)
-    .to(
-      // Output goes directly to the contract address, not the wallet
-      new OutputBuilder(SAFE_MIN_BOX_VALUE, contractErgoTree)
-        .mintToken({
-          amount: 1n,
-          name: "ContractStateNFT",
-          decimals: 0,
-          description:
+  const mintingBox = new OutputBuilder(
+    SAFE_MIN_BOX_VALUE,
+    recipientErgoTree,
+    creationHeight
+  )

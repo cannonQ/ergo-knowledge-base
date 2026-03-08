@@ -5,193 +5,190 @@ tags: [proxy-contracts, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [kushti/dexy-stable, paideiadao/paideia-contracts, duckpools/lend-protocol-contracts]
 ---
-# Proxy Contracts: Developer Guide for Ergo Integration
+# Proxy Contracts in Ergo: A Comprehensive Developer Guide
+
+## Table of Contents
+1. [Overview](#overview)
+2. [How It Works](#how-it-works)
+3. [Implementation](#implementation)
+4. [Common Pitfalls](#common-pitfalls)
+5. [References](#references)
+
+---
 
 ## Overview
 
-### What Is This Pattern?
+### What Is the Proxy Contract Pattern?
 
-A **proxy contract** in Ergo is a user-facing eUTXO script that acts as an intermediary holding layer between a user's wallet and a core protocol contract (such as an AMM pool, lending vault, or staking state box). The user locks funds into the proxy box first; an off-chain agent (bot, relayer, or the user themselves) then consumes that proxy box in a transaction that also interacts with the protocol contract.
+A **proxy contract** in Ergo is a user-facing eUTXO Box whose ErgoScript guards an intermediate step between a user's intent and a protocol's core logic. Rather than having users interact directly with complex multi-stage protocol contracts (LP pools, staking state machines, lending vaults), a proxy contract acts as a **holding escrow** that:
 
-The pattern emerged directly from Ergo's eUTXO model, where **the spending transaction's shape must be known at signing time**. Because on-chain state (pool reserves, oracle prices, interest rates) changes between blocks, users cannot atomically sign a transaction against a moving target. The proxy contract absorbs this uncertainty by:
+1. **Receives** the user's funds and encodes their parameters (desired output, slippage tolerance, deadline) into Registers or Context extension variables
+2. **Allows a permissionless executor** (off-chain bot, keeper) to compose the proxy Box as an input alongside the real protocol Boxes in a single atomic Transaction
+3. **Enforces a refund path** so the user can reclaim funds if no executor services the request within a deadline
 
-1. **Holding the user's funds safely** under a script that enforces their intent.
-2. **Allowing a relayer** to assemble the final transaction when conditions are favorable.
-3. **Guaranteeing a refund path** so funds are never permanently locked if the operation fails or expires.
+This pattern is pervasive across the Ergo ecosystem because of two fundamental eUTXO properties:
 
-### Why It Exists
+- **Boxes are stateless and immutable** — a Box's ErgoTree cannot distinguish *who* submitted the spending Transaction; it can only verify conditions on the Transaction's inputs, outputs, Data inputs, and context
+- **Multi-input transactions are atomic** — an executor can safely compose the user's proxy Box with a DEX pool Box, check all invariants, and either the whole swap succeeds or nothing changes
 
-| Ergo Constraint | How Proxy Contracts Solve It |
+### Why Does It Exist?
+
+| Problem Without Proxy | How Proxy Solves It |
 |---|---|
-| Wallet must sign a fully-formed transaction | User signs once to deposit into proxy; relayer assembles protocol tx later |
-| Pool/state box is a shared resource (singleton) | Proxy decouples user deposit timing from contention on the State NFT box |
-| No miner-extractable value mitigation at the script layer | Deadline guards + minimum-output checks prevent sandwich attacks |
-| Storage rent (0.13 ERG/4 years per byte) punishes dust boxes | Proxy boxes carry enough ERG and have short deadlines to avoid rent traps |
+| Users must sign multi-step protocol Transactions directly, requiring wallet integration with full protocol knowledge | User signs one simple "deposit to proxy" Transaction; keepers handle protocol complexity |
+| Race conditions: two users cannot safely submit to the same pool Box simultaneously | Each user's intent is isolated in their own proxy Box; the keeper serialises execution |
+| No recourse if a keeper never executes | Deadline guard + self-refund path in the proxy ErgoTree |
+| Front-running: miners can see user intent in mempool | Proxy Box parameters can be commit-reveal or use Sigma protocol blinding |
+| Storage rent accumulation on long-lived Boxes | Deadline ensures the Box is either consumed or refunded before rent becomes material |
 
 ### When to Use It
 
-- **AMM swaps** where the pool box reserve ratio changes every block (Dexy LP, Spectrum Finance).
-- **Staking entry/exit** where a singleton State NFT box must be updated atomically (Paideia).
-- **Lending operations** where interest accrual between signing and execution would break fixed-rate assumptions (Duckpools).
-- **Any multi-party protocol** where one party's box must be assembled together with a protocol box by a third-party relayer.
+Use the proxy pattern when:
 
-Do **not** use proxy contracts when:
-- The user can sign against a stable, non-contested box (simple P2PK payments).
-- The operation is fully self-contained (no shared state box required).
-- Latency requirements demand single-block settlement (use direct spending with pre-computed context instead).
+- Users interact with a **Singleton / State NFT**-guarded protocol contract (DEX pool, lending vault, staking state box) that can only have one instance in a given Transaction
+- Your protocol requires **off-chain keeper infrastructure** (Spectrum-style AMM bots, Dexy arbitrageurs, Paideia staking incentive bots)
+- The protocol Transaction requires **multiple coordinated inputs** that a standard wallet cannot assemble alone
+- You need **MEV-resistance** or **slippage protection** enforced on-chain rather than in UI code
+
+Do **not** use a proxy when:
+- The user can directly spend the protocol Box themselves (simple P2PK or threshold Sigma protocol suffices)
+- The operation is idempotent and stateless (no shared state Box exists)
 
 ---
 
 ## How It Works
 
-### Canonical Flow
+### High-Level Flow
 
 ```
-Block N:  User signs Tx_deposit
-          Input:  User wallet box (ERG + optional tokens)
-          Output: Proxy box (locked under ProxyErgoTree)
-                  ├─ R4: user P2PK refund address (SigmaProp)
-                  ├─ R5: deadline height (Int)
-                  ├─ R6: min output tokens expected (Long)
-                  └─ R7: protocol-specific parameters
-
-Block N+k (k ≥ 0, k < deadline):
-          Relayer assembles Tx_execute
-          Inputs:  [0] Protocol State box (singleton / State NFT)
-                   [1] Proxy box
-          Outputs: [0] Updated protocol State box
-                   [1] User output box (tokens received)
-                   [2] Fee box (relayer reward, optional)
-          DataInputs: [0] Oracle box (price feed, if needed)
-
-Block N+deadline (if Tx_execute never landed):
-          User (or anyone) submits Tx_refund
-          Input:  Proxy box
-          Output: User wallet (full refund)
+User Wallet                 Proxy Box (on-chain)           Protocol Box (on-chain)
+     │                            │                               │
+     │──── Tx 1: deposit ────────►│                               │
+     │      (ERG + tokens,        │  [waiting for keeper]         │
+     │       params in R4–R7)     │                               │
+     │                            │                               │
+     │                     Keeper Bot                             │
+     │                            │                               │
+     │                            │◄─── Tx 2: execute ──────────►│
+     │                            │     (proxy + protocol         │
+     │                            │      + data inputs)           │
+     │◄─── output Box ────────────┴───────────────────────────────┘
+     │     (tokens / ERG to user)
+     │
+     │  [if deadline passes, no keeper:]
+     │
+     │──── Tx 3: refund ─────────►│ (user reclaims own Box)
 ```
 
-### Step-by-Step Breakdown
+### Step-by-Step Execution
 
-#### Step 1 — User Deposits into Proxy
+#### Step 1 — User Deposits into Proxy Box
 
-The user's wallet constructs a **deposit transaction** spending their own box and producing a proxy box. The proxy box's **ErgoTree** encodes:
+The user's wallet constructs a Transaction spending their own UTXOs and creating one **proxy Box**. The proxy Box contains:
 
-- The user's refund `SigmaProp` (stored in **R4**).
-- A block-height deadline (stored in **R5**).
-- Expected minimum output (stored in **R6**) — the slippage guard.
-- The target protocol contract address (hardcoded in the ErgoScript or stored in **R7**).
+| Field | Content |
+|---|---|
+| `value` | ERG to swap/stake/lend + `Minimum box value` for output + `Minimum transaction fee` |
+| `tokens(0)` | (Optional) Native tokens being deposited |
+| `R4` | User's refund address as `SigmaProp` (or `Coll[Byte]` ErgoTree) |
+| `R5` | Minimum expected output amount (slippage guard) |
+| `R6` | Deadline height (block number after which refund is valid) |
+| `R7` | (Optional) Protocol-specific parameters (pool ID, token ID) |
+| `ErgoTree` | The proxy contract script |
 
-The user signs this transaction with their private key. At this point, **no interaction with the protocol contract is required**; the proxy box is self-contained.
+The user signs Tx 1 with their standard P2PK key. No protocol knowledge is required.
 
-#### Step 2 — Relayer Monitors the Chain
+#### Step 2 — Keeper Discovers and Executes
 
-An off-chain service indexes all UTXOs matching the proxy ErgoTree. When protocol conditions satisfy the user's parameters (price within slippage, pool has sufficient liquidity), the relayer:
+An off-chain keeper scans the blockchain (via Ergo node REST API or explorer) for unspent proxy Boxes matching a known ErgoTree template. When found:
 
-1. Fetches the **singleton/State NFT box** (the protocol's shared state).
-2. Fetches any required **Data Input boxes** (oracle price boxes — these are read-only and do not need to be spent).
-3. Assembles `Tx_execute` with the proxy box as one of the inputs.
+1. Keeper fetches the current **protocol Box** (identified by its Singleton / State NFT Token ID)
+2. Keeper assembles Tx 2 with inputs: `[proxy Box, protocol Box]` and data inputs as needed
+3. Keeper verifies the Transaction satisfies all ErgoScript guards (simulation via `ergo-appkit` or `sigma-rust`)
+4. Keeper submits Tx 2; if successful, the user's output Box lands at the address encoded in `R4` (or derived from it)
 
-#### Step 3 — On-chain Validation (ErgoScript)
+The keeper is permissionless — anyone can do this. The proxy ErgoScript enforces correctness, not the keeper's identity.
 
-The proxy's ErgoScript validates every output of `Tx_execute`. Specifically, it checks:
+#### Step 3 — Deadline Guard / Refund Path
 
-- `HEIGHT < deadline` — the operation is still valid.
-- `OUTPUTS(1).propositionBytes == userPK.propBytes` — output goes to the user.
-- `OUTPUTS(1).tokens(0)._2 >= minExpectedTokens` — slippage guard met.
-- `OUTPUTS(0).tokens` contains the State NFT — the protocol box is preserved.
-- The relayer fee (if any) does not exceed a hardcoded cap.
-
-If all checks pass, the proxy box is consumed and the operation executes atomically.
-
-#### Step 4 — Refund Path
-
-If the deadline block has passed and `Tx_execute` was never mined, the proxy script exposes the **refund branch**:
+If no keeper executes by block height `R6`, the user can self-spend the proxy Box back to their own wallet. The ErgoScript's refund branch verifies:
 
 ```
-HEIGHT >= deadline  =>  userPK  (user's SigmaProp)
+HEIGHT > deadlineHeight && userPk
 ```
 
-Only the user (holder of the private key corresponding to `userPK`) can sign the refund transaction. This ensures **no relayer can steal funds** by simply waiting for the deadline.
+Only the original user (whose `SigmaProp` is in `R4`) can trigger the refund, and only after the deadline.
 
-### Data Flow Diagram
+### Transaction Anatomy (Tx 2 — Execute)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Block N                                                    │
-│                                                             │
-│  [User Wallet Box]                                          │
-│       │  Tx_deposit (signed by user)                        │
-│       ▼                                                     │
-│  [Proxy Box]                                                │
-│    ErgoTree: ProxyScript                                    │
-│    Value:    100 ERG                                        │
-│    R4:       userSigmaProp                                  │
-│    R5:       N + 30  (deadline)                             │
-│    R6:       minDexyOut (1000 DEXY)                         │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-           ┌───────────┴──────────────┐
-           │  Relayer monitors UTXOs  │
-           └───────────┬──────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│  Block N+k (k < 30)                                         │
-│                                                             │
-│  DataInputs: [Oracle Box (price feed)]                      │
-│  Inputs:     [0] LP Pool Box  (State NFT present)           │
-│              [1] Proxy Box                                  │
-│  Outputs:    [0] Updated LP Pool Box                        │
-│              [1] User Box (≥ minDexyOut DEXY tokens)        │
-│              [2] Relayer Fee Box (optional, capped)         │
-└─────────────────────────────────────────────────────────────┘
+INPUTS:
+  [0] proxy Box       (value=X ERG, tokens=[Y dexyUSD], R4=userPk, R5=minOut, R6=deadline)
+  [1] LP Pool Box     (value=reservesX ERG, tokens=[LP token, reservesY dexyUSD], R4=..., R5=...)
 
-   OR (if deadline passed):
+DATA INPUTS:
+  [0] Oracle Box      (value=..., R4=ERG/USD rate as Long)
 
-┌──────────────────────────────────────────────────────────────┐
-│  Block N+30 (or later)                                      │
-│                                                             │
-│  Input:  [Proxy Box]                                        │
-│  Output: [User Wallet Box]  (full refund)                   │
-│  Signed: userPrivateKey                                     │
-└─────────────────────────────────────────────────────────────┘
+OUTPUTS:
+  [0] LP Pool Box'    (updated reserves, same ErgoTree as input[1])
+  [1] User Output Box (value=userERGback, tokens=[swapOutput dexyUSD], propositionBytes=userPk.propBytes)
+  [2] Miner Fee Box   (value=MinimumTransactionFee)
+  [3] (Optional) Protocol fee Box
 ```
+
+The proxy ErgoScript checks `OUTPUTS(1)` satisfies the user's minimum output requirement. The LP pool's own ErgoScript (the protocol contract) checks its own constant-product invariant independently.
 
 ---
 
 ## Implementation
 
-### 1. Core Proxy ErgoScript
+### 1. ErgoScript — Core Proxy Contract Template
 
-The following is a generalized proxy contract modeled on Dexy's `SwapBuyV1.es` and Spectrum Finance's redeem proxy pattern. It handles ERG→Token swaps against an n2t (native-to-token) CFMM pool.
+This template is generalised from the pattern seen in Dexy's `SwapBuyV1.es` and Spectrum's redeem proxy:
 
 ```scala
-// File: lp/proxy/SwapBuyV1.es
-// Pattern: Proxy contract for ERG-to-Token swap via n2t CFMM pool
-//
-// Registers expected in this proxy box:
-//   R4: SigmaProp  — user's refund public key
-//   R5: Int        — deadline block height
-//   R6: Long       — minimum token output (slippage guard)
-//   R7: Coll[Byte] — expected pool NFT Token ID (authenticates the pool box)
-//
-// Context:
-//   INPUTS(0): LP Pool box (must contain pool NFT)
-//   INPUTS(1): This proxy box
-//   OUTPUTS(0): Updated LP Pool box
-//   OUTPUTS(1): User output box (receives tokens)
-//   OUTPUTS(2): (optional) Relayer fee box
-
+// proxy/SwapBuyV1.es
+// User deposits ERG to buy Dexy tokens from the LP pool.
+// Keeper executes; user can refund after deadline.
 {
-  // ── Registers ──────────────────────────────────────────────────────────────
-  val userPK          = SELF.R4[SigmaProp].get
-  val deadline        = SELF.R5[Int].get
-  val minTokenOut     = SELF.R6[Long].get
-  val expectedPoolNFT = SELF.R7[Coll[Byte]].get
+  // ===== Registers of THIS proxy Box ===== //
+  // R4: SigmaProp  — user's refund/output public key
+  // R5: Long       — minimum Dexy tokens user accepts (slippage guard)
+  // R6: Int        — deadline block height for refund
+  // R7: Coll[Byte] — expected LP pool ErgoTree hash (anti-substitution)
 
-  // ── Constants ──────────────────────────────────────────────────────────────
-  // Maximum ERG the relayer may take as a fee (0.002 ERG = 2_000_000 nanoERG)
-  val MaxRelayerFee   = 2000000L
+  // ===== Named extractions ===== //
+  val userPk         : SigmaProp   = SELF.R4[SigmaProp].get
+  val minOutputDexy  : Long        = SELF.R5[Long].get
+  val deadlineHeight : Int         = SELF.R6[Int].get
+  val expectedPoolTree: Coll[Byte] = SELF.R7[Coll[Byte]].get
+
+  // ===== Output boxes ===== //
+  // By convention, output[0] = updated pool, output[1] = user receipt
+  val userOutput : Box = OUTPUTS(1)
+
+  // ===== Pool input validation ===== //
+  // Prevent pool-substitution attack: the LP pool box must have the known ErgoTree
+  val poolInput  : Box = INPUTS(1)
+  val poolTreeOk : Boolean = blake2b256(poolInput.propositionBytes) == expectedPoolTree
+
+  // ===== Slippage guard ===== //
+  // User's output box must carry at least minOutputDexy Dexy tokens (Token ID at index 0)
+  val userDexyOut : Long =
+    if (userOutput.tokens.size > 0) userOutput.tokens(0)._2
+    else 0L
+  val slippageOk  : Boolean = userDexyOut >= minOutputDexy
+
+  // ===== Recipient guard ===== //
+  // Output must go back to the user (their ErgoTree)
+  val recipientOk : Boolean = userOutput.propositionBytes == userPk.propBytes
+
+  // ===== Execute path ===== //
+  val canExecute : Boolean = poolTreeOk && slippageOk && recipientOk
+
+  // ===== Refund path ===== //
+  // After

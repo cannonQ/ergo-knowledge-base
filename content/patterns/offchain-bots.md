@@ -5,181 +5,181 @@ tags: [offchain-bots, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [spectrum-finance/ergo-dex-backend, duckpools/lend-protocol-contracts, duckpools/voting-bot]
 ---
-# Developer Guide: Off-Chain Bots — Chain Scanning → State Detection → Transaction Assembly → Submission
-
----
+# Off-Chain Bots: Chain Scanning → State Detection → TX Assembly → Submission
 
 ## Overview
 
 ### What This Pattern Is
 
-The **off-chain bot pattern** is the primary mechanism by which Ergo dApps implement automated, reactive, and stateful behavior that cannot (or should not) live entirely on-chain. It describes a continuous loop running off-chain that:
+An **off-chain bot** in the Ergo ecosystem is a persistent process that monitors the blockchain, identifies actionable eUTXO states, assembles valid transactions in response, and submits them to the network. The bot is an external actor — it holds no on-chain authority itself — but it drives the execution of on-chain logic by constructing transactions that satisfy **ErgoScript** guards protecting **Boxes**.
 
-1. **Scans** the blockchain (confirmed blocks and/or mempool) for relevant eUTXO Boxes
-2. **Detects** application state encoded in those Boxes (via Registers, ErgoTree, or Token IDs)
-3. **Assembles** a new Transaction that advances the protocol state
-4. **Submits** that Transaction to the Ergo node for validation and eventual confirmation
+This pattern is the operational backbone of nearly every DeFi protocol on Ergo: DEX order matching, lending liquidations, DAO voting tallies, oracle pool refreshes, and yield farming compounders all rely on it.
 
 ### Why It Exists
 
-Ergo's eUTXO model is fundamentally **reactive** at the chain level. ErgoScript defines spending conditions (what must be true for a Box to be consumed), but it has no notion of time-based triggers, loops, or side effects. The chain itself does not "push" — nothing happens unless someone constructs and submits a valid transaction.
+Ergo's **eUTXO** model is purely reactive. A Box sitting on-chain cannot execute itself; it can only be spent by a transaction that satisfies its **ErgoTree**. The on-chain contract defines *what is valid*; the off-chain bot defines *what gets done and when*. This separation of concerns is intentional:
 
-Off-chain bots are the actors that:
+- **ErgoScript** is a non-Turing-complete language for validation, not computation.
+- Heavy computation (order matching, price calculations, route finding) belongs off-chain.
+- The bot internalises the economic incentive — it typically earns a protocol fee from the transaction it assembles.
+- **Storage rent** (0.1 ERG per 4 years per box) creates a cost for abandoned boxes, incentivising bots to process them promptly.
 
-- **Observe** the world state (current Boxes, block height, oracle data)
-- **Decide** which protocol transitions are now valid or profitable
-- **Execute** those transitions by building and submitting transactions
+### When to Use It
 
-This mirrors how miners work in Proof-of-Work but for application-layer logic. The economic incentive for running a bot is typically embedded in the protocol itself — for example, a DEX bot collects an execution fee from each swap it processes, paid out of the user's deposited Box.
-
-### When to Use This Pattern
-
-| Situation | Use Off-Chain Bot? |
+| Situation | Use this pattern |
 |---|---|
-| AMM/DEX order matching (spectrum-finance) | ✅ Yes — orders sit as Boxes waiting to be matched |
-| Lending protocol liquidations (duckpools) | ✅ Yes — undercollateralized positions must be detected |
-| Governance/voting aggregation | ✅ Yes — vote Boxes must be tallied and committed on-chain |
-| Oracle data posting | ✅ Yes — external data must be injected into Boxes periodically |
-| Simple token transfer or NFT mint | ❌ No — user-initiated, single transaction |
-| Pure on-chain logic with no triggers | ❌ No — ErgoScript handles it at spend time |
-
-### Core Invariant
-
-> **The off-chain bot is trusted by nobody.** The ErgoScript in each Box enforces all invariants. The bot merely finds opportunities the script already permits. A malicious or buggy bot can fail to execute, but cannot violate protocol rules — the node's validation ensures this.
-
-This separation of concerns is what makes the pattern safe: correctness is guaranteed by the **ErgoTree** (compiled ErgoScript), not by the bot's logic.
+| Orders / intents sit in boxes waiting to be matched or filled | ✅ |
+| A **Singleton / State NFT** box must be updated on a schedule or trigger | ✅ |
+| A **multi-stage contract** requires an external party to advance stage | ✅ |
+| Liquidation conditions must be detected and acted on atomically | ✅ |
+| A DAO vote period ends and a tally transaction is required | ✅ |
+| Your contract can be fully self-executing within one user's wallet | ❌ |
 
 ---
 
 ## How It Works
 
-### The Full Loop
+The pattern decomposes into four sequential, repeating phases:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    OFF-CHAIN BOT PROCESS                    │
-│                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   SCANNING   │───▶│    STATE     │───▶│  ASSEMBLY    │  │
-│  │              │    │  DETECTION   │    │              │  │
-│  │ Block/Mempool│    │ Box matching │    │  Build Tx    │  │
-│  │ polling via  │    │ ErgoTree ID  │    │  inputs +    │  │
-│  │ node API     │    │ Token ID     │    │  outputs +   │  │
-│  │              │    │ Register val │    │  context ext │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘  │
-│                                                  │          │
-│  ┌──────────────┐                               │          │
-│  │  SUBMISSION  │◀──────────────────────────────┘          │
-│  │              │                                           │
-│  │ POST /tx     │                                           │
-│  │ Handle err   │                                           │
-│  │ Retry logic  │                                           │
-│  └──────────────┘                                           │
-│         │                                                   │
-│         └──────────────────────────── loop ─────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  BLOCK / MEMPOOL EVENTS                                             │
+│                                                                     │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐         │
+│   │  1. SCAN     │───▶│  2. DETECT   │───▶│  3. ASSEMBLE │         │
+│   │  Chain /     │    │  State       │    │  Transaction │         │
+│   │  Mempool     │    │  Matching    │    │  (ErgoTx)    │         │
+│   └──────────────┘    └──────────────┘    └──────┬───────┘         │
+│                                                  │                  │
+│                                           ┌──────▼───────┐         │
+│                                           │  4. SUBMIT   │         │
+│                                           │  + Confirm   │         │
+│                                           └──────────────┘         │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Step 1: Chain Scanning
+### Phase 1 — Chain Scanning
 
-The bot polls the Ergo node's REST API at regular intervals. It queries:
+The bot polls the Ergo node REST API (or an indexer such as **Explorer** or **Spectrum's ergo-chain-grabber**) for:
 
-- `/blockchain/box/byAddress/{address}` — unspent Boxes at a known contract address
-- `/blockchain/transaction/byAddress/{address}` — recent transactions at that address
-- `/transactions/unconfirmed` — mempool transactions (to avoid double-processing)
-- `/blocks/lastHeaders/{n}` — recent block headers for current height
+- New blocks at the current tip (`/api/v1/blocks`)
+- Unconfirmed mempool transactions (`/api/v1/mempool/transactions`)
+- Specific **ErgoTree** addresses (`/api/v1/boxes/unspent/byErgoTree/{ergoTree}`)
 
-The bot maintains a **cursor** (last processed block height or box index) to avoid re-processing already-handled state. This cursor is typically persisted to a local database (Redis, PostgreSQL, or an embedded store).
+The scan identifies **unspent Boxes** whose **ErgoTree** matches a known contract template. The bot maintains a local cursor (last processed height) so it can resume after restarts without re-scanning the entire chain.
 
-**Key consideration:** Boxes in the **mempool** (unconfirmed) represent "pending" state. A robust bot must either:
-- Skip mempool Boxes and wait for confirmation, or
-- Track predicted next-state Boxes to avoid assembling conflicting transactions
+**Key considerations:**
+- Boxes in the mempool are *tentatively spent* — the bot must track them to avoid double-spend attempts.
+- **NiPoPoW**-based light clients can reduce sync overhead in resource-constrained environments, but most production bots use a full node or trusted indexer.
+- The node's `/blockchain/box/byId/{id}` endpoint returns a Box with all **Registers** (R4–R9) populated, essential for state extraction.
 
-Spectrum Finance's backend calls this the **resolver/predicted** mechanism — it stores the expected output Box of a pending transaction to avoid re-processing the same order.
+### Phase 2 — State Detection
 
-### Step 2: State Detection
+Once candidate boxes are identified, the bot decodes their **Registers** and **Tokens** to reconstruct protocol state:
 
-Once raw Boxes are retrieved, the bot **classifies** them. Classification uses:
+- **R4–R9** are typed registers holding `SLong`, `SInt`, `SColl[SByte]`, `SSigmaProp`, `SGroupElement`, `STuple`, etc.
+- **Native tokens** on a box are inspected by **Token ID** — a 32-byte Blake2b256 hash of the creating transaction's first input box ID.
+- A **Singleton / State NFT** (a token with a supply of exactly 1) uniquely identifies a live protocol instance (pool, vault, oracle).
+- **AVL tree** digests stored in registers encode compact authenticated data structures for stateful contracts.
 
-- **ErgoTree matching** — compare the Box's `ergoTree` bytes against known compiled contract templates
-- **Token ID matching** — check `tokens` array for a known **Singleton / State NFT** that uniquely identifies a contract instance
-- **Register inspection** — decode `R4`–`R9` registers (which are `SType`-tagged byte arrays) to extract application state (pool reserves, loan terms, vote weights, etc.)
-- **Value thresholds** — check that `value` (nanoERG) meets **Minimum box value** requirements
+The bot applies matching logic: "Does this box represent an open limit order? Is the pool TVL sufficient? Has the voting period elapsed?"
 
-A Box that holds a **State NFT** (a token with exactly one unit in existence, sometimes called a Singleton) definitively identifies a unique contract instance. This is the standard Ergo pattern for distinguishing one pool/vault/position from another that uses the same ErgoScript template.
+### Phase 3 — Transaction Assembly
 
-### Step 3: Transaction Assembly
+This is the most complex phase. The bot constructs an `ErgoLikeTransaction` containing:
 
-This is the most complex step. The bot must construct a valid `ErgoLikeTransaction` that satisfies all ErgoScript spending conditions. This involves:
+| Element | Purpose |
+|---|---|
+| **Inputs** | Boxes being spent; must satisfy their ErgoTrees |
+| **Data inputs** | Read-only boxes used for price feeds, oracle data, or auxiliary state — they are NOT spent |
+| **Outputs** | New boxes produced by the transaction |
+| **Context extension** | Key-value pairs injected into the **ErgoScript context** for inputs that require them |
+| **Proofs** | Sigma-protocol proofs (Schnorr, DLOG, etc.) satisfying spending conditions |
 
-**Inputs:** The Boxes being consumed (e.g., a user's order Box, the pool's state Box)
+Critical constraints the bot must enforce:
 
-**Data Inputs:** Read-only Boxes referenced by the transaction but not consumed (e.e., oracle price Boxes, governance parameter Boxes). Data inputs allow scripts to read external state without spending it.
+- **Minimum box value**: every output box must hold ≥ `minBoxValue` (currently ~0.001 ERG, calculated as `360 * maxBoxSize` nanoERG by the node).
+- **Minimum transaction fee**: the fee box must hold ≥ `minFee` (1,000,000 nanoERG = 0.001 ERG minimum; DEX bots typically use 2,000,000–4,000,000 nanoERG).
+- **Token conservation**: total tokens in = total tokens out for every Token ID (except minting/burning).
+- **ERG conservation**: `sum(inputs.value) = sum(outputs.value) + fee`.
+- The fee box must have `ErgoTree = feeErgoTree` (the standard miner fee tree: `1005040004000e36100204a00b08cd0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ea02d192a39a8cc7a701730073011001020402d19683030193a38cc7b2a57300000193c2b2a57301007473027303830108cdeeac93b1a57304`).
 
-**Outputs:** New Boxes that represent the next protocol state, with correct:
-- `value` (nanoERG, must be ≥ **Minimum box value**, currently 0.001 ERG)
-- `ergoTree` (the spending condition for the output)
-- `tokens` (Native tokens, preserving **Token ID rule**: no token created without an input Box whose ID matches)
-- Registers `R4`–`R9` (updated application state)
-- `creationHeight` (set to current block height)
+The bot typically signs with its own **ErgoTree** (proving ownership of its ERG inputs needed for fees), while the contract inputs are satisfied by the ErgoScript logic itself (e.g., the script validates the output structure rather than requiring a signature).
 
-**Fees:** One output must pay the **Minimum transaction fee** (currently 0.001 ERG) to the fee address (`ErgoTree` = `1005040004000e36100204a00b08cd...`), or the fee can be paid from a dedicated fee Box.
+### Phase 4 — Submission and Confirmation Tracking
 
-**Context Extension:** Some contracts use `Context extension` variables (key-value pairs attached to inputs) to pass off-chain data into the ErgoScript execution context. This is how scripts can receive parameters that vary per execution without changing the ErgoTree.
+The assembled transaction is submitted via `POST /api/v1/transactions`. The bot:
 
-**Sigma protocols:** The transaction must include valid proofs (signatures) for any `SigmaProp` spending conditions that require the bot's private key (e.g., an operator-gated contract).
-
-### Step 4: Submission
-
-The assembled transaction is serialized and POSTed to `/api/v1/transactions`. The node validates:
-
-1. All input Boxes exist and are unspent
-2. All ErgoScript conditions evaluate to `true`
-3. Value conservation: `sum(inputs.value) = sum(outputs.value) + fee`
-4. Token conservation: no tokens created without valid provenance
-5. Context validity: height, self reference, etc.
-
-If validation fails, the node returns an error. The bot must parse this error, determine if it is:
-- **Recoverable** (e.g., input already spent by a competing bot → re-scan and try again)
-- **Unrecoverable** (e.g., script logic error → alert and skip)
+1. Optimistically marks involved boxes as "pending" in its local cache.
+2. Polls for transaction confirmation (`GET /api/v1/transactions/{txId}`).
+3. On confirmation failure (node rejection, double-spend, mempool eviction), rolls back the pending state and retries.
+4. On `TxFailed` errors (as seen in Spectrum's `Execution.scala`), parses the error to identify missed inputs and refreshes state from the chain.
 
 ---
 
 ## Implementation
 
-### Project Structure (Scala — Spectrum Finance style)
+### Project Structure (Scala / TypeScript hybrid, reflecting real ecosystem patterns)
 
 ```
 off-chain-bot/
-├── scanning/
-│   ├── BoxScanner.scala          # Polls node for Boxes
-│   └── MempoolTracker.scala      # Tracks unconfirmed transactions
-├── detection/
-│   ├── OrderParser.scala         # Decodes order Boxes from raw API response
-│   └── PoolParser.scala          # Decodes pool state Boxes
-├── execution/
-│   ├── TxAssembler.scala         # Builds ErgoLikeTransaction
-│   └── Execution.scala           # Orchestrates the full loop
-├── network/
-│   ├── ErgoNetwork.scala         # Abstraction over node + explorer APIs
-│   └── ErgoNode.scala            # Low-level node API client
-└── Main.scala                    # Entry point, wires everything together
+├── scanner/          # Chain polling, box indexing
+├── detector/         # State matching, order book, pool state
+├── assembler/        # Transaction building
+├── submitter/        # Network submission, retry logic
+└── models/           # Box, Order, Pool domain types
 ```
 
 ---
 
-### Step 1 Implementation: Chain Scanning (Scala)
+### 1. Chain Scanning (TypeScript — ergo-lib-wasm)
 
-```scala
-// ErgoNetwork.scala — Abstraction layer over Ergo node REST API
-// Mirrors spectrum-finance/ergo-dex-backend architecture
+```typescript
+// scanner/ChainScanner.ts
+import {
+  ErgoNodeApi,
+  OutputInfo,
+  TransactionInfo,
+} from "@ergo-graphql/types";
+import axios from "axios";
 
-import org.ergoplatform.ergo.domain.{Box, Transaction}
-import tofu.higherKind.derived.representableK
+const NODE_URL = "http://localhost:9053";
+const EXPLORER_URL = "https://api.ergoplatform.com";
 
-/**
- * ErgoNetwork provides a typed, effect-polymorphic interface to the
- * Ergo node REST API. F[_] is typically IO or a tag
+// The ErgoTree hex of the contract we are monitoring.
+// In production this is generated from the compiled ErgoScript.
+const POOL_ERGO_TREE =
+  "19a3030f0400040204020404040404060406..."; // truncated
+
+interface BoxCandidate {
+  boxId: string;
+  value: bigint; // nanoERG
+  ergoTree: string;
+  assets: Array<{ tokenId: string; amount: bigint }>;
+  additionalRegisters: Record<string, string>; // R4-R9 as hex-encoded SType values
+  creationHeight: number;
+  transactionId: string;
+  index: number;
+}
+
+interface ScanCursor {
+  lastProcessedHeight: number;
+}
+
+export class ChainScanner {
+  private cursor: ScanCursor = { lastProcessedHeight: 0 };
+
+  /**
+   * Fetch all unspent boxes matching a given ErgoTree.
+   * Uses the Explorer v1 API which returns rich box data including registers.
+   */
+  async getUnspentBoxesByErgoTree(
+    ergoTree: string,
+    offset = 0,
+    limit = 100
+  ): Promise<BoxCandidate[]> {
+    const response = await axios
