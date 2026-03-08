@@ -5,239 +5,238 @@ tags: [onchain-state-tracking, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [rosen-bridge/scanner, paideiadao/paideia-state, ergo-pad/danaides]
 ---
-# Developer Guide: On-Chain State Tracking in Ergo
+# On-Chain State Tracking in Ergo: A Comprehensive Developer Guide
 
 ## Overview
 
-On-chain state tracking is the discipline of continuously monitoring the Ergo blockchain, identifying specific eUTXO **Boxes** of interest, and reconstructing application-level state from their contents — **Registers**, **Native tokens**, **ErgoTree** scripts, and spending history.
+### What Is On-Chain State Tracking?
 
-### Why It Exists
+On-chain state tracking is the practice of continuously monitoring the Ergo blockchain to reconstruct the current (and historical) state of a decentralized application from raw block and transaction data. Rather than trusting a centralized server to maintain application state, your off-chain code re-derives state from the eUTXO ledger itself — the canonical source of truth.
 
-Ergo's eUTXO model differs fundamentally from account-based chains. There is no single "account state" to query. Instead, state lives inside Boxes that are created and destroyed (spent) by Transactions. A dApp's logical state — for example, a DEX pool's reserves, a DAO's governance token circulation, or a bridge's pending transfers — is encoded across one or more Boxes at any given block height.
+In Ergo's eUTXO model, application state is stored inside **Boxes** (UTXOs extended with **Registers**, **Native tokens**, and **ErgoTree** spending conditions). State transitions happen when transactions consume old boxes and produce new ones. Because boxes are immutable once created and destroyed once spent, "current state" means finding the **unspent box** that carries the latest version of your application's data.
 
-To answer questions like *"What is the current price in the ERG/SigUSD pool?"* or *"Which withdrawal requests are pending?"*, you must:
+### Why Does This Pattern Exist?
 
-1. Scan every block for relevant Boxes.
-2. Persist their contents to a queryable off-chain store.
-3. Reconstruct the logical state from that store.
+The eUTXO model eliminates shared mutable state (unlike the account model), which makes smart contracts more predictable and parallelizable. However, it shifts the burden of state reconstruction to the application layer:
+
+- There is **no global mutable variable** you can read; you must find the right live box.
+- A **Singleton / State NFT** (a token minted with a fixed supply of 1 using the **Token ID rule** — where the Token ID equals the Box ID of the minting input) is the idiomatic way to uniquely identify the box that holds current state.
+- **Storage rent** means boxes that are not spent for roughly four years may be reclaimed by miners, so long-running applications must account for box lifecycle.
+- **Multi-stage contracts** spread state across several chained boxes; tracking them requires following a graph of transactions, not just a single address.
 
 ### When to Use It
 
-| Situation | Use On-Chain State Tracking |
+| Scenario | Use On-Chain State Tracking |
 |---|---|
-| Your contract uses a **Singleton / State NFT** to identify the canonical state box | ✅ Yes |
-| You need to list all UTXO boxes held by an address or script | ✅ Yes |
-| You operate a **Multi-stage contract** pipeline (e.g., order → fill → settlement) | ✅ Yes |
-| Your dApp must survive node restarts without replaying the entire chain | ✅ Yes |
-| You only need the current best-block tip | ❌ Use node API directly |
-
-### Ecosystem Implementations
-
-| Project | Purpose |
-|---|---|
-| [`rosen-bridge/scanner`](https://github.com/rosen-bridge/scanner) | General-purpose block-by-block scanner with extractor plugins |
-| [`paideiadao/paideia-state`](https://github.com/paideiadao/paideia-state) | DAO governance state reconstruction |
-| [`ergo-pad/danaides`](https://github.com/ergo-pad/danaides) | Address/token indexing pipeline for ErgoFi ecosystem |
+| DEX / AMM pool — track current reserves | ✅ |
+| DAO governance — reconstruct proposal & vote state | ✅ |
+| Bridge — detect deposit/withdrawal events | ✅ |
+| NFT marketplace — track ownership and listings | ✅ |
+| Simple wallet balance check | ❌ (use node API directly) |
+| One-off transaction submission | ❌ (use fleet-sdk / appkit) |
 
 ---
 
 ## How It Works
 
-The following describes the canonical scanning loop shared by all three reference implementations.
-
-### Step 1 — Establish a Chain Cursor
-
-The scanner maintains a pointer to the last processed block (height + header hash). On startup it reads this from its persistent store. If none exists, it begins from a configured `initialHeight` (typically the block at which the contract was first deployed, not genesis).
+### Conceptual Flow
 
 ```
-stored_height = db.getLastProcessedBlock() ?? config.initialHeight
+Blockchain
+    │
+    ▼
+[Scanner] ──polls/subscribes──► [Block stream]
+    │
+    ▼
+[Extractors] ──filter boxes──► [Relevant box events (created / spent)]
+    │
+    ▼
+[Database] ──persist──► [Box table + State table]
+    │
+    ▼
+[State Reconstructor] ──query──► [Current application state]
+    │
+    ▼
+[Application / UI / Off-chain agents]
 ```
 
-### Step 2 — Fetch the Next Block
+### Step-by-Step Explanation
 
-The scanner polls (HTTP) or receives (WebSocket) the next block from an Ergo node. Each block contains:
+#### Step 1 — Anchor the Scan
 
-- **Header**: height, `id` (header hash), `parentId`
-- **Block transactions**: ordered list of `Transaction` objects, each containing `inputs` (spent Box IDs), `dataInputs` (read-only **Data inputs**), and `outputs` (new Boxes)
+Choose your scan anchor. You need at least one of:
 
-### Step 3 — Fork Detection
+- **Token ID** of a Singleton / State NFT — uniquely identifies the current state box no matter how many times the contract has been called.
+- **ErgoTree** hash / **P2S address** — identifies all boxes locked by a particular contract.
+- **P2PK address** — identifies boxes belonging to a particular public key (less common for contracts).
 
-Before processing, the scanner checks that `block.parentId == stored_header`. If not, it rolls back stored blocks until it finds a common ancestor — this handles chain reorganisations.
+The Singleton / State NFT approach is strongly preferred for protocols that update state because the NFT must always live in exactly one unspent box.
+
+#### Step 2 — Initialize the Scanner
+
+The scanner connects to an Ergo node (or multiple nodes via a **FailoverStrategy** or **RoundRobinStrategy**) and begins streaming blocks from an `initialHeight`. For each block it:
+
+1. Fetches full block data (headers + transactions).
+2. Iterates every **Transaction** in the block.
+3. For each transaction, iterates **inputs** (boxes being spent) and **outputs** (boxes being created).
+4. Passes these to registered **Extractors**.
+
+#### Step 3 — Extract Relevant Boxes
+
+An **Extractor** is a filter + transformer. It receives a block's transactions and emits structured records about boxes it cares about. Typical extractor logic:
 
 ```
-if block.parentId != db.getHeaderAt(block.height - 1):
-    rollbackTo(findCommonAncestor(block))
+for each transaction T in block B:
+    for each output box O in T:
+        if O contains target Token ID OR O.ergoTree == targetErgoTree:
+            emit BoxCreated(O, T.id, B.height)
+    for each input I in T:
+        if I.boxId is tracked in our DB:
+            emit BoxSpent(I.boxId, T.id, B.height)
 ```
 
-### Step 4 — Run Extractors
+#### Step 4 — Handle Rollbacks
 
-Each registered **Extractor** is a plugin that receives the raw block and emits structured records. An extractor typically does one of the following:
+Ergo nodes can reorganize (fork) the chain. The scanner must detect when its stored `lastScannedHeader` no longer matches the node's chain and roll back to the last common ancestor. The `PROCEED` flag on `BlockEntity` signals whether a block is confirmed or pending rollback.
 
-- **Filter by ErgoTree / address**: collect every output Box whose `ErgoTree` matches a known script template.
-- **Filter by Token ID rule**: collect every output Box whose `tokens` array contains a specific **Native token** Token ID — especially useful for **Singleton / State NFT** tracking.
-- **Filter by Register content**: inspect `R4`–`R9` for application-specific markers.
+#### Step 5 — Persist Box State
 
-### Step 5 — Persist Box Records
+Boxes are stored in a local database (typically TypeORM + PostgreSQL or SQLite) with:
 
-Extractor output is written atomically with the block record. A single database transaction covers: marking the block as processed + inserting/updating all Box records for that height.
+- `boxId` (primary key)
+- `ergoTree`
+- `registers` (R4–R9, serialized)
+- `tokens` (array of `{tokenId, amount}`)
+- `value` (nanoERG — relevant for **Minimum box value** and **Storage rent** calculations)
+- `creationHeight`, `creationTxId`
+- `spentHeight`, `spentTxId` (null if unspent)
 
-### Step 6 — State Reconstruction
+#### Step 6 — Reconstruct State
 
-Consumers query the off-chain store. For each logical entity (e.g., one liquidity pool) the latest unspent Box is the current state. Spent Boxes form a historical audit trail.
+Query the database for the unspent box carrying the State NFT. Deserialize its **Registers** using the appropriate **ErgoScript** type encoders (SLong, SGroupElement, SColl, etc.) to recover the application-level state variables.
 
-### Step 7 — Handle Storage Rent
+#### Step 7 — Serve State to Consumers
 
-After **Storage rent** epochs (~4 years per cycle), unmaintained Boxes are reclaimed by miners. A robust tracker must detect when a Box disappears without an explicit spend in a transaction (it was rent-collected) and handle this case without treating it as a fork.
+Expose state via a REST API, WebSocket feed, or internal service bus. Off-chain agents (bots, UI backends, other contracts' executors) consume this state to build and submit new transactions.
 
 ---
 
 ## Implementation
 
-### 1. TypeScript — Rosen Scanner Framework
+### Project Structure
 
-The `rosen-bridge/scanner` library provides the scaffolding. You write an `AbstractExtractor` subclass; the framework handles block fetching, fork detection, and DB persistence.
+```
+ergo-state-tracker/
+├── src/
+│   ├── scanner/
+│   │   ├── ergoScanner.ts        # Ergo-specific GeneralScanner subclass
+│   │   └── extractors/
+│   │       ├── stateNftExtractor.ts
+│   │       └── poolExtractor.ts
+│   ├── entities/
+│   │   ├── trackedBox.entity.ts
+│   │   └── appState.entity.ts
+│   ├── state/
+│   │   └── stateReconstructor.ts
+│   └── index.ts
+├── migrations/
+└── ormconfig.ts
+```
 
-#### 1.1 Define Your Extractor
+---
+
+### 1. Database Entities (TypeORM)
 
 ```typescript
-// src/extractors/poolExtractor.ts
-import { AbstractExtractor } from '@rosen-bridge/abstract-extractor';
-import { Block } from '@rosen-bridge/scanner-interfaces';
-import { DataSource } from 'typeorm';
+// src/entities/trackedBox.entity.ts
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+} from 'typeorm';
 
 /**
- * Tracks all eUTXO Boxes whose ErgoTree matches the
- * ErgoDEX CFMMPool script template.
+ * Represents a Box observed on-chain.
+ * A box is "live" (unspent) when spentTxId IS NULL.
  *
- * The Singleton / State NFT approach: each pool box carries
- * a unique Native token (the "pool NFT") in its tokens[0]
- * slot. We index by Token ID to reconstruct individual pool
- * state without ambiguity.
+ * Ergo terminology:
+ *  - boxId:        32-byte Blake2b256 hash of the box serialization
+ *  - ergoTree:     serialized ErgoScript spending condition (hex)
+ *  - registers:    R4–R9 as hex-encoded ErgoValue serializations
+ *  - value:        nanoERG (must be >= Minimum box value = 360 nanoERG/byte)
+ *  - tokens:       Native tokens held in the box (Token ID + amount)
  */
-export class PoolStateExtractor extends AbstractExtractor<
-  ErgoTransaction,  // the TransactionType for ErgoScanner
-  PoolBoxRecord     // the entity type written to the DB
-> {
-  readonly POOL_NFT_POLICY_ID: string;
+@Entity('tracked_box')
+export class TrackedBoxEntity {
+  @PrimaryColumn({ type: 'varchar', length: 64 })
+  boxId: string;
 
-  constructor(
-    dataSource: DataSource,
-    poolNftPolicyId: string
-  ) {
-    super(dataSource);
-    this.POOL_NFT_POLICY_ID = poolNftPolicyId;
-  }
+  @Index()
+  @Column({ type: 'varchar', length: 64 })
+  ergoTreeHash: string;
 
-  /**
-   * Unique name used for ExtractorStatusEntity tracking.
-   * Changing this name resets the scan-from-height cursor.
-   */
-  getId = (): string => 'ergo-pool-state-extractor-v1';
+  @Column({ type: 'text' })
+  ergoTree: string;
 
-  /**
-   * Called once per block by GeneralScanner.
-   * Must return DB entities to upsert atomically with block commit.
-   */
-  async processTransactions(
-    transactions: ErgoTransaction[],
-    block: BlockInfo
-  ): Promise<boolean> {
-    const poolBoxes: PoolBoxRecord[] = [];
+  // Serialized as JSON: { tokenId: string; amount: string }[]
+  // amount is string to safely handle uint64 via BigInt
+  @Column({ type: 'jsonb' })
+  tokens: Array<{ tokenId: string; amount: string }>;
 
-    for (const tx of transactions) {
-      // Mark inputs as spent — eUTXO boxes are destroyed on spend
-      for (const input of tx.inputs) {
-        await this.dataSource
-          .getRepository(PoolBoxRecord)
-          .update({ boxId: input.boxId }, { spentTxId: tx.id });
-      }
+  // nanoERG value — stored as string to avoid JS number precision loss
+  @Column({ type: 'varchar', length: 30 })
+  value: string;
 
-      // Scan outputs for pool boxes identified by Token ID rule:
-      // token[0] must be the Singleton / State NFT for this pool family
-      for (const output of tx.outputs) {
-        const nft = output.assets?.find(
-          (a) => a.tokenId === this.POOL_NFT_POLICY_ID
-        );
-        if (!nft) continue;
+  // Registers R4–R9 serialized as hex ErgoValue
+  @Column({ type: 'jsonb', default: '{}' })
+  registers: Record<string, string>;
 
-        poolBoxes.push(
-          this.buildPoolRecord(output, tx.id, block.height)
-        );
-      }
-    }
+  @Index()
+  @Column({ type: 'integer' })
+  creationHeight: number;
 
-    // Batch insert; framework wraps in the block's DB transaction
-    if (poolBoxes.length > 0) {
-      await this.dataSource
-        .getRepository(PoolBoxRecord)
-        .upsert(poolBoxes, ['boxId']);
-    }
+  @Column({ type: 'varchar', length: 64 })
+  creationTxId: string;
 
-    return true; // signal success; false triggers retry
-  }
+  @Index()
+  @Column({ type: 'integer', nullable: true })
+  spentHeight: number | null;
 
-  /**
-   * Called by scanner during fork rollback.
-   * Remove all records created at or above `height`.
-   */
-  async revertBlock(
-    transactions: ErgoTransaction[],
-    block: BlockInfo
-  ): Promise<void> {
-    await this.dataSource
-      .getRepository(PoolBoxRecord)
-      .delete({ createdHeight: block.height });
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  spentTxId: string | null;
 
-    // Restore the spent flag for inputs that were spent in reverted txs
-    for (const tx of transactions) {
-      for (const input of tx.inputs) {
-        await this.dataSource
-          .getRepository(PoolBoxRecord)
-          .update({ boxId: input.boxId }, { spentTxId: null });
-      }
-    }
-  }
-
-  private buildPoolRecord(
-    box: ErgoBox,
-    txId: string,
-    height: number
-  ): PoolBoxRecord {
-    return {
-      boxId:         box.boxId,
-      txId,
-      createdHeight: height,
-      spentTxId:     null,
-
-      // Decode pool state from ErgoScript Registers:
-      // R4 = fee numerator (Int)
-      // R5 = emission LP amount (Long)
-      // Registers are encoded as ErgoValue (sigma-serialised)
-      feeNum:   decodeRegisterInt(box.additionalRegisters?.R4),
-      lpAmount: decodeRegisterLong(box.additionalRegisters?.R5),
-
-      // Native token amounts — pool's reserve balances
-      tokenXId:     box.assets[1]?.tokenId ?? null,
-      tokenXAmount: box.assets[1]?.amount  ?? 0n,
-      tokenYId:     box.assets[2]?.tokenId ?? null,
-      tokenYAmount: box.assets[2]?.amount  ?? 0n,
-
-      // Minimum box value enforcement: store nanoERG value
-      ergValue:  BigInt(box.value),
-
-      serializedErgoTree: box.ergoTree,
-    };
-  }
+  @CreateDateColumn()
+  createdAt: Date;
 }
 ```
 
-#### 1.2 Wire the Scanner
-
 ```typescript
-// src/scanner/poolScanner.ts
-import { DataSource } from 'typeorm';
-import { NodeNetworkConnector } from '@
+// src/entities/appState.entity.ts
+import { Entity, PrimaryColumn, Column, UpdateDateColumn } from 'typeorm';
+
+/**
+ * Materialized application state derived from the current live box
+ * carrying the Singleton / State NFT.
+ *
+ * Updated atomically whenever the scanner observes the NFT moving
+ * to a new box (i.e., a state transition transaction).
+ */
+@Entity('app_state')
+export class AppStateEntity {
+  // The State NFT token ID — fixed for the lifetime of the protocol
+  @PrimaryColumn({ type: 'varchar', length: 64 })
+  stateNftId: string;
+
+  // boxId of the current (unspent) box carrying the NFT
+  @Column({ type: 'varchar', length: 64 })
+  currentBoxId: string;
+
+  // Decoded R4 — example: a pool's LP token reserve (SLong)
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  reserveX: string | null;

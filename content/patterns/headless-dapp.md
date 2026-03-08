@@ -5,170 +5,196 @@ tags: [headless-dapp, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-05
+updated: 2026-03-07
 source: auto-generated
 source_repos: [DjedAlliance/Djed-Ergo, StabilityNexus/Gluon-Ergo-SDK]
 ---
-# Headless dApp Pattern: Developer Guide
+# Headless dApp Pattern — Developer Guide
 
 ## Overview
 
-The **headless dApp pattern** is an architectural approach where all protocol logic — transaction construction, Box validation, state machine transitions, and business rule enforcement — is encapsulated in a pure, UI-agnostic library. The "headless" refers to the absence of any frontend coupling: the same core library can be consumed by a CLI tool, a web wallet, a mobile app, a bot, or an automated testing harness without modification.
+### What This Pattern Is
+
+The **headless dApp pattern** separates pure protocol logic from any user interface layer, producing a self-contained library that encodes all the rules of an Ergo protocol — box validation, transaction construction, state transitions, and economic equations — without any dependency on a frontend, wallet UI, or rendering engine.
+
+In Ergo's eUTXO model, a decentralized application is fundamentally a set of rules about:
+
+- Which **Boxes** (eUTXOs) are valid inputs to a transaction
+- What **ErgoScript** constraints those boxes encode in their **ErgoTree**
+- How **Registers** (R4–R9), **Native tokens**, and **NanoErg** values must change between inputs and outputs
+- What auxiliary boxes (**Data inputs**) must be present to provide read-only context
+
+A headless dApp encodes all of these rules as a typed, composable Rust/Scala/TypeScript library. The UI — whether a CLI, web frontend, mobile app, or bot — becomes a thin consumer of this library, responsible only for fetching boxes and submitting signed transactions.
 
 ### Why It Exists
 
-Ergo's eUTXO model presents unique challenges that make this separation especially valuable:
+The eUTXO model is fundamentally different from account-based chains. There is no global mutable state: every action is a deterministic transformation from a set of input boxes to a set of output box candidates. This makes protocol logic naturally separable from presentation.
 
-1. **Transaction construction is non-trivial.** Every Ergo Transaction must satisfy ErgoTree spending conditions, fund Storage rent, meet the Minimum box value per output Box, and include the Minimum transaction fee. This logic is complex enough to warrant isolation.
+Without the headless pattern:
 
-2. **Protocol state is on-chain.** Multi-stage contracts maintain state across a sequence of Boxes. A Singleton / State NFT (a Token with supply exactly 1, enforced by the Token ID rule — the token ID equals the ID of the Box in which it was first minted) anchors the canonical state Box. Finding that Box, reading its Registers, and producing a valid successor Box requires precise, repeatable logic that must not diverge between UI implementations.
+- Protocol rules get scattered across UI components
+- The same validation logic is duplicated in every frontend
+- Testing requires a running browser or wallet
+- Third-party integrations (bots, aggregators, other dApps) must re-implement the protocol from scratch
 
-3. **Composability and auditability.** Because ErgoScript is Turing-incomplete at the per-script level (all loops must terminate), protocol invariants that span multiple transactions must be enforced in the off-chain layer. A headless library makes those invariants explicit, testable, and auditable by any integrator.
+With the headless pattern:
 
-4. **Multiple frontends, one protocol.** Djed (AgeUSD), SigmaUSD, Gluon, and similar protocols need CLI tooling, web UIs, and third-party integrations to behave identically. A shared headless core guarantees that.
+- A single canonical library defines the protocol
+- Any interface — web, CLI, Telegram bot, on-chain composition — calls the same library
+- Unit tests run against pure functions with no network dependencies
+- **Multi-stage contracts** (sequences of dependent transactions) can be composed programmatically
 
 ### When to Use It
 
-| Situation | Use Headless Pattern? |
-|---|---|
-| Multi-stage contract with shared state (Singleton NFT) | ✅ Yes |
-| Protocol with multiple independent frontend implementations | ✅ Yes |
-| dApp requiring automated / bot interaction | ✅ Yes |
-| Pure ErgoScript contract with no off-chain state | ⚠️ Optional |
-| Single-page toy dApp with no reuse intent | ❌ Probably not |
+Use the headless dApp pattern when:
+
+- Your protocol has non-trivial box-selection logic (e.g., reserve ratio constraints, cooling-off periods, oracle-dependent pricing)
+- Multiple independent frontends or integration points need to interact with the same contracts
+- You need deterministic, reproducible transaction construction for automated agents (arbitrage bots, liquidation keepers, governance voters)
+- You want to publish an SDK that third parties can embed in their own dApps
+- Your protocol uses **Singleton / State NFT** boxes whose state must be tracked and updated atomically
+
+Canonical examples from the ecosystem: **AgeUSD (Djed)**, **SigmaUSD**, **Gluon Gold**, and **ErgoDEX** all expose headless libraries.
 
 ---
 
 ## How It Works
 
-The pattern decomposes into five distinct layers, each with a single responsibility.
-
-### Layer 1: Protocol Parameters
-
-Immutable constants embedded at compile time: Token IDs (enforced by the Token ID rule), ErgoTree hashes, fee percentages, reserve ratio bounds, and height-based guards (e.g., `COOLING_OFF_HEIGHT`). These are never derived at runtime from user input.
-
-### Layer 2: Box Specifications (`BoxSpec`)
-
-A `BoxSpec` declaratively describes what a valid Box looks like: its ErgoTree (P2S address), required Tokens with `TokenSpec` constraints, and Register layouts. The specification is used both for *finding* Boxes (via Explorer or node scan) and for *validating* Boxes before they are used in transaction construction.
-
-### Layer 3: Wrapped Boxes (`WrappedBox` / `SpecifiedBox`)
-
-A raw `ErgoBox` is deserialized and wrapped in a typed struct that exposes decoded Register values as strongly-typed fields. All decoding errors are surfaced here, before any transaction logic runs. The wrapper enforces that a Box matching the spec is in fact the protocol Box it claims to be.
-
-### Layer 4: Protocol Actions (Transaction Builders)
-
-Pure functions that accept Wrapped Boxes (and optionally Data inputs — read-only Boxes that provide context without being spent) and return `ErgoBoxCandidate` output collections or unsigned `Transaction` objects. No network I/O occurs here. This is where:
-
-- Reserve ratio equations are evaluated
-- Minting/redemption amounts are calculated
-- Output Register values are set
-- Fee Boxes are constructed to the Minimum box value
-
-### Layer 5: Integration Adapters
-
-Thin, environment-specific adapters that perform I/O:
-- **Node adapter**: Registers node Scans, submits transactions via `NodeInterface`
-- **Explorer adapter**: Calls the Explorer API endpoint derived from a `BoxSpec`
-- **WASM adapter**: Exposes the library to JavaScript via `wasm-bindgen`
+### Conceptual Flow
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Frontend / CLI / Bot                  │
-└───────────────────────┬─────────────────────────────────┘
-                        │ calls
-┌───────────────────────▼─────────────────────────────────┐
-│              Integration Adapter (Layer 5)               │
-│         (Node scan, Explorer fetch, WASM bridge)        │
-└───────────────────────┬─────────────────────────────────┘
-                        │ produces typed Boxes
-┌───────────────────────▼─────────────────────────────────┐
-│           WrappedBox / SpecifiedBox (Layer 3)            │
-│         (Register decoding, Token validation)           │
-└──────────┬────────────────────────────┬─────────────────┘
-           │                            │ reads
-┌──────────▼──────────┐    ┌────────────▼────────────────┐
-│  BoxSpec (Layer 2)  │    │  Protocol Equations (Layer 4)│
-│  (find & validate)  │    │  (pure business logic)       │
-└──────────┬──────────┘    └────────────┬────────────────┘
-           │                            │
-┌──────────▼────────────────────────────▼────────────────┐
-│              Protocol Parameters (Layer 1)              │
-│    (Token IDs, fee %, reserve bounds, height guards)    │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                   Protocol Library                   │
+│                                                      │
+│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
+│  │ BoxSpecs │  │Equations │  │  Action Functions  │ │
+│  │(validation│  │(reserve  │  │(build tx candidate)│ │
+│  │ rules)   │  │ ratio,   │  │                    │ │
+│  └──────────┘  │ pricing) │  └────────────────────┘ │
+│                └──────────┘                          │
+└─────────────────────────────────────────────────────┘
+         ▲                              │
+         │  fetch boxes                 │  UnsignedTransaction
+         │                              ▼
+┌─────────────────────────────────────────────────────┐
+│              Interface Layer (thin)                  │
+│                                                      │
+│  ┌──────────────┐   ┌───────────┐   ┌─────────────┐ │
+│  │ Explorer API │   │ Node Scan │   │  Wallet /   │ │
+│  │  (read UTXOs)│   │ (tracking)│   │  Signing    │ │
+│  └──────────────┘   └───────────┘   └─────────────┘ │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Data Flow for a Mint Operation
+### Step-by-Step Flow
 
-```
-1. Adapter fetches BankBox    ─→  BoxSpec.explorer_endpoint() → HTTP GET
-2. Adapter fetches OracleBox  ─→  same mechanism (Data input — not spent)
-3. Adapter fetches ERG input  ─→  user's ErgsBox
-4. Validate all three         ─→  WrappedBox::try_from(raw_box)?
-5. Compute oracle rate        ─→  OraclePoolBox.datapoint_in_cents()
-6. Compute reserve ratio      ─→  equations::reserve_ratio(reserves, circ_sc, rate)
-7. Check protocol guard       ─→  ratio >= MIN_RESERVE_RATIO?
-8. Build output BankBox       ─→  create_candidate(new_registers, new_tokens)
-9. Build output user Box      ─→  create_candidate(minted_tokens, change_value)
-10. Assemble Transaction      ─→  unsigned_tx with Data input = OracleBox
-11. Adapter signs & submits   ─→  NodeInterface.sign_and_submit(unsigned_tx)
-```
+#### Step 1 — Define BoxSpecs
 
-The Oracle Box is included as a **Data input**: it provides the ERG/USD rate to the ErgoScript context without being spent, which means the Oracle pool's contract is not involved in this transaction at all — a key eUTXO composability feature.
+A `BoxSpec` declares the structural requirements for a box to be considered a valid participant in a protocol action. It encodes:
+
+- The **ErgoTree** (P2S address) the box must be locked to
+- Which **Registers** must be present and their types
+- Which **Native tokens** (by **Token ID**) must be present, and in what quantity range
+- The NanoErg value bounds
+
+This is the runtime equivalent of the on-chain **ErgoScript** validation, expressed as a Rust/Scala type.
+
+#### Step 2 — Wrap Boxes
+
+Raw `ErgoBox` values from the node or Explorer API are **wrapped** in typed structs (`BankBox`, `ReserveCoinBox`, `OraclePoolBox`). Wrapping validates the box against its `BoxSpec` at construction time, preventing invalid boxes from propagating into transaction-building code.
+
+#### Step 3 — Fetch Boxes
+
+The interface layer fetches boxes from:
+
+- **Explorer API**: Public REST endpoint, suitable for read-only frontend queries
+- **Node Scans**: The Ergo node's `/scan` API registers tracking rules (e.g., "boxes containing asset `<BANK_NFT_ID>`"). Scans persist across blocks and return live UTXO sets — essential for **Singleton / State NFT** tracking
+
+#### Step 4 — Execute Protocol Equations
+
+Before building a transaction, the library evaluates protocol-level equations using the current box states. For AgeUSD/Djed these include:
+
+- `reserve_ratio(base_reserves, circulating_stablecoins, oracle_rate)` → determines whether minting/redeeming is permitted
+- `stablecoin_nominal_price(oracle_rate)` → price of one StableCoin in NanoErg
+- `reservecoin_price(base_reserves, circulating_stablecoins, circulating_reservecoins, oracle_rate)` → price of one ReserveCoin
+
+These equations are pure functions. They have no side effects and can be unit-tested exhaustively.
+
+#### Step 5 — Build Output Box Candidates
+
+An **action function** (e.g., `mint_stablecoin_tx`) takes:
+
+- The validated, wrapped input boxes
+- User-provided parameters (amount to mint, user address, implementor address)
+- Current block height (for **Storage rent** and validity intervals)
+
+It returns an `UnsignedTransaction` or a list of `ErgoBoxCandidate` output objects. Output candidates specify:
+
+- NanoErg value (respecting **Minimum box value**)
+- Tokens (via **Token ID rule** — token IDs in output must derive from input box IDs or existing input tokens)
+- Register values (R4–R9)
+- The ErgoTree (contract address) locking the output
+
+The transaction also specifies the **Minimum transaction fee** as a dedicated fee output.
+
+#### Step 6 — Sign and Submit
+
+The interface layer passes the unsigned transaction to a wallet or node signing endpoint. The headless library has no opinion on how signing occurs — it works with Nautilus wallet, `ergo-wallet`, the Ergo node's `/wallet/transaction/send` endpoint, or an offline signer.
+
+#### Step 7 — Verify On-Chain
+
+After submission, the interface layer monitors the mempool or block confirmations. The headless library may provide utilities to re-fetch and re-wrap the updated boxes for subsequent actions.
 
 ---
 
 ## Implementation
 
-### Layer 1: Protocol Parameters (Rust)
+### Project Structure
+
+A well-structured headless dApp library looks like this:
+
+```
+protocol-headless/
+├── src/
+│   ├── lib.rs              # Public API re-exports
+│   ├── parameters.rs       # Protocol constants (NFT IDs, ratios, fees)
+│   ├── equations.rs        # Pure economic/protocol functions
+│   ├── error.rs            # Typed error enum
+│   ├── bank.rs             # BankBox spec, wrapping, and actions
+│   ├── input_boxes.rs      # OraclePoolBox, ErgsBox, token box specs
+│   └── actions/
+│       ├── mint_stablecoin.rs
+│       ├── redeem_stablecoin.rs
+│       ├── mint_reservecoin.rs
+│       └── redeem_reservecoin.rs
+interface/
+├── src/
+│   ├── main.rs             # CLI entry point
+│   ├── fetch_boxes.rs      # Explorer API fetching
+│   └── scan.rs             # Node scan registration
+```
+
+### 1. Protocol Parameters (`parameters.rs`)
+
+All contract constants live in one place. **Token IDs** are fixed at deployment and embedded here. Changing any of these changes the protocol identity.
 
 ```rust
 // ageusd_headless/src/parameters.rs
-// These constants are derived from on-chain bootstrap transactions.
-// The BANK_NFT_ID equals the Box ID of the genesis Bank Box (Token ID rule).
-// Once set, they are immutable for the lifetime of the protocol.
 
+/// The Token ID of the Bank's Singleton / State NFT.
+/// This NFT uniquely identifies the canonical BankBox on-chain.
+/// There is exactly one box holding this token at any time.
 pub const BANK_NFT_ID: &str =
-    "7d672d1def471720ca5782fd6473e47e796d9ac0c138d9911346f118b2f6d9d";
+    "7d672d1def471720ca5782fd6473e47e796d9ac0c138d9911346f118b2f6d9d9";
 
+/// The Token ID of the StableCoin (SigmaUSD).
 pub const STABLECOIN_TOKEN_ID: &str =
     "03faf2cb329f2e90d6d23b58d91bbb6c046aa143261cc21f52fbe2824bfcbf04";
 
+/// The Token ID of the ReserveCoin (SigmaRSV).
 pub const RESERVECOIN_TOKEN_ID: &str =
     "003bd19d0187117f130b62e1bcab0939929ff5c7709f843c5c4dd158949285d0";
 
-/// Minimum nanoERG value any Box must hold to avoid Storage rent reclamation.
-/// Storage rent charges ~0.13 ERG per 4 years per box; this floor ensures
-/// boxes remain economically viable. See EIP-0002.
-pub const MIN_BOX_VALUE: u64 = 1_000_000; // 0.001 ERG in nanoERGs
-
-/// Basis-point fee charged on each mint/redeem action.
-/// 200 = 2.00%. Applied to base reserves delta.
-pub const FEE_PERCENT: u64 = 200;
-
-/// Secondary fee routed to the protocol implementor.
-pub const IMPLEMENTOR_FEE_PERCENT: u64 = 20; // 0.20%
-
-/// Height below which the protocol is in cooling-off mode.
-/// Prevents manipulation attacks in the first N blocks after launch.
-pub const COOLING_OFF_HEIGHT: u64 = 460_000;
-
-pub const MIN_RESERVE_RATIO: u64 = 400; // 400%
-pub const MAX_RESERVE_RATIO: u64 = 800; // 800%
-
-/// Default price for ReserveCoin when no stablecoins are in circulation.
-pub const RESERVECOIN_DEFAULT_PRICE: u64 = 1_000_000; // 1 milliERG
-```
-
-### Layer 2: Box Specifications (Rust)
-
-```rust
-// ageusd_headless/src/bank.rs (simplified and annotated)
-use ergo_headless_dapp_framework::{
-    BoxSpec, TokenSpec, SpecifiedBox, WrapBox, WrappedBox,
-    BlockHeight, NanoErg, P2SAddressString,
-};
-use crate::parameters::*;
-
-/// The BankBox is the Singleton state box for the AgeUSD protocol.
-/// It is identified by the BANK_NFT_ID (Token ID rule: minted in genesis Box).
-///
+/// Minimum reserve ratio (400%) — below this, StableCoin redemption is blocked
+/// and ReserveCoin minting is blocked.
+pub const MIN_RESERVE_RATIO: u64
