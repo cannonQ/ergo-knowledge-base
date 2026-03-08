@@ -1,0 +1,4521 @@
+{
+  "total_posts": 701,
+  "content_posts": 397,
+  "stub_posts": 304,
+  "by_tag": {
+    "Uncategorized": [
+      {
+        "title": "Flux Announces Ergo Parallel Asset\n",
+        "path": "blog/posts/uncategorized/flux-announces-ergo-parallel-asset.md",
+        "date": "2022-08-07",
+        "has_content": true
+      },
+      {
+        "title": "Yoroi\u2019s Ergo Wallet: An Update from the Ergo Foundation and EMURGO\n",
+        "path": "blog/posts/uncategorized/yorois-ergo-wallet-an-update-from-the-ergo-foundation-and-emurgo.md",
+        "date": "2022-06-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo's new website",
+        "path": "blog/stubs/uncategorized/ergos-new-website.md",
+        "date": "2022-05-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo\u2019s New Website",
+        "path": "blog/posts/uncategorized/ergos-new-website.md",
+        "date": "2022-05-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Now Available on Indodax",
+        "path": "blog/stubs/uncategorized/ergo-now-available-on-indodax.md",
+        "date": "2022-04-28",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Now Available on Indodax",
+        "path": "blog/posts/uncategorized/ergo-now-available-on-indodax.md",
+        "date": "2022-04-28",
+        "has_content": true
+      },
+      {
+        "title": "Ergo has The First Non-Custodial Token Mixer that can be Implemented Into Wallets and Other dApps \u2014 Interview with a Ergo Platform Team",
+        "path": "blog/stubs/uncategorized/ergo-has-the-first-non-custodial-token-mixer-that-can-be-implemented-into-wallet.md",
+        "date": "2022-03-30",
+        "has_content": false
+      },
+      {
+        "title": "Dev Update Feb 27",
+        "path": "blog/stubs/uncategorized/dev-update-feb-27.md",
+        "date": "2022-02-28",
+        "has_content": false
+      },
+      {
+        "title": "Dev Update Feb 20",
+        "path": "blog/stubs/uncategorized/dev-update-feb-20.md",
+        "date": "2022-02-20",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III Wrap-Up",
+        "path": "blog/stubs/uncategorized/ergohack-iii-wrap-up.md",
+        "date": "2022-02-16",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III: Day One",
+        "path": "blog/stubs/uncategorized/ergohack-iii-day-one.md",
+        "date": "2022-02-12",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III Starts Today: Event Program & Teams",
+        "path": "blog/stubs/uncategorized/ergohack-iii-starts-today-event-program-teams.md",
+        "date": "2022-02-11",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up February 4, 2022",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-february-4-2022.md",
+        "date": "2022-02-08",
+        "has_content": false
+      },
+      {
+        "title": "Dev Update Feb 6 2022",
+        "path": "blog/stubs/uncategorized/dev-update-feb-6-2022.md",
+        "date": "2022-02-07",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Pulse Episode 3 - GetBlok",
+        "path": "blog/stubs/uncategorized/ergo-pulse-episode-3-getblok.md",
+        "date": "2022-02-07",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Summit: Privacy Event",
+        "path": "blog/stubs/uncategorized/ergo-summit-privacy-event.md",
+        "date": "2022-02-04",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III is Next Week!",
+        "path": "blog/stubs/uncategorized/ergohack-iii-is-next-week.md",
+        "date": "2022-02-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 28",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-january-28.md",
+        "date": "2022-02-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform 2022: Plans and Predictions for the Year",
+        "path": "blog/stubs/uncategorized/ergo-platform-2022-plans-and-predictions-for-the-year.md",
+        "date": "2022-01-27",
+        "has_content": false
+      },
+      {
+        "title": "Network Update",
+        "path": "blog/stubs/uncategorized/network-update.md",
+        "date": "2022-01-21",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, January 14",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-january-14.md",
+        "date": "2022-01-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 7, 2022",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-january-7-2022.md",
+        "date": "2022-01-10",
+        "has_content": false
+      },
+      {
+        "title": "2021 - End of Year Review | Joe and Alex",
+        "path": "blog/stubs/uncategorized/2021-end-of-year-review-joe-and-alex.md",
+        "date": "2022-01-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Pulse Episode 2 - ErgoLend",
+        "path": "blog/stubs/uncategorized/ergo-pulse-episode-2-ergolend.md",
+        "date": "2022-01-04",
+        "has_content": false
+      },
+      {
+        "title": "Developer Update - Jan 2, 2022",
+        "path": "blog/stubs/uncategorized/developer-update-jan-2-2022.md",
+        "date": "2022-01-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 24",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-december-24.md",
+        "date": "2021-12-27",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 17",
+        "path": "blog/stubs/uncategorized/ergo-ama-wrap-up-december-17.md",
+        "date": "2021-12-20",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Foundation Announces Official Incorporation",
+        "path": "blog/posts/uncategorized/ergo-foundation-announces-official-incorporation.md",
+        "date": "2021-12-10",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation Announces Official Incorporation",
+        "path": "blog/stubs/uncategorized/ergo-foundation-announces-official-incorporation.md",
+        "date": "2021-12-10",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Protocol Overview",
+        "path": "blog/stubs/uncategorized/ergo-protocol-overview.md",
+        "date": "2021-12-09",
+        "has_content": false
+      },
+      {
+        "title": "The Proposal Regarding Emission Soft-Fork",
+        "path": "blog/stubs/uncategorized/the-proposal-regarding-emission-soft-fork.md",
+        "date": "2021-12-08",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Pulse Episode 1 - ErgoDex",
+        "path": "blog/stubs/uncategorized/ergo-pulse-episode-1-ergodex.md",
+        "date": "2021-12-07",
+        "has_content": false
+      },
+      {
+        "title": "Raffle User Interface v2",
+        "path": "blog/stubs/uncategorized/raffle-user-interface-v2.md",
+        "date": "2021-12-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo & Kairon Labs Partnership",
+        "path": "blog/stubs/uncategorized/ergo-kairon-labs-partnership.md",
+        "date": "2021-12-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo and Waves Enterprise Partnership",
+        "path": "blog/stubs/uncategorized/ergo-and-waves-enterprise-partnership.md",
+        "date": "2021-11-29",
+        "has_content": false
+      },
+      {
+        "title": "Roadmap",
+        "path": "blog/stubs/uncategorized/roadmap.md",
+        "date": "2021-11-25",
+        "has_content": false
+      },
+      {
+        "title": "Developer Update 21 Nov 2021",
+        "path": "blog/stubs/uncategorized/developer-update-21-nov-2021.md",
+        "date": "2021-11-21",
+        "has_content": false
+      },
+      {
+        "title": "IOHK Business Developer Appointed Advisor to Ergo Foundation Board",
+        "path": "blog/stubs/uncategorized/iohk-business-developer-appointed-advisor-to-ergo-foundation-board.md",
+        "date": "2021-11-11",
+        "has_content": false
+      },
+      {
+        "title": "Good Whale\u2019s Grant Fund",
+        "path": "blog/stubs/uncategorized/good-whales-grant-fund.md",
+        "date": "2021-11-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Interview On NiceTalk",
+        "path": "blog/stubs/uncategorized/ergo-interview-on-nicetalk.md",
+        "date": "2021-10-30",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack II Results",
+        "path": "blog/stubs/uncategorized/ergohack-ii-results.md",
+        "date": "2021-10-21",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Cold Wallet",
+        "path": "blog/stubs/uncategorized/ergo-cold-wallet.md",
+        "date": "2021-10-19",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Cold Wallet",
+        "path": "blog/stubs/uncategorized/ergo-cold-wallet.md",
+        "date": "2021-10-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Cold Wallet",
+        "path": "blog/stubs/uncategorized/ergo-cold-wallet.md",
+        "date": "2021-10-18",
+        "has_content": false
+      },
+      {
+        "title": "What\u2019s Going On Behind the Screens: Ergo Weekly Dev Update October 13th",
+        "path": "blog/stubs/uncategorized/whats-going-on-behind-the-screens-ergo-weekly-dev-update-october-13th.md",
+        "date": "2021-10-14",
+        "has_content": false
+      },
+      {
+        "title": "ERGOHACK II - Closing video",
+        "path": "blog/stubs/uncategorized/ergohack-ii-closing-video.md",
+        "date": "2021-10-10",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Weekly Dev Update October 6th",
+        "path": "blog/stubs/uncategorized/ergo-weekly-dev-update-october-6th.md",
+        "date": "2021-10-07",
+        "has_content": false
+      },
+      {
+        "title": "Auctionhouse V2 On the Way!",
+        "path": "blog/stubs/uncategorized/auctionhouse-v2-on-the-way.md",
+        "date": "2021-09-30",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Weekly Dev Update September 29th",
+        "path": "blog/stubs/uncategorized/ergo-weekly-dev-update-september-29th.md",
+        "date": "2021-09-30",
+        "has_content": false
+      },
+      {
+        "title": "What\u2019s Going On Behind the Screens: Ergo Weekly Dev Update September 22nd",
+        "path": "blog/stubs/uncategorized/whats-going-on-behind-the-screens-ergo-weekly-dev-update-september-22nd.md",
+        "date": "2021-09-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo NFT AuctionHouse Update",
+        "path": "blog/stubs/uncategorized/ergo-nft-auctionhouse-update.md",
+        "date": "2021-09-20",
+        "has_content": false
+      },
+      {
+        "title": "What is ERGO + ErgoDEX Concurrency Solution For Cardano?",
+        "path": "blog/stubs/uncategorized/what-is-ergo-ergodex-concurrency-solution-for-cardano.md",
+        "date": "2021-09-11",
+        "has_content": false
+      },
+      {
+        "title": "What\u2019s Going On Behind the Screens: Ergo Weekly Dev Update September 8th",
+        "path": "blog/stubs/uncategorized/whats-going-on-behind-the-screens-ergo-weekly-dev-update-september-8th.md",
+        "date": "2021-09-08",
+        "has_content": false
+      },
+      {
+        "title": "ERG/SigUSD and ERG/SigRSV Pairs!",
+        "path": "blog/stubs/uncategorized/ergsigusd-and-ergsigrsv-pairs.md",
+        "date": "2021-09-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo<>Graviton Partnership",
+        "path": "blog/stubs/uncategorized/ergograviton-partnership.md",
+        "date": "2021-08-16",
+        "has_content": false
+      },
+      {
+        "title": "An Interview With ErgoDEX Developer",
+        "path": "blog/stubs/uncategorized/an-interview-with-ergodex-developer.md",
+        "date": "2021-08-15",
+        "has_content": false
+      },
+      {
+        "title": "ErgoDEX Beta!",
+        "path": "blog/stubs/uncategorized/ergodex-beta.md",
+        "date": "2021-08-11",
+        "has_content": false
+      },
+      {
+        "title": "AMA with Bitcoin.com",
+        "path": "blog/stubs/uncategorized/ama-with-bitcoincom.md",
+        "date": "2021-08-08",
+        "has_content": false
+      },
+      {
+        "title": "KuCoin Listing!",
+        "path": "blog/stubs/uncategorized/kucoin-listing.md",
+        "date": "2021-08-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Team is Hiring!",
+        "path": "blog/stubs/uncategorized/ergo-team-is-hiring.md",
+        "date": "2021-07-31",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Swags! ",
+        "path": "blog/stubs/uncategorized/ergo-swags.md",
+        "date": "2021-07-13",
+        "has_content": false
+      },
+      {
+        "title": "Updated 2021 RoadMap From Kushti",
+        "path": "blog/stubs/uncategorized/updated-2021-roadmap-from-kushti.md",
+        "date": "2021-07-13",
+        "has_content": false
+      },
+      {
+        "title": "Giveaway Event!",
+        "path": "blog/stubs/uncategorized/giveaway-event.md",
+        "date": "2021-07-10",
+        "has_content": false
+      },
+      {
+        "title": "2nd ErgoVersary Wrap-Up",
+        "path": "blog/stubs/uncategorized/2nd-ergoversary-wrap-up.md",
+        "date": "2021-07-07",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack Results",
+        "path": "blog/stubs/uncategorized/ergohack-results.md",
+        "date": "2021-06-24",
+        "has_content": false
+      },
+      {
+        "title": "Youtube Video Competition Winners!",
+        "path": "blog/stubs/uncategorized/youtube-video-competition-winners.md",
+        "date": "2021-05-27",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Integration With Gravity Network",
+        "path": "blog/stubs/uncategorized/ergo-integration-with-gravity-network.md",
+        "date": "2021-05-17",
+        "has_content": false
+      },
+      {
+        "title": "The Opolo Hardware Wallet Becomes The New BPSAA Partner",
+        "path": "blog/stubs/uncategorized/the-opolo-hardware-wallet-becomes-the-new-bpsaa-partner.md",
+        "date": "2021-05-10",
+        "has_content": false
+      },
+      {
+        "title": "Ledger Network integrates Ergo Network",
+        "path": "blog/stubs/uncategorized/ledger-network-integrates-ergo-network.md",
+        "date": "2021-05-07",
+        "has_content": false
+      },
+      {
+        "title": "Use ERG To Make/Receive Payments Worldwide",
+        "path": "blog/stubs/uncategorized/use-erg-to-makereceive-payments-worldwide.md",
+        "date": "2021-05-07",
+        "has_content": false
+      },
+      {
+        "title": "Use SigUSD To Make/Receive Payments Worldwide",
+        "path": "blog/stubs/uncategorized/use-sigusd-to-makereceive-payments-worldwide.md",
+        "date": "2021-05-07",
+        "has_content": false
+      },
+      {
+        "title": "WrapAssets announces integration with ErgoDEX!",
+        "path": "blog/stubs/uncategorized/wrapassets-announces-integration-with-ergodex.md",
+        "date": "2021-04-22",
+        "has_content": false
+      },
+      {
+        "title": "What\u2019s Going On Behind The Screens: Ergo Weekly Dev Update April 21st",
+        "path": "blog/stubs/uncategorized/whats-going-on-behind-the-screens-ergo-weekly-dev-update-april-21st.md",
+        "date": "2021-04-22",
+        "has_content": false
+      },
+      {
+        "title": "What\u2019s Going On Behind The Screens: Ergo Weekly Dev Update April 21st",
+        "path": "blog/stubs/uncategorized/whats-going-on-behind-the-screens-ergo-weekly-dev-update-april-21st.md",
+        "date": "2021-04-22",
+        "has_content": false
+      },
+      {
+        "title": "SigmaUSD - Ergo\u2019s Community Deployed Stablecoin Is Live!",
+        "path": "blog/stubs/uncategorized/sigmausd-ergos-community-deployed-stablecoin-is-live.md",
+        "date": "2021-02-26",
+        "has_content": false
+      },
+      {
+        "title": "BitMart has listed Ergo",
+        "path": "blog/stubs/uncategorized/bitmart-has-listed-ergo.md",
+        "date": "2021-02-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo explorer backend 7.0.0 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-backend-700-released.md",
+        "date": "2021-02-21",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 4.0.7 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-407-released.md",
+        "date": "2021-02-19",
+        "has_content": false
+      },
+      {
+        "title": "2020, Year in Review - Ergo Cast Episode #6",
+        "path": "blog/stubs/uncategorized/2020-year-in-review-ergo-cast-episode-6.md",
+        "date": "2021-02-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 4.0.5 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-405-released.md",
+        "date": "2021-02-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo will be listed on BitMart on Feb, 24th",
+        "path": "blog/stubs/uncategorized/ergo-will-be-listed-on-bitmart-on-feb-24th.md",
+        "date": "2021-02-16",
+        "has_content": false
+      },
+      {
+        "title": " ErgoMixer Tutorial - Taking Fire - Version 3.0.1 & Above",
+        "path": "blog/stubs/uncategorized/ergomixer-tutorial-taking-fire-version-301-above.md",
+        "date": "2021-02-16",
+        "has_content": false
+      },
+      {
+        "title": "2000 ERG in Prizes to be Won in the Ergo Digital Art Competition!",
+        "path": "blog/stubs/uncategorized/2000-erg-in-prizes-to-be-won-in-the-ergo-digital-art-competition.md",
+        "date": "2021-02-12",
+        "has_content": false
+      },
+      {
+        "title": " Building Ergo: How the AgeUSD stablecoin works",
+        "path": "blog/stubs/uncategorized/building-ergo-how-the-ageusd-stablecoin-works.md",
+        "date": "2021-02-11",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on TradeOgre",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-tradeogre.md",
+        "date": "2021-02-08",
+        "has_content": false
+      },
+      {
+        "title": "Huge performance increase on Autolykos v.2 algorithm on AMD GPU and CPU",
+        "path": "blog/stubs/uncategorized/huge-performance-increase-on-autolykos-v2-algorithm-on-amd-gpu-and-cpu.md",
+        "date": "2021-02-05",
+        "has_content": false
+      },
+      {
+        "title": "NVMiner 1.1.0 with improved hashrate(3-4x) by Mhs_sam",
+        "path": "blog/stubs/uncategorized/nvminer-110-with-improved-hashrate3-4x-by-mhs-sam.md",
+        "date": "2021-02-04",
+        "has_content": false
+      },
+      {
+        "title": "\u201cHardening\u201d Hard Fork Post-Mortem",
+        "path": "blog/stubs/uncategorized/hardening-hard-fork-post-mortem.md",
+        "date": "2021-02-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 4.0.4 Release",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-404-release.md",
+        "date": "2021-02-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo added to https://666pool.cn mining pool",
+        "path": "blog/stubs/uncategorized/ergo-added-to-https666poolcn-mining-pool.md",
+        "date": "2021-02-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo is on https://WoolyPooly.com mining pool!",
+        "path": "blog/stubs/uncategorized/ergo-is-on-httpswoolypoolycom-mining-pool.md",
+        "date": "2021-02-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 4.0.3 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-403-released.md",
+        "date": "2021-02-01",
+        "has_content": false
+      },
+      {
+        "title": "Autolykos v.2 added to SRBMiner-Multi CPU & GPU Miner",
+        "path": "blog/stubs/uncategorized/autolykos-v2-added-to-srbminer-multi-cpu-gpu-miner.md",
+        "date": "2021-01-31",
+        "has_content": false
+      },
+      {
+        "title": "Mining Ergo before and after the Hardening Upgrade by Mhs_sam",
+        "path": "blog/stubs/uncategorized/mining-ergo-before-and-after-the-hardening-upgrade-by-mhs-sam.md",
+        "date": "2021-01-29",
+        "has_content": false
+      },
+      {
+        "title": "The AgeUSD protocol specifications/smart contracts/off-chain code",
+        "path": "blog/stubs/uncategorized/the-ageusd-protocol-specificationssmart-contractsoff-chain-code.md",
+        "date": "2021-01-29",
+        "has_content": false
+      },
+      {
+        "title": "Ergo JS Template",
+        "path": "blog/stubs/uncategorized/ergo-js-template.md",
+        "date": "2021-01-27",
+        "has_content": false
+      },
+      {
+        "title": "AgeUSD instantiation will be launched in about two weeks by Ergo community!",
+        "path": "blog/stubs/uncategorized/ageusd-instantiation-will-be-launched-in-about-two-weeks-by-ergo-community.md",
+        "date": "2021-01-25",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Summit 2021 - Full video",
+        "path": "blog/stubs/uncategorized/ergo-summit-2021-full-video.md",
+        "date": "2021-01-24",
+        "has_content": false
+      },
+      {
+        "title": "Robert Kornacki announcing The Release Of The AgeUSD Stablecoin Protocol!",
+        "path": "blog/stubs/uncategorized/robert-kornacki-announcing-the-release-of-the-ageusd-stablecoin-protocol.md",
+        "date": "2021-01-23",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 4.0.0 Release - Please update your nodes",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-400-release-please-update-your-nodes.md",
+        "date": "2021-01-17",
+        "has_content": false
+      },
+      {
+        "title": "We're holding the 2021 Ergo Summit!",
+        "path": "blog/stubs/uncategorized/were-holding-the-2021-ergo-summit.md",
+        "date": "2021-01-15",
+        "has_content": false
+      },
+      {
+        "title": "If you want to help the project with promotion, then join our special chat room on Telegram",
+        "path": "blog/stubs/uncategorized/if-you-want-to-help-the-project-with-promotion-then-join-our-special-chat-room-o.md",
+        "date": "2021-01-14",
+        "has_content": false
+      },
+      {
+        "title": "Instant Ergo web wallet for experiments and temporary usage (not HODL)",
+        "path": "blog/stubs/uncategorized/instant-ergo-web-wallet-for-experiments-and-temporary-usage-not-hodl.md",
+        "date": "2021-01-14",
+        "has_content": false
+      },
+      {
+        "title": "Here are our winners of articles contest - Verium fellow, JAGO and Can Degen",
+        "path": "blog/stubs/uncategorized/here-are-our-winners-of-articles-contest-verium-fellow-jago-and-can-degen.md",
+        "date": "2021-01-09",
+        "has_content": false
+      },
+      {
+        "title": "Unblocked with Robert Kornacki",
+        "path": "blog/stubs/uncategorized/unblocked-with-robert-kornacki.md",
+        "date": "2021-01-08",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest - December 2020",
+        "path": "blog/stubs/uncategorized/ergo-platform-ecosystem-digest-december-2020.md",
+        "date": "2021-01-03",
+        "has_content": false
+      },
+      {
+        "title": "HeroMiners - \"We opened testnet ERGO pool\"",
+        "path": "blog/stubs/uncategorized/herominers-we-opened-testnet-ergo-pool.md",
+        "date": "2021-01-02",
+        "has_content": false
+      },
+      {
+        "title": "Happy New Year Ergonauts!",
+        "path": "blog/stubs/uncategorized/happy-new-year-ergonauts.md",
+        "date": "2020-12-31",
+        "has_content": false
+      },
+      {
+        "title": "A new tutorial on ErgoMixer by Anon2020s and Sakata",
+        "path": "blog/stubs/uncategorized/a-new-tutorial-on-ergomixer-by-anon2020s-and-sakata.md",
+        "date": "2020-12-30",
+        "has_content": false
+      },
+      {
+        "title": "A tool for airdrops added to ErgoUtils by Anon_real",
+        "path": "blog/stubs/uncategorized/a-tool-for-airdrops-added-to-ergoutils-by-anon-real.md",
+        "date": "2020-12-29",
+        "has_content": false
+      },
+      {
+        "title": "ErgoMixer v3.2.0, ZeroJoin for ERG and tokens on Ergo released by Anon2020s",
+        "path": "blog/stubs/uncategorized/ergomixer-v320-zerojoin-for-erg-and-tokens-on-ergo-released-by-anon2020s.md",
+        "date": "2020-12-27",
+        "has_content": false
+      },
+      {
+        "title": "Details on updated Proof-of-Work scheme Autolykos v.2",
+        "path": "blog/stubs/uncategorized/details-on-updated-proof-of-work-scheme-autolykos-v2.md",
+        "date": "2020-12-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo protocol reference client 4.0.0 (The Hardening Upgrade) pre-release",
+        "path": "blog/stubs/uncategorized/ergo-protocol-reference-client-400-the-hardening-upgrade-pre-release.md",
+        "date": "2020-12-23",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Summit 2021 - Entering The New Era, Announcing AgeUSD & The Hardening Upgrade",
+        "path": "blog/stubs/uncategorized/ergo-summit-2021-entering-the-new-era-announcing-ageusd-the-hardening-upgrade.md",
+        "date": "2020-12-23",
+        "has_content": false
+      },
+      {
+        "title": "From the family at Ergo, we present The Sigmaverse",
+        "path": "blog/stubs/uncategorized/from-the-family-at-ergo-we-present-the-sigmaverse.md",
+        "date": "2020-12-23",
+        "has_content": false
+      },
+      {
+        "title": "The Hardening protocol upgrade activation is set to block 414,720 ",
+        "path": "blog/stubs/uncategorized/the-hardening-protocol-upgrade-activation-is-set-to-block-414720.md",
+        "date": "2020-12-23",
+        "has_content": false
+      },
+      {
+        "title": "2021: The Next Battlegrounds for DeFi",
+        "path": "blog/stubs/uncategorized/2021-the-next-battlegrounds-for-defi.md",
+        "date": "2020-12-18",
+        "has_content": false
+      },
+      {
+        "title": "Love Ergo Platform? Want to share your knowledge and earn some ERG?",
+        "path": "blog/stubs/uncategorized/love-ergo-platform-want-to-share-your-knowledge-and-earn-some-erg.md",
+        "date": "2020-12-18",
+        "has_content": false
+      },
+      {
+        "title": "\"Tutorial #3 for the Headless dApp Framework is out\" by Emurgo ",
+        "path": "blog/stubs/uncategorized/tutorial-3-for-the-headless-dapp-framework-is-out-by-emurgo.md",
+        "date": "2020-12-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.3.7 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-337-released.md",
+        "date": "2020-12-16",
+        "has_content": false
+      },
+      {
+        "title": "In less time it takes to make cereal, launch your NFT artwork auction on Ergo with any wallet",
+        "path": "blog/stubs/uncategorized/in-less-time-it-takes-to-make-cereal-launch-your-nft-artwork-auction-on-ergo-wit.md",
+        "date": "2020-12-15",
+        "has_content": false
+      },
+      {
+        "title": "Understanding Headless dApps with Robert Kornacki",
+        "path": "blog/stubs/uncategorized/understanding-headless-dapps-with-robert-kornacki.md",
+        "date": "2020-12-15",
+        "has_content": false
+      },
+      {
+        "title": "Welcome to a new era of Ergo ecosystem development!",
+        "path": "blog/stubs/uncategorized/welcome-to-a-new-era-of-ergo-ecosystem-development.md",
+        "date": "2020-12-14",
+        "has_content": false
+      },
+      {
+        "title": " Ergo Bootstrap, Streamlining Ergo dApp Infrastructure With One Simple Tool",
+        "path": "blog/stubs/uncategorized/ergo-bootstrap-streamlining-ergo-dapp-infrastructure-with-one-simple-tool.md",
+        "date": "2020-12-11",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Headless dApp Framework Now Available",
+        "path": "blog/stubs/uncategorized/ergo-headless-dapp-framework-now-available.md",
+        "date": "2020-12-09",
+        "has_content": false
+      },
+      {
+        "title": "Ergo/Emurgo Stable Coin, NFT, Mixer, and more! | The Cardano Aura #9",
+        "path": "blog/stubs/uncategorized/ergoemurgo-stable-coin-nft-mixer-and-more-the-cardano-aura-9.md",
+        "date": "2020-12-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo \"Headless dApp Framework\" just released by Emurgo",
+        "path": "blog/stubs/uncategorized/ergo-headless-dapp-framework-just-released-by-emurgo.md",
+        "date": "2020-12-01",
+        "has_content": false
+      },
+      {
+        "title": "ErgoTree & ErgoScript 3.3.3 Release",
+        "path": "blog/stubs/uncategorized/ergotree-ergoscript-333-release.md",
+        "date": "2020-12-01",
+        "has_content": false
+      },
+      {
+        "title": "Autolykos v.2 details",
+        "path": "blog/stubs/uncategorized/autolykos-v2-details.md",
+        "date": "2020-11-19",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Foundation Makes Key dApp Infrastructure Grant",
+        "path": "blog/stubs/uncategorized/ergo-foundation-makes-key-dapp-infrastructure-grant.md",
+        "date": "2020-11-18",
+        "has_content": false
+      },
+      {
+        "title": "Introducing the \u2018Ergonaut\u2019: the Ergo Foundation NFT sale!",
+        "path": "blog/stubs/uncategorized/introducing-the-ergonaut-the-ergo-foundation-nft-sale.md",
+        "date": "2020-11-17",
+        "has_content": false
+      },
+      {
+        "title": "ErgoTree & ErgoScript 3.3.2 released",
+        "path": "blog/stubs/uncategorized/ergotree-ergoscript-332-released.md",
+        "date": "2020-11-13",
+        "has_content": false
+      },
+      {
+        "title": "Updated Roadmap 2020 - 2021",
+        "path": "blog/stubs/uncategorized/updated-roadmap-2020-2021.md",
+        "date": "2020-11-12",
+        "has_content": false
+      },
+      {
+        "title": "Magnum Wallet Closing in 20 days! ",
+        "path": "blog/stubs/uncategorized/magnum-wallet-closing-in-20-days.md",
+        "date": "2020-11-11",
+        "has_content": false
+      },
+      {
+        "title": " Ergo Explained: Episode 01 - Basics & Forking",
+        "path": "blog/stubs/uncategorized/ergo-explained-episode-01-basics-forking.md",
+        "date": "2020-11-10",
+        "has_content": false
+      },
+      {
+        "title": "First steps towards interoperability with Cardano oracles",
+        "path": "blog/stubs/uncategorized/first-steps-towards-interoperability-with-cardano-oracles.md",
+        "date": "2020-11-10",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Explorer 4.0.1 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-401-released.md",
+        "date": "2020-11-06",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Mainnet 3.3.6 released",
+        "path": "blog/stubs/uncategorized/ergo-platform-mainnet-336-released.md",
+        "date": "2020-11-05",
+        "has_content": false
+      },
+      {
+        "title": "Single-Chain Swap Contracts (DEX basis) by Alex Chepurnoy",
+        "path": "blog/stubs/uncategorized/single-chain-swap-contracts-dex-basis-by-alex-chepurnoy.md",
+        "date": "2020-11-03",
+        "has_content": false
+      },
+      {
+        "title": "\"EMURGO is happy to release it's Ergo Node Interface for the Ergo dev community\"",
+        "path": "blog/stubs/uncategorized/emurgo-is-happy-to-release-its-ergo-node-interface-for-the-ergo-dev-community.md",
+        "date": "2020-11-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Cast Episode #4 - Yoroi Wallet",
+        "path": "blog/stubs/uncategorized/ergo-cast-episode-4-yoroi-wallet.md",
+        "date": "2020-10-28",
+        "has_content": false
+      },
+      {
+        "title": "\u201cWaves partners with Ergo to foster interoperability solutions via Gravity\u201d",
+        "path": "blog/stubs/uncategorized/waves-partners-with-ergo-to-foster-interoperability-solutions-via-gravity.md",
+        "date": "2020-10-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Mainnet 3.3.5 released",
+        "path": "blog/stubs/uncategorized/ergo-platform-mainnet-335-released.md",
+        "date": "2020-10-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo ($ERG) is listed on BTCNEXT Exchange ",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-btcnext-exchange.md",
+        "date": "2020-10-20",
+        "has_content": false
+      },
+      {
+        "title": "Announcing the Auction House, NFT Marketplace on Ergo",
+        "path": "blog/stubs/uncategorized/announcing-the-auction-house-nft-marketplace-on-ergo.md",
+        "date": "2020-10-16",
+        "has_content": false
+      },
+      {
+        "title": "Ergo ($ERG) is listed on Gate.io Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-gateio-exchange.md",
+        "date": "2020-10-11",
+        "has_content": false
+      },
+      {
+        "title": "Learn ErgoScript By Example Via The Ergo Playground with Robert Kornacki",
+        "path": "blog/stubs/uncategorized/learn-ergoscript-by-example-via-the-ergo-playground-with-robert-kornacki.md",
+        "date": "2020-10-08",
+        "has_content": false
+      },
+      {
+        "title": "Yoroi Wallet now supports Ergo!",
+        "path": "blog/stubs/uncategorized/yoroi-wallet-now-supports-ergo.md",
+        "date": "2020-10-08",
+        "has_content": false
+      },
+      {
+        "title": "Ergo explorer backend 3.3.0 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-backend-330-released.md",
+        "date": "2020-10-06",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Mainnet 3.3.4 released",
+        "path": "blog/stubs/uncategorized/ergo-platform-mainnet-334-released.md",
+        "date": "2020-10-06",
+        "has_content": false
+      },
+      {
+        "title": "What will DeFi look like in 10 years?",
+        "path": "blog/stubs/uncategorized/what-will-defi-look-like-in-10-years.md",
+        "date": "2020-10-05",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest - September 2020",
+        "path": "blog/stubs/uncategorized/ergo-platform-ecosystem-digest-september-2020.md",
+        "date": "2020-10-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Utilities - General utilities to make writing off-chain Ergo code in Rust simpler",
+        "path": "blog/stubs/uncategorized/ergo-utilities-general-utilities-to-make-writing-off-chain-ergo-code-in-rust-sim.md",
+        "date": "2020-09-30",
+        "has_content": false
+      },
+      {
+        "title": "ErgoTree & ErgoScript 3.3.1 released",
+        "path": "blog/stubs/uncategorized/ergotree-ergoscript-331-released.md",
+        "date": "2020-09-29",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Cast is now back online, now with a new co-host Sakata",
+        "path": "blog/stubs/uncategorized/ergo-cast-is-now-back-online-now-with-a-new-co-host-sakata.md",
+        "date": "2020-09-28",
+        "has_content": false
+      },
+      {
+        "title": "Ergo explorer backend 3.2.1 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-backend-321-released.md",
+        "date": "2020-09-28",
+        "has_content": false
+      },
+      {
+        "title": "NFTs on Ergo",
+        "path": "blog/stubs/uncategorized/nfts-on-ergo.md",
+        "date": "2020-09-25",
+        "has_content": false
+      },
+      {
+        "title": "DeFi: Finance, but not always Decentralised?",
+        "path": "blog/stubs/uncategorized/defi-finance-but-not-always-decentralised.md",
+        "date": "2020-09-17",
+        "has_content": false
+      },
+      {
+        "title": "Ergo explorer backend 3.2.0 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-backend-320-released.md",
+        "date": "2020-09-17",
+        "has_content": false
+      },
+      {
+        "title": "\"Unlocking The Potential Of The UTXO Model\" by Emurgo Research",
+        "path": "blog/stubs/uncategorized/unlocking-the-potential-of-the-utxo-model-by-emurgo-research.md",
+        "date": "2020-09-14",
+        "has_content": false
+      },
+      {
+        "title": "Explorer backend 3.1.0 released",
+        "path": "blog/stubs/uncategorized/explorer-backend-310-released.md",
+        "date": "2020-09-14",
+        "has_content": false
+      },
+      {
+        "title": "Oracle Pools and Interoperability of Cardano and Ergo with Robert Kornacki | TCE 105",
+        "path": "blog/stubs/uncategorized/oracle-pools-and-interoperability-of-cardano-and-ergo-with-robert-kornacki-tce-1.md",
+        "date": "2020-09-13",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Mainnet 3.3.2 released",
+        "path": "blog/stubs/uncategorized/ergo-platform-mainnet-332-released.md",
+        "date": "2020-09-11",
+        "has_content": false
+      },
+      {
+        "title": "Announcing the ZK Treasury on Ergo!",
+        "path": "blog/stubs/uncategorized/announcing-the-zk-treasury-on-ergo.md",
+        "date": "2020-09-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest - August 2020",
+        "path": "blog/stubs/uncategorized/ergo-platform-ecosystem-digest-august-2020.md",
+        "date": "2020-09-03",
+        "has_content": false
+      },
+      {
+        "title": "\"ZeroJoin: Combining ZeroCoin and CoinJoin\" has been accepted to CBT2020 workshop",
+        "path": "blog/stubs/uncategorized/zerojoin-combining-zerocoin-and-coinjoin-has-been-accepted-to-cbt2020-workshop.md",
+        "date": "2020-09-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo\u2019s Oracle Pools, and what they mean for the ecosystem",
+        "path": "blog/stubs/uncategorized/ergos-oracle-pools-and-what-they-mean-for-the-ecosystem.md",
+        "date": "2020-08-31",
+        "has_content": false
+      },
+      {
+        "title": "\"Today EMURGO and Ergo platform mark a historic moment for UTXO based dApps and DeFi applications\"",
+        "path": "blog/stubs/uncategorized/today-emurgo-and-ergo-platform-mark-a-historic-moment-for-utxo-based-dapps-and-d.md",
+        "date": "2020-08-28",
+        "has_content": false
+      },
+      {
+        "title": "Transcript of the Oracle Pools Q&A session with Robert Kornacki",
+        "path": "blog/stubs/uncategorized/transcript-of-the-oracle-pools-qa-session-with-robert-kornacki.md",
+        "date": "2020-08-28",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Explorer 2.0.0 released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-200-released.md",
+        "date": "2020-08-22",
+        "has_content": false
+      },
+      {
+        "title": "\"App on Distributed Signatures\"",
+        "path": "blog/stubs/uncategorized/app-on-distributed-signatures.md",
+        "date": "2020-08-20",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Reference Client 3.3.1 has been released",
+        "path": "blog/stubs/uncategorized/ergo-platform-reference-client-331-has-been-released.md",
+        "date": "2020-08-20",
+        "has_content": false
+      },
+      {
+        "title": "The Evolution of Programmable Money",
+        "path": "blog/stubs/uncategorized/the-evolution-of-programmable-money.md",
+        "date": "2020-08-20",
+        "has_content": false
+      },
+      {
+        "title": "Ergo\u2019s Vision for DeFi: Ergo vs CBDCs",
+        "path": "blog/stubs/uncategorized/ergos-vision-for-defi-ergo-vs-cbdcs.md",
+        "date": "2020-08-18",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Our Vision for DeFi",
+        "path": "blog/stubs/uncategorized/building-ergo-our-vision-for-defi.md",
+        "date": "2020-08-16",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Reference Client 3.3.0 has been released",
+        "path": "blog/stubs/uncategorized/ergo-platform-reference-client-330-has-been-released.md",
+        "date": "2020-08-08",
+        "has_content": false
+      },
+      {
+        "title": "\"New Video: Robert Kornacki of EMURGO does a deep dive into the ground breaking research behind the Oracle Pools Smart Contract Specification.\"",
+        "path": "blog/stubs/uncategorized/new-video-robert-kornacki-of-emurgo-does-a-deep-dive-into-the-ground-breaking-re.md",
+        "date": "2020-08-03",
+        "has_content": false
+      },
+      {
+        "title": "Decentralized Exchange Contracts on Ergo",
+        "path": "blog/stubs/uncategorized/decentralized-exchange-contracts-on-ergo.md",
+        "date": "2020-07-31",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AppKit 3.2.2 has been released",
+        "path": "blog/stubs/uncategorized/ergo-appkit-322-has-been-released.md",
+        "date": "2020-07-28",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Explorer Backend 1.1.0 has been released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-backend-110-has-been-released.md",
+        "date": "2020-07-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo ($ERG) is listed on Coinex Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-coinex-exchange.md",
+        "date": "2020-07-24",
+        "has_content": false
+      },
+      {
+        "title": "Video: How to set up and configure a full Ergo node on Windows",
+        "path": "blog/stubs/uncategorized/video-how-to-set-up-and-configure-a-full-ergo-node-on-windows.md",
+        "date": "2020-07-24",
+        "has_content": false
+      },
+      {
+        "title": "\"New EMURGO Research: This week we bring you the official Oracle Pools Smart Contract Spec!\"",
+        "path": "blog/stubs/uncategorized/new-emurgo-research-this-week-we-bring-you-the-official-oracle-pools-smart-contr.md",
+        "date": "2020-07-23",
+        "has_content": false
+      },
+      {
+        "title": "\"Ergo Contracts\"",
+        "path": "blog/stubs/uncategorized/ergo-contracts.md",
+        "date": "2020-07-15",
+        "has_content": false
+      },
+      {
+        "title": "\"Summary of the AMA with Ergo Platform\"",
+        "path": "blog/stubs/uncategorized/summary-of-the-ama-with-ergo-platform.md",
+        "date": "2020-07-11",
+        "has_content": false
+      },
+      {
+        "title": "\"Ergopool is live on mainnet\"",
+        "path": "blog/stubs/uncategorized/ergopool-is-live-on-mainnet.md",
+        "date": "2020-07-03",
+        "has_content": false
+      },
+      {
+        "title": "\"New EMURGO Research: We present a brand new model, Oracle Pools, which reimagines oracles from the ground up. This research is part of the Emurgo Ergo partnership\"",
+        "path": "blog/stubs/uncategorized/new-emurgo-research-we-present-a-brand-new-model-oracle-pools-which-reimagines-o.md",
+        "date": "2020-06-26",
+        "has_content": false
+      },
+      {
+        "title": "\"Let\u2019s sign collectively! Distributed signatures API\"",
+        "path": "blog/stubs/uncategorized/lets-sign-collectively-distributed-signatures-api.md",
+        "date": "2020-06-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Reference Client 3.2.7 has been released",
+        "path": "blog/stubs/uncategorized/ergo-platform-reference-client-327-has-been-released.md",
+        "date": "2020-06-22",
+        "has_content": false
+      },
+      {
+        "title": "ERGO with Founder Alex Chepurnoy - The Daily Chain",
+        "path": "blog/stubs/uncategorized/ergo-with-founder-alex-chepurnoy-the-daily-chain.md",
+        "date": "2020-06-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo ($ERG) is listed on Sistemkoin Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-sistemkoin-exchange.md",
+        "date": "2020-06-17",
+        "has_content": false
+      },
+      {
+        "title": "EMURGO to Partner with Ergo and Build Blockchain-Based Decentralized Financial Solutions",
+        "path": "blog/stubs/uncategorized/emurgo-to-partner-with-ergo-and-build-blockchain-based-decentralized-financial-s.md",
+        "date": "2020-06-09",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.2.6 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-326-released.md",
+        "date": "2020-05-31",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.2.5 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-325-released.md",
+        "date": "2020-05-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.2.4 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-324-released.md",
+        "date": "2020-05-18",
+        "has_content": false
+      },
+      {
+        "title": "ZeroJoin: Combining ZeroCoin and CoinJoin (Alexander Chepurnoy and Amitabh Saxena)",
+        "path": "blog/stubs/uncategorized/zerojoin-combining-zerocoin-and-coinjoin-alexander-chepurnoy-and-amitabh-saxena.md",
+        "date": "2020-05-15",
+        "has_content": false
+      },
+      {
+        "title": "Ergo update, 14 May 2020: New exchange, wallet and first mining pool with collaterals!",
+        "path": "blog/stubs/uncategorized/ergo-update-14-may-2020-new-exchange-wallet-and-first-mining-pool-with-collatera.md",
+        "date": "2020-05-14",
+        "has_content": false
+      },
+      {
+        "title": "\"Team\" page is replaced with \"Hall of Fame\"",
+        "path": "blog/stubs/uncategorized/team-page-is-replaced-with-hall-of-fame.md",
+        "date": "2020-05-13",
+        "has_content": false
+      },
+      {
+        "title": "Ergo ($ERG) is listed on Coinsbit Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-coinsbit-exchange.md",
+        "date": "2020-05-13",
+        "has_content": false
+      },
+      {
+        "title": "Ergo joins BPSAA thinktank",
+        "path": "blog/stubs/uncategorized/ergo-joins-bpsaa-thinktank.md",
+        "date": "2020-05-13",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Reference Client 3.2.3 released",
+        "path": "blog/stubs/uncategorized/ergo-platform-reference-client-323-released.md",
+        "date": "2020-05-12",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Lite full nodes",
+        "path": "blog/stubs/uncategorized/building-ergo-lite-full-nodes.md",
+        "date": "2020-05-08",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: SPV security ",
+        "path": "blog/stubs/uncategorized/building-ergo-spv-security.md",
+        "date": "2020-05-01",
+        "has_content": false
+      },
+      {
+        "title": "FlowCards: A Declarative Framework for Development of Ergo dApps",
+        "path": "blog/stubs/uncategorized/flowcards-a-declarative-framework-for-development-of-ergo-dapps.md",
+        "date": "2020-04-29",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Atomic Swaps",
+        "path": "blog/stubs/uncategorized/building-ergo-atomic-swaps.md",
+        "date": "2020-04-24",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Oracles",
+        "path": "blog/stubs/uncategorized/building-ergo-oracles.md",
+        "date": "2020-04-23",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Storage rent",
+        "path": "blog/stubs/uncategorized/building-ergo-storage-rent.md",
+        "date": "2020-04-21",
+        "has_content": false
+      },
+      {
+        "title": "Ergo use case: \u2018hot potato\u2019 monetary policy",
+        "path": "blog/stubs/uncategorized/ergo-use-case-hot-potato-monetary-policy.md",
+        "date": "2020-04-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo use case: Local Exchange Trading System (LETS)",
+        "path": "blog/stubs/uncategorized/ergo-use-case-local-exchange-trading-system-lets.md",
+        "date": "2020-04-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.2.2 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-322-released.md",
+        "date": "2020-03-24",
+        "has_content": false
+      },
+      {
+        "title": "Introducing \u03a33 - ErgoMixer",
+        "path": "blog/stubs/uncategorized/introducing-\u03c33-ergomixer.md",
+        "date": "2020-03-23",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: UTXO vs Account",
+        "path": "blog/stubs/uncategorized/building-ergo-utxo-vs-account.md",
+        "date": "2020-03-03",
+        "has_content": false
+      },
+      {
+        "title": "Coinbarn, a simple wallet for Ergo has been published in Chrome store",
+        "path": "blog/stubs/uncategorized/coinbarn-a-simple-wallet-for-ergo-has-been-published-in-chrome-store.md",
+        "date": "2020-02-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.2.1 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-321-released.md",
+        "date": "2020-02-19",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest",
+        "path": "blog/stubs/uncategorized/ergo-platform-ecosystem-digest.md",
+        "date": "2020-02-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Platform Discord Server has been created",
+        "path": "blog/stubs/uncategorized/ergo-platform-discord-server-has-been-created.md",
+        "date": "2020-01-23",
+        "has_content": false
+      },
+      {
+        "title": "Bypassing Non-Outsourceable Proof-of-Work Schemes Using Collateralized Smart Contracts",
+        "path": "blog/stubs/uncategorized/bypassing-non-outsourceable-proof-of-work-schemes-using-collateralized-smart-con.md",
+        "date": "2020-01-17",
+        "has_content": false
+      },
+      {
+        "title": "Security Audit (by Jean Philippe Aumasson)",
+        "path": "blog/stubs/uncategorized/security-audit-by-jean-philippe-aumasson.md",
+        "date": "2020-01-12",
+        "has_content": false
+      },
+      {
+        "title": "",
+        "path": "blog/stubs/uncategorized/.md",
+        "date": "2020-01-08",
+        "has_content": false
+      },
+      {
+        "title": "Coinbarn wallet now has its desktop version",
+        "path": "blog/stubs/uncategorized/coinbarn-wallet-now-has-its-desktop-version.md",
+        "date": "2020-01-04",
+        "has_content": false
+      },
+      {
+        "title": "Make Your Own Ergo Wallet: Managing Ergo Coins with ErgoTool",
+        "path": "blog/stubs/uncategorized/make-your-own-ergo-wallet-managing-ergo-coins-with-ergotool.md",
+        "date": "2020-01-04",
+        "has_content": false
+      },
+      {
+        "title": "ErgoTool: A Command Line Interface for Ergo blockchain",
+        "path": "blog/stubs/uncategorized/ergotool-a-command-line-interface-for-ergo-blockchain.md",
+        "date": "2019-12-24",
+        "has_content": false
+      },
+      {
+        "title": "Universal dApp Interface & Package Standard",
+        "path": "blog/stubs/uncategorized/universal-dapp-interface-package-standard.md",
+        "date": "2019-12-24",
+        "has_content": false
+      },
+      {
+        "title": "New tutorial: 'Mining Ergo for Fun and Profit'",
+        "path": "blog/stubs/uncategorized/new-tutorial-mining-ergo-for-fun-and-profit.md",
+        "date": "2019-12-23",
+        "has_content": false
+      },
+      {
+        "title": "Early description of Ergo contractual approach",
+        "path": "blog/stubs/uncategorized/early-description-of-ergo-contractual-approach.md",
+        "date": "2019-12-23",
+        "has_content": false
+      },
+      {
+        "title": "Ergo is using highly efficient AVL+ tree",
+        "path": "blog/stubs/uncategorized/ergo-is-using-highly-efficient-avl-tree.md",
+        "date": "2019-12-23",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.5 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-315-released.md",
+        "date": "2019-12-19",
+        "has_content": false
+      },
+      {
+        "title": "A New Quest for Decentralization",
+        "path": "blog/stubs/uncategorized/a-new-quest-for-decentralization.md",
+        "date": "2019-12-12",
+        "has_content": false
+      },
+      {
+        "title": "Typescript library for Ergo with the support of custom tokens and complex transactions",
+        "path": "blog/stubs/uncategorized/typescript-library-for-ergo-with-the-support-of-custom-tokens-and-complex-transa.md",
+        "date": "2019-12-04",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.4 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-314-released.md",
+        "date": "2019-12-04",
+        "has_content": false
+      },
+      {
+        "title": "How to set up and configure a full Ergo node",
+        "path": "blog/stubs/uncategorized/how-to-set-up-and-configure-a-full-ergo-node.md",
+        "date": "2019-12-03",
+        "has_content": false
+      },
+      {
+        "title": "5 Ways Ergo Application Development Is Changed Forever Thanks To Appkit and GraalVM",
+        "path": "blog/stubs/uncategorized/5-ways-ergo-application-development-is-changed-forever-thanks-to-appkit-and-graa.md",
+        "date": "2019-12-03",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on Probit Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-probit-exchange.md",
+        "date": "2019-10-30",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.3 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-313-released.md",
+        "date": "2019-10-29",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.2 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-312-released.md",
+        "date": "2019-10-14",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.1 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-311-released.md",
+        "date": "2019-10-08",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on HOTBIT Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-hotbit-exchange.md",
+        "date": "2019-10-08",
+        "has_content": false
+      },
+      {
+        "title": "BISQ has officially added ERG",
+        "path": "blog/stubs/uncategorized/bisq-has-officially-added-erg.md",
+        "date": "2019-09-16",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on P2PB2B Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-p2pb2b-exchange.md",
+        "date": "2019-09-14",
+        "has_content": false
+      },
+      {
+        "title": "Ergo will be listed on Hotbit exchange",
+        "path": "blog/stubs/uncategorized/ergo-will-be-listed-on-hotbit-exchange.md",
+        "date": "2019-09-06",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.1.0 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-310-released.md",
+        "date": "2019-08-27",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.7 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-307-released.md",
+        "date": "2019-08-20",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on Vgate Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-vgate-exchange.md",
+        "date": "2019-08-20",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.6 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-306-released.md",
+        "date": "2019-08-06",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.5 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-305-released.md",
+        "date": "2019-07-30",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.4 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-304-released.md",
+        "date": "2019-07-19",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.3 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-303-released.md",
+        "date": "2019-07-18",
+        "has_content": false
+      },
+      {
+        "title": "ERG is available in Magnum Wallet",
+        "path": "blog/stubs/uncategorized/erg-is-available-in-magnum-wallet.md",
+        "date": "2019-07-11",
+        "has_content": false
+      },
+      {
+        "title": "After-Launch Thoughts and Ergo Roadmap",
+        "path": "blog/stubs/uncategorized/after-launch-thoughts-and-ergo-roadmap.md",
+        "date": "2019-07-09",
+        "has_content": false
+      },
+      {
+        "title": "ERGO ($ERG) is listed on Tidex Exchange",
+        "path": "blog/stubs/uncategorized/ergo-erg-is-listed-on-tidex-exchange.md",
+        "date": "2019-07-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Withdrawal Instructions",
+        "path": "blog/stubs/uncategorized/ergo-withdrawal-instructions.md",
+        "date": "2019-07-03",
+        "has_content": false
+      },
+      {
+        "title": "Ergo explorer released",
+        "path": "blog/stubs/uncategorized/ergo-explorer-released.md",
+        "date": "2019-07-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo mainnet is launched",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-is-launched.md",
+        "date": "2019-07-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mainnet 3.0.1 released",
+        "path": "blog/stubs/uncategorized/ergo-mainnet-301-released.md",
+        "date": "2019-07-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo will be listed on P2PB2B exchange",
+        "path": "blog/stubs/uncategorized/ergo-will-be-listed-on-p2pb2b-exchange.md",
+        "date": "2019-06-28",
+        "has_content": false
+      },
+      {
+        "title": "Joining the Ergo main network at the very beginning",
+        "path": "blog/stubs/uncategorized/joining-the-ergo-main-network-at-the-very-beginning.md",
+        "date": "2019-06-28",
+        "has_content": false
+      },
+      {
+        "title": "Testnet 2.2.0 released",
+        "path": "blog/stubs/uncategorized/testnet-220-released.md",
+        "date": "2019-06-27",
+        "has_content": false
+      },
+      {
+        "title": "Mainnet launch - Monday, July 1, 10:00 AM UTC",
+        "path": "blog/stubs/uncategorized/mainnet-launch-monday-july-1-1000-am-utc.md",
+        "date": "2019-06-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Mining Telegram group is now open",
+        "path": "blog/stubs/uncategorized/ergo-mining-telegram-group-is-now-open.md",
+        "date": "2019-06-24",
+        "has_content": false
+      },
+      {
+        "title": "EFYT (Ergo First Year Token) is listed on Tidex Exchange",
+        "path": "blog/stubs/uncategorized/efyt-ergo-first-year-token-is-listed-on-tidex-exchange.md",
+        "date": "2019-06-14",
+        "has_content": false
+      },
+      {
+        "title": "The Bad Crypto Podcast featuring Ergo",
+        "path": "blog/stubs/uncategorized/the-bad-crypto-podcast-featuring-ergo.md",
+        "date": "2019-06-13",
+        "has_content": false
+      },
+      {
+        "title": "Mainnet launch postponed",
+        "path": "blog/stubs/uncategorized/mainnet-launch-postponed.md",
+        "date": "2019-06-13",
+        "has_content": false
+      },
+      {
+        "title": "Testnet 2.1.2 released",
+        "path": "blog/stubs/uncategorized/testnet-212-released.md",
+        "date": "2019-06-12",
+        "has_content": false
+      },
+      {
+        "title": "Interview with Ergo, a platform who's building the framework for contractual money",
+        "path": "blog/stubs/uncategorized/interview-with-ergo-a-platform-whos-building-the-framework-for-contractual-money.md",
+        "date": "2019-06-11",
+        "has_content": false
+      },
+      {
+        "title": "New Bitcointalk thread",
+        "path": "blog/stubs/uncategorized/new-bitcointalk-thread.md",
+        "date": "2019-06-05",
+        "has_content": false
+      },
+      {
+        "title": "Testnet 2.1.0 released",
+        "path": "blog/stubs/uncategorized/testnet-210-released.md",
+        "date": "2019-06-05",
+        "has_content": false
+      },
+      {
+        "title": "Agreement with SWFT Blockchain",
+        "path": "blog/stubs/uncategorized/agreement-with-swft-blockchain.md",
+        "date": "2019-06-05",
+        "has_content": false
+      },
+      {
+        "title": "Ergo whitepaper(Chinese)",
+        "path": "blog/stubs/uncategorized/ergo-whitepaperchinese.md",
+        "date": "2019-06-03",
+        "has_content": false
+      },
+      {
+        "title": "A Trustless Local Exchange Trading System on top of Ergo",
+        "path": "blog/stubs/uncategorized/a-trustless-local-exchange-trading-system-on-top-of-ergo.md",
+        "date": "2019-05-30",
+        "has_content": false
+      },
+      {
+        "title": "The Ergo Emission Schedule",
+        "path": "blog/stubs/uncategorized/the-ergo-emission-schedule.md",
+        "date": "2019-05-20",
+        "has_content": false
+      },
+      {
+        "title": "Ergo whitepaper",
+        "path": "blog/stubs/uncategorized/ergo-whitepaper.md",
+        "date": "2019-05-15",
+        "has_content": false
+      },
+      {
+        "title": "Release postponed",
+        "path": "blog/stubs/uncategorized/release-postponed.md",
+        "date": "2019-05-07",
+        "has_content": false
+      },
+      {
+        "title": "Ergo teaser",
+        "path": "blog/stubs/uncategorized/ergo-teaser.md",
+        "date": "2019-04-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo mining tutorial",
+        "path": "blog/stubs/uncategorized/ergo-mining-tutorial.md",
+        "date": "2019-04-03",
+        "has_content": false
+      },
+      {
+        "title": "Q&A session transcript. Mainnet launch is planned for May 26",
+        "path": "blog/stubs/uncategorized/qa-session-transcript-mainnet-launch-is-planned-for-may-26.md",
+        "date": "2019-03-19",
+        "has_content": false
+      }
+    ],
+    "Events": [
+      {
+        "title": "ErgoHack X Meet the Winners!",
+        "path": "blog/posts/events/ergohack-x-meet-the-winners.md",
+        "date": "2025-07-21",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack X: A Decade of Innovation Meets the Age of AI",
+        "path": "blog/posts/events/ergohack-x-a-decade-of-innovation-meets-the-age-of-ai.md",
+        "date": "2025-06-09",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHACK X: Artificial Intelligence on the Ergo Blockchain",
+        "path": "blog/posts/events/ergohack-x-artificial-intelligence-on-the-ergo-blockchain.md",
+        "date": "2025-04-10",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack IX: Next Steps Towards Increased Adoption",
+        "path": "blog/posts/events/ergohack-ix-next-steps-towards-increased-adoption.md",
+        "date": "2024-10-20",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack IX: Advancing UI/UX Design and Mining Solutions on Ergo",
+        "path": "blog/posts/events/ergohack-ix-advancing-uiux-design-and-mining-solutions-on-ergo.md",
+        "date": "2024-09-24",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VIII Winners",
+        "path": "blog/posts/events/ergohack-viii-winners.md",
+        "date": "2024-06-30",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VIII: Meet the Judges",
+        "path": "blog/posts/events/ergohack-viii-meet-the-judges.md",
+        "date": "2024-06-05",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VIII: Ergo As A Smart Layer",
+        "path": "blog/posts/events/ergohack-viii-ergo-as-a-smart-layer.md",
+        "date": "2024-05-29",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VIII: Ergo as a Smart Layer",
+        "path": "blog/posts/events/ergohack-viii-ergo-as-a-smart-layer.md",
+        "date": "2024-04-24",
+        "has_content": true
+      },
+      {
+        "title": "2024 Ergo Summit - Future of Finance, Ways of Adoption",
+        "path": "blog/posts/events/2024-ergo-summit-future-of-finance-ways-of-adoption.md",
+        "date": "2024-01-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: Year in Review 2023",
+        "path": "blog/posts/events/ergo-year-in-review-2023.md",
+        "date": "2023-12-30",
+        "has_content": true
+      },
+      {
+        "title": "ErogHack VII Results",
+        "path": "blog/posts/events/eroghack-vii-results.md",
+        "date": "2023-11-29",
+        "has_content": true
+      },
+      {
+        "title": "Ergohack Participants - The Future of Finance",
+        "path": "blog/posts/events/ergohack-participants-the-future-of-finance.md",
+        "date": "2023-10-17",
+        "has_content": true
+      },
+      {
+        "title": "Meet Your Judges: Ergohack VII",
+        "path": "blog/posts/events/meet-your-judges-ergohack-vii.md",
+        "date": "2023-10-10",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VII Update: Prize Pool",
+        "path": "blog/posts/events/ergohack-vii-update-prize-pool.md",
+        "date": "2023-10-04",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VII: The Future of Finance and the Path to Adoption",
+        "path": "blog/posts/events/ergohack-vii-the-future-of-finance-and-the-path-to-adoption.md",
+        "date": "2023-08-23",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Summit 2023",
+        "path": "blog/posts/events/ergo-summit-2023.md",
+        "date": "2023-07-03",
+        "has_content": true
+      },
+      {
+        "title": "ErgoVersary 2023",
+        "path": "blog/posts/events/ergoversary-2023.md",
+        "date": "2023-05-29",
+        "has_content": true
+      },
+      {
+        "title": "Ergohack VI - Cypherpunk Finance Winners",
+        "path": "blog/posts/events/ergohack-vi-cypherpunk-finance-winners.md",
+        "date": "2023-04-05",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VI: Updates \n",
+        "path": "blog/posts/events/ergohack-vi-updates.md",
+        "date": "2023-02-27",
+        "has_content": true
+      },
+      {
+        "title": "Ergohack VI Participants: Week One Overview\n",
+        "path": "blog/posts/events/ergohack-vi-participants-week-one-overview.md",
+        "date": "2023-02-12",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack VI Cypherpunk Finance: A Focus on Privacy\n",
+        "path": "blog/posts/events/ergohack-vi-cypherpunk-finance-a-focus-on-privacy.md",
+        "date": "2023-02-06",
+        "has_content": true
+      },
+      {
+        "title": "Meet Your Judges: ErgoHack VI",
+        "path": "blog/posts/events/meet-your-judges-ergohack-vi.md",
+        "date": "2023-02-05",
+        "has_content": true
+      },
+      {
+        "title": "Announcing ErgoHack VI - Cypherpunk Finance\n",
+        "path": "blog/posts/events/announcing-ergohack-vi-cypherpunk-finance.md",
+        "date": "2023-01-18",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform 2022 Year in Review\n",
+        "path": "blog/posts/events/ergo-platform-2022-year-in-review.md",
+        "date": "2022-12-24",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack V Results",
+        "path": "blog/posts/events/ergohack-v-results.md",
+        "date": "2022-11-22",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack V Participants",
+        "path": "blog/posts/events/ergohack-v-participants.md",
+        "date": "2022-10-09",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack V: Meet Our Judges\n",
+        "path": "blog/posts/events/ergohack-v-meet-our-judges.md",
+        "date": "2022-09-26",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack V Prizes\n",
+        "path": "blog/posts/events/ergohack-v-prizes.md",
+        "date": "2022-09-18",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Summit",
+        "path": "blog/posts/events/ergo-summit.md",
+        "date": "2022-08-08",
+        "has_content": true
+      },
+      {
+        "title": "Ergo is Turning 3 ErgoVersary July 1 2022",
+        "path": "blog/posts/events/ergo-is-turning-3-ergoversary-july-1-2022.md",
+        "date": "2022-06-28",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Fest: Meet Our Judges\n",
+        "path": "blog/posts/events/ergohack-fest-meet-our-judges.md",
+        "date": "2022-06-06",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Fest: Third Week Update\n",
+        "path": "blog/posts/events/ergohack-fest-third-week-update.md",
+        "date": "2022-05-30",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Fest: Second Week Update\n",
+        "path": "blog/posts/events/ergohack-fest-second-week-update.md",
+        "date": "2022-05-24",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Fest: First Week Update\n",
+        "path": "blog/posts/events/ergohack-fest-first-week-update.md",
+        "date": "2022-05-17",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Fest: May 9 - 30",
+        "path": "blog/posts/events/ergohack-fest-may-9-30.md",
+        "date": "2022-05-03",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Pulse with Charles Hoskinson",
+        "path": "blog/posts/events/ergo-pulse-with-charles-hoskinson.md",
+        "date": "2022-04-13",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, March 25, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-march-25-2022.md",
+        "date": "2022-03-31",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, March 11, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-march-11-2022.md",
+        "date": "2022-03-15",
+        "has_content": true
+      },
+      {
+        "title": "Dev Update March 6",
+        "path": "blog/stubs/events/dev-update-march-6.md",
+        "date": "2022-03-07",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III Results",
+        "path": "blog/posts/events/ergohack-iii-results.md",
+        "date": "2022-03-01",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III Results",
+        "path": "blog/stubs/events/ergohack-iii-results.md",
+        "date": "2022-03-01",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, February 18, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-february-18-2022.md",
+        "date": "2022-02-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, February 18, 2022",
+        "path": "blog/stubs/events/ergo-ama-wrap-up-february-18-2022.md",
+        "date": "2022-02-24",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Summit Starts!",
+        "path": "blog/stubs/events/ergo-summit-starts.md",
+        "date": "2022-02-17",
+        "has_content": false
+      },
+      {
+        "title": "ErgoHack III Wrap-Up",
+        "path": "blog/posts/events/ergohack-iii-wrap-up.md",
+        "date": "2022-02-16",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, February 11, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-february-11-2022.md",
+        "date": "2022-02-14",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III: Day Two",
+        "path": "blog/posts/events/ergohack-iii-day-two.md",
+        "date": "2022-02-13",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III: Day One",
+        "path": "blog/posts/events/ergohack-iii-day-one.md",
+        "date": "2022-02-12",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III Starts Today: Event Program & Teams",
+        "path": "blog/posts/events/ergohack-iii-starts-today-event-program-teams.md",
+        "date": "2022-02-11",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up February 4, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-february-4-2022.md",
+        "date": "2022-02-08",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III is Next Week!",
+        "path": "blog/posts/events/ergohack-iii-is-next-week.md",
+        "date": "2022-02-03",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 28",
+        "path": "blog/posts/events/ergo-ama-wrap-up-january-28.md",
+        "date": "2022-02-02",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III: Last Week to Register",
+        "path": "blog/posts/events/ergohack-iii-last-week-to-register.md",
+        "date": "2022-01-25",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 21, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-january-21-2022.md",
+        "date": "2022-01-25",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 21, 2022",
+        "path": "blog/stubs/events/ergo-ama-wrap-up-january-21-2022.md",
+        "date": "2022-01-25",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, January 14",
+        "path": "blog/posts/events/ergo-ama-wrap-up-january-14.md",
+        "date": "2022-01-18",
+        "has_content": true
+      },
+      {
+        "title": "Community Projects on Ergo: Important Dates",
+        "path": "blog/posts/events/community-projects-on-ergo-important-dates.md",
+        "date": "2022-01-11",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up January 7, 2022",
+        "path": "blog/posts/events/ergo-ama-wrap-up-january-7-2022.md",
+        "date": "2022-01-10",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III Registration Information",
+        "path": "blog/posts/events/ergohack-iii-registration-information.md",
+        "date": "2022-01-06",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform 2021: Year in Review",
+        "path": "blog/posts/events/ergo-platform-2021-year-in-review.md",
+        "date": "2021-12-30",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 24",
+        "path": "blog/posts/events/ergo-ama-wrap-up-december-24.md",
+        "date": "2021-12-27",
+        "has_content": true
+      },
+      {
+        "title": "Announcing ErgoHACK III!",
+        "path": "blog/stubs/events/announcing-ergohack-iii.md",
+        "date": "2021-12-22",
+        "has_content": false
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 17",
+        "path": "blog/posts/events/ergo-ama-wrap-up-december-17.md",
+        "date": "2021-12-20",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 10",
+        "path": "blog/posts/events/ergo-ama-wrap-up-december-10.md",
+        "date": "2021-12-13",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, December 3",
+        "path": "blog/posts/events/ergo-ama-wrap-up-december-3.md",
+        "date": "2021-12-06",
+        "has_content": true
+      },
+      {
+        "title": "Ergo AMA Wrap-Up, November 26",
+        "path": "blog/posts/events/ergo-ama-wrap-up-november-26.md",
+        "date": "2021-11-30",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack II Results",
+        "path": "blog/posts/events/ergohack-ii-results.md",
+        "date": "2021-10-21",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack II: Meet Your Judges",
+        "path": "blog/posts/events/ergohack-ii-meet-your-judges.md",
+        "date": "2021-10-20",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack II Wrap-Up",
+        "path": "blog/posts/events/ergohack-ii-wrap-up.md",
+        "date": "2021-10-15",
+        "has_content": true
+      },
+      {
+        "title": "Hacking Social Transformation",
+        "path": "blog/posts/events/hacking-social-transformation.md",
+        "date": "2021-09-28",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack II",
+        "path": "blog/posts/events/ergohack-ii.md",
+        "date": "2021-09-07",
+        "has_content": true
+      },
+      {
+        "title": "What\u2019s Going on Behind the Screens: Ergo Weekly Dev Update July 7th",
+        "path": "blog/stubs/events/whats-going-on-behind-the-screens-ergo-weekly-dev-update-july-7th.md",
+        "date": "2021-07-08",
+        "has_content": false
+      },
+      {
+        "title": "2nd ErgoVersary Wrap-Up",
+        "path": "blog/posts/events/2nd-ergoversary-wrap-up.md",
+        "date": "2021-07-07",
+        "has_content": true
+      },
+      {
+        "title": "2nd ErgoVersary - Core Things Early Adopters Should Know",
+        "path": "blog/posts/events/2nd-ergoversary-core-things-early-adopters-should-know.md",
+        "date": "2021-06-29",
+        "has_content": true
+      },
+      {
+        "title": "ERGOHACK",
+        "path": "blog/posts/events/ergohack.md",
+        "date": "2021-06-19",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack Day One",
+        "path": "blog/posts/events/ergohack-day-one.md",
+        "date": "2021-06-12",
+        "has_content": true
+      },
+      {
+        "title": "Meet Your Judges",
+        "path": "blog/posts/events/meet-your-judges.md",
+        "date": "2021-06-08",
+        "has_content": true
+      },
+      {
+        "title": "What\u2019s Going On Behind The Screens: Ergo Weekly Dev Update April 28th",
+        "path": "blog/stubs/events/whats-going-on-behind-the-screens-ergo-weekly-dev-update-april-28th.md",
+        "date": "2021-04-30",
+        "has_content": false
+      },
+      {
+        "title": "Youtube Video Competition",
+        "path": "blog/posts/events/youtube-video-competition.md",
+        "date": "2021-04-19",
+        "has_content": true
+      },
+      {
+        "title": "2000 ERG in Prizes to be Won in the Ergo Digital Art Competition!",
+        "path": "blog/posts/events/2000-erg-in-prizes-to-be-won-in-the-ergo-digital-art-competition.md",
+        "date": "2021-02-12",
+        "has_content": true
+      },
+      {
+        "title": "We\u2019ve just released the Ergo Summit Schedule! Check it out and get ready for the most Ergo-packed day of 2021",
+        "path": "blog/stubs/events/weve-just-released-the-ergo-summit-schedule-check-it-out-and-get-ready-for-the-m.md",
+        "date": "2021-01-23",
+        "has_content": false
+      },
+      {
+        "title": "Ergo roadmap for 2020",
+        "path": "blog/posts/events/ergo-roadmap-for-2020.md",
+        "date": "2020-08-04",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation - New members and contests",
+        "path": "blog/posts/events/ergo-foundation-new-members-and-contests.md",
+        "date": "2020-07-27",
+        "has_content": true
+      },
+      {
+        "title": "The opportunities of the Ergo/Emurgo partnership",
+        "path": "blog/posts/events/the-opportunities-of-the-ergoemurgo-partnership.md",
+        "date": "2020-06-11",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest - February 2020",
+        "path": "blog/posts/events/ergo-platform-ecosystem-digest-february-2020.md",
+        "date": "2020-03-03",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Ecosystem Digest - January 2020",
+        "path": "blog/posts/events/ergo-platform-ecosystem-digest-january-2020.md",
+        "date": "2020-02-04",
+        "has_content": true
+      },
+      {
+        "title": "Q&A with Alex Chepurnoy and Dmitry Meshkov",
+        "path": "blog/posts/events/qa-with-alex-chepurnoy-and-dmitry-meshkov.md",
+        "date": "2019-03-19",
+        "has_content": true
+      }
+    ],
+    "Tooling": [
+      {
+        "title": "Braiding Lunarpunk and Solarpunk through Merged Mining",
+        "path": "blog/posts/tooling/braiding-lunarpunk-and-solarpunk-through-merged-mining.md",
+        "date": "2025-09-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Wallet Update: Ergo Fully Integrated with Ledger",
+        "path": "blog/posts/tooling/ergo-wallet-update-ergo-fully-integrated-with-ledger.md",
+        "date": "2025-04-22",
+        "has_content": true
+      },
+      {
+        "title": "The Best Blockchain Languages For Blockchain Development",
+        "path": "blog/posts/tooling/the-best-blockchain-languages-for-blockchain-development.md",
+        "date": "2024-01-17",
+        "has_content": true
+      },
+      {
+        "title": "Build on Ergo with Ease: Fleet SDK v0.1.3\n",
+        "path": "blog/posts/tooling/build-on-ergo-with-ease-fleet-sdk-v013.md",
+        "date": "2023-08-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Tutorials\n",
+        "path": "blog/posts/tooling/ergo-tutorials.md",
+        "date": "2023-05-16",
+        "has_content": true
+      },
+      {
+        "title": "Ledger Launches Ergo Support in Developer Mode\n",
+        "path": "blog/posts/tooling/ledger-launches-ergo-support-in-developer-mode.md",
+        "date": "2023-01-10",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Multisig Wallet: What is it and How to Create One?\n",
+        "path": "blog/posts/tooling/ergo-multisig-wallet-what-is-it-and-how-to-create-one.md",
+        "date": "2022-11-28",
+        "has_content": true
+      },
+      {
+        "title": "New Ergo Reference Client Greatly Improves Cost Efficiency, Transaction Rates and Throughput\n",
+        "path": "blog/posts/tooling/new-ergo-reference-client-greatly-improves-cost-efficiency-transaction-rates-and.md",
+        "date": "2022-10-24",
+        "has_content": true
+      },
+      {
+        "title": "Storing Ergo: SAFEW",
+        "path": "blog/posts/tooling/storing-ergo-safew.md",
+        "date": "2022-03-25",
+        "has_content": true
+      },
+      {
+        "title": "Storing Crypto on Ergo: Nautilus Wallet",
+        "path": "blog/posts/tooling/storing-crypto-on-ergo-nautilus-wallet.md",
+        "date": "2022-03-10",
+        "has_content": true
+      },
+      {
+        "title": "iOS Ergo Wallet: How-To Guide",
+        "path": "blog/posts/tooling/ios-ergo-wallet-how-to-guide.md",
+        "date": "2021-12-21",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Cold Wallet",
+        "path": "blog/posts/tooling/ergo-cold-wallet.md",
+        "date": "2021-10-18",
+        "has_content": true
+      },
+      {
+        "title": "Ergoutils: A How-To Guide",
+        "path": "blog/posts/tooling/ergoutils-a-how-to-guide.md",
+        "date": "2021-07-16",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: Decentralized Applications Framework",
+        "path": "blog/posts/tooling/ergo-decentralized-applications-framework.md",
+        "date": "2021-07-02",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Developer Tools",
+        "path": "blog/posts/tooling/building-ergo-developer-tools.md",
+        "date": "2021-06-10",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: ErgoScript",
+        "path": "blog/posts/tooling/building-ergo-ergoscript.md",
+        "date": "2021-06-09",
+        "has_content": true
+      },
+      {
+        "title": "Multi-Stage Contracts",
+        "path": "blog/posts/tooling/multi-stage-contracts.md",
+        "date": "2021-04-16",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Bootstrap, Streamlining Ergo dApp Infrastructure With One Simple Tool",
+        "path": "blog/posts/tooling/ergo-bootstrap-streamlining-ergo-dapp-infrastructure-with-one-simple-tool.md",
+        "date": "2020-12-11",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Headless dApp Framework Now Available",
+        "path": "blog/posts/tooling/ergo-headless-dapp-framework-now-available.md",
+        "date": "2020-12-08",
+        "has_content": true
+      },
+      {
+        "title": "An introduction to \u2018Headless\u2019 dApps",
+        "path": "blog/stubs/tooling/an-introduction-to-headless-dapps.md",
+        "date": "2020-11-27",
+        "has_content": false
+      },
+      {
+        "title": "An introduction to \u2018Headless\u2019 dApps",
+        "path": "blog/posts/tooling/an-introduction-to-headless-dapps.md",
+        "date": "2020-11-27",
+        "has_content": true
+      },
+      {
+        "title": "Learn ErgoScript by Example",
+        "path": "blog/posts/tooling/learn-ergoscript-by-example.md",
+        "date": "2020-10-12",
+        "has_content": true
+      },
+      {
+        "title": "Yoroi: your gateway to Ergo dapps",
+        "path": "blog/posts/tooling/yoroi-your-gateway-to-ergo-dapps.md",
+        "date": "2020-10-09",
+        "has_content": true
+      },
+      {
+        "title": "Decentralized Exchange Contracts on Ergo",
+        "path": "blog/posts/tooling/decentralized-exchange-contracts-on-ergo.md",
+        "date": "2020-07-31",
+        "has_content": true
+      },
+      {
+        "title": "FlowCards: A Declarative Framework for Development of Ergo dApps",
+        "path": "blog/posts/tooling/flowcards-a-declarative-framework-for-development-of-ergo-dapps.md",
+        "date": "2020-04-29",
+        "has_content": true
+      },
+      {
+        "title": "Make Your Own Ergo Wallet: Managing Ergo Coins with ErgoTool",
+        "path": "blog/posts/tooling/make-your-own-ergo-wallet-managing-ergo-coins-with-ergotool.md",
+        "date": "2019-12-31",
+        "has_content": true
+      },
+      {
+        "title": "5 Ways Ergo Application Development Is Changed Forever Thanks To Appkit",
+        "path": "blog/posts/tooling/5-ways-ergo-application-development-is-changed-forever-thanks-to-appkit.md",
+        "date": "2019-12-03",
+        "has_content": true
+      },
+      {
+        "title": "How to set up and configure a full Ergo node",
+        "path": "blog/posts/tooling/how-to-set-up-and-configure-a-full-ergo-node.md",
+        "date": "2019-12-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Addresses",
+        "path": "blog/posts/tooling/ergo-addresses.md",
+        "date": "2019-07-24",
+        "has_content": true
+      },
+      {
+        "title": "Wallet documentation",
+        "path": "blog/posts/tooling/wallet-documentation.md",
+        "date": "2019-06-04",
+        "has_content": true
+      },
+      {
+        "title": "ErgoScript, a Cryptocurrency Scripting Language Supporting Noninteractive Zero-Knowledge Proofs",
+        "path": "blog/stubs/tooling/ergoscript-a-cryptocurrency-scripting-language-supporting-noninteractive-zero-kn.md",
+        "date": "2019-03-12",
+        "has_content": false
+      }
+    ],
+    "Explaining Ergo": [
+      {
+        "title": "Three Opportunities And Challenges For DeFi On Ergo",
+        "path": "blog/posts/explaining-ergo/three-opportunities-and-challenges-for-defi-on-ergo.md",
+        "date": "2024-06-11",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: The Smart Layer For Bitcoin",
+        "path": "blog/posts/explaining-ergo/ergo-the-smart-layer-for-bitcoin.md",
+        "date": "2024-05-02",
+        "has_content": true
+      },
+      {
+        "title": "How The eUTXO Model Is Revolutionizing Blockchain",
+        "path": "blog/posts/explaining-ergo/how-the-eutxo-model-is-revolutionizing-blockchain.md",
+        "date": "2024-04-21",
+        "has_content": true
+      },
+      {
+        "title": "How Ergo Remains Decentralized And Secure",
+        "path": "blog/posts/explaining-ergo/how-ergo-remains-decentralized-and-secure.md",
+        "date": "2024-03-21",
+        "has_content": true
+      },
+      {
+        "title": "Redefining Money with Ergo: The Evolution from Centralized Control to Decentralized Possibilities",
+        "path": "blog/posts/explaining-ergo/redefining-money-with-ergo-the-evolution-from-centralized-control-to-decentraliz.md",
+        "date": "2023-08-20",
+        "has_content": true
+      },
+      {
+        "title": "The Benefits of the eUTXO Model",
+        "path": "blog/posts/explaining-ergo/the-benefits-of-the-eutxo-model.md",
+        "date": "2023-06-07",
+        "has_content": true
+      },
+      {
+        "title": "NIPoPoWs on Ergo: Innovations in Blockchain",
+        "path": "blog/posts/explaining-ergo/nipopows-on-ergo-innovations-in-blockchain.md",
+        "date": "2022-04-01",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Hybrid Method for Counting Costs",
+        "path": "blog/posts/explaining-ergo/ergos-hybrid-method-for-counting-costs.md",
+        "date": "2022-02-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: An Answer to Modern Monetary Theory Failures",
+        "path": "blog/posts/explaining-ergo/ergo-an-answer-to-modern-monetary-theory-failures.md",
+        "date": "2022-02-08",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & Blockchain: Scalability and Adoption",
+        "path": "blog/posts/explaining-ergo/ergo-blockchain-scalability-and-adoption.md",
+        "date": "2022-01-18",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & Blockchain: Technology and Innovation",
+        "path": "blog/posts/explaining-ergo/ergo-blockchain-technology-and-innovation.md",
+        "date": "2021-12-28",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: Building a Decentralized Future",
+        "path": "blog/posts/explaining-ergo/ergo-building-a-decentralized-future.md",
+        "date": "2021-12-16",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Ecosystem: Scaling Solutions",
+        "path": "blog/posts/explaining-ergo/ergo-ecosystem-scaling-solutions.md",
+        "date": "2021-10-29",
+        "has_content": true
+      },
+      {
+        "title": "Off-chain Logic and eUTXO",
+        "path": "blog/posts/explaining-ergo/off-chain-logic-and-eutxo.md",
+        "date": "2021-10-04",
+        "has_content": true
+      },
+      {
+        "title": "How Ergo Changes Crypto",
+        "path": "blog/posts/explaining-ergo/how-ergo-changes-crypto.md",
+        "date": "2021-09-16",
+        "has_content": true
+      },
+      {
+        "title": "NIPoPoW Applications: Light Clients and Side Chains",
+        "path": "blog/posts/explaining-ergo/nipopow-applications-light-clients-and-side-chains.md",
+        "date": "2021-08-26",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: Advancing on Bitcoin",
+        "path": "blog/posts/explaining-ergo/ergo-advancing-on-bitcoin.md",
+        "date": "2021-08-17",
+        "has_content": true
+      },
+      {
+        "title": "Ergo UTXO Model: The Evolution From Bitcoin To Ergo",
+        "path": "blog/posts/explaining-ergo/ergo-utxo-model-the-evolution-from-bitcoin-to-ergo.md",
+        "date": "2021-07-23",
+        "has_content": true
+      },
+      {
+        "title": "Cryptocurrency Fees: A Solution to Unreasonable State Growth",
+        "path": "blog/posts/explaining-ergo/cryptocurrency-fees-a-solution-to-unreasonable-state-growth.md",
+        "date": "2021-07-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo - The Future of Smart Money is Here",
+        "path": "blog/posts/explaining-ergo/ergo-the-future-of-smart-money-is-here.md",
+        "date": "2021-06-28",
+        "has_content": true
+      },
+      {
+        "title": "Here\u2019s how Ergo seeks to boost interoperability for Cardano\u2019s eUTxO model ",
+        "path": "blog/posts/explaining-ergo/heres-how-ergo-seeks-to-boost-interoperability-for-cardanos-eutxo-model.md",
+        "date": "2021-04-08",
+        "has_content": true
+      },
+      {
+        "title": "Ergo seeks to fix what Ethereum can\u2019t\u2026 Here\u2019s how",
+        "path": "blog/posts/explaining-ergo/ergo-seeks-to-fix-what-ethereum-cant-heres-how.md",
+        "date": "2021-03-26",
+        "has_content": true
+      },
+      {
+        "title": "How Ergo Makes the Most of Blockchain",
+        "path": "blog/posts/explaining-ergo/how-ergo-makes-the-most-of-blockchain.md",
+        "date": "2021-01-20",
+        "has_content": true
+      },
+      {
+        "title": "What Ergo can contribute to DeFi interoperability",
+        "path": "blog/posts/explaining-ergo/what-ergo-can-contribute-to-defi-interoperability.md",
+        "date": "2021-01-05",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Our Vision for DeFi",
+        "path": "blog/posts/explaining-ergo/building-ergo-our-vision-for-defi.md",
+        "date": "2020-08-13",
+        "has_content": true
+      },
+      {
+        "title": "Ergo and the explosion of DeFi",
+        "path": "blog/posts/explaining-ergo/ergo-and-the-explosion-of-defi.md",
+        "date": "2020-07-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo use case: \u2018hot potato\u2019 monetary policy",
+        "path": "blog/posts/explaining-ergo/ergo-use-case-hot-potato-monetary-policy.md",
+        "date": "2020-04-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo use cases: safe, simple financial contracts",
+        "path": "blog/posts/explaining-ergo/ergo-use-cases-safe-simple-financial-contracts.md",
+        "date": "2020-03-29",
+        "has_content": true
+      },
+      {
+        "title": "Welcome to Smart Money",
+        "path": "blog/posts/explaining-ergo/welcome-to-smart-money.md",
+        "date": "2020-02-12",
+        "has_content": true
+      },
+      {
+        "title": "Ergo and crowdfunding",
+        "path": "blog/posts/explaining-ergo/ergo-and-crowdfunding.md",
+        "date": "2019-09-06",
+        "has_content": true
+      },
+      {
+        "title": "After-Launch Thoughts and Ergo Roadmap",
+        "path": "blog/posts/explaining-ergo/after-launch-thoughts-and-ergo-roadmap.md",
+        "date": "2019-07-09",
+        "has_content": true
+      }
+    ],
+    "Basics": [
+      {
+        "title": "Ergo Vs Other Blockchain Platforms: What\u2019s The Difference?",
+        "path": "blog/posts/basics/ergo-vs-other-blockchain-platforms-whats-the-difference.md",
+        "date": "2024-08-19",
+        "has_content": true
+      },
+      {
+        "title": "Comparing Lending Protocols: UTXO Model vs. Account Model",
+        "path": "blog/posts/basics/comparing-lending-protocols-utxo-model-vs-account-model.md",
+        "date": "2024-05-20",
+        "has_content": true
+      },
+      {
+        "title": "The Six Best Crypto Decentralized Exchanges (DEXs) In 2024",
+        "path": "blog/posts/basics/the-six-best-crypto-decentralized-exchanges-dexs-in-2024.md",
+        "date": "2024-03-28",
+        "has_content": true
+      },
+      {
+        "title": "What is The Fastest and Most Efficient Blockchain?",
+        "path": "blog/posts/basics/what-is-the-fastest-and-most-efficient-blockchain.md",
+        "date": "2024-02-12",
+        "has_content": true
+      },
+      {
+        "title": "What Are eUTXOs?",
+        "path": "blog/posts/basics/what-are-eutxos.md",
+        "date": "2024-02-06",
+        "has_content": true
+      },
+      {
+        "title": "The Digital Evolution of Money.\nExploring Digital Wallets: The Gateway to Mainstream Adoption",
+        "path": "blog/posts/basics/the-digital-evolution-of-money-exploring-digital-wallets-the-gateway-to-mainstre.md",
+        "date": "2023-10-09",
+        "has_content": true
+      },
+      {
+        "title": "Building Bridges: The Role of DeFi Protocols in Mass Adoption",
+        "path": "blog/posts/basics/building-bridges-the-role-of-defi-protocols-in-mass-adoption.md",
+        "date": "2023-10-02",
+        "has_content": true
+      },
+      {
+        "title": "The Digital Evolution of Money. Unraveling the Shift: From Traditional Currency to Digital Assets\n",
+        "path": "blog/posts/basics/the-digital-evolution-of-money-unraveling-the-shift-from-traditional-currency-to.md",
+        "date": "2023-09-25",
+        "has_content": true
+      },
+      {
+        "title": "Beyond Banks: How Decentralized Finance is Reshaping the Financial Sector",
+        "path": "blog/posts/basics/beyond-banks-how-decentralized-finance-is-reshaping-the-financial-sector.md",
+        "date": "2023-09-14",
+        "has_content": true
+      },
+      {
+        "title": "The Importance of Know-Your-Assumptions (KYA): An Alternative to Traditional Know-Your-Customer (KYC) Practices",
+        "path": "blog/posts/basics/the-importance-of-know-your-assumptions-kya-an-alternative-to-traditional-know-y.md",
+        "date": "2023-07-20",
+        "has_content": true
+      },
+      {
+        "title": "What Wallet is Right for Me?",
+        "path": "blog/posts/basics/what-wallet-is-right-for-me.md",
+        "date": "2023-06-01",
+        "has_content": true
+      },
+      {
+        "title": "Stablecoins: What Are They and How Do They Work?\n",
+        "path": "blog/posts/basics/stablecoins-what-are-they-and-how-do-they-work.md",
+        "date": "2023-05-04",
+        "has_content": true
+      },
+      {
+        "title": "Crypto Scams Part 2: Understanding and Avoiding Them",
+        "path": "blog/posts/basics/crypto-scams-part-2-understanding-and-avoiding-them.md",
+        "date": "2023-03-08",
+        "has_content": true
+      },
+      {
+        "title": "Crypto Scams: How to Understand and Avoid Them Part 1\n",
+        "path": "blog/posts/basics/crypto-scams-how-to-understand-and-avoid-them-part-1.md",
+        "date": "2023-02-01",
+        "has_content": true
+      },
+      {
+        "title": "First Principles: A Harsh Reminder",
+        "path": "blog/posts/basics/first-principles-a-harsh-reminder.md",
+        "date": "2023-01-15",
+        "has_content": true
+      },
+      {
+        "title": "Cold Wallet Explanation: Everything You Need To Know\n",
+        "path": "blog/posts/basics/cold-wallet-explanation-everything-you-need-to-know.md",
+        "date": "2022-12-18",
+        "has_content": true
+      },
+      {
+        "title": "Centralized Exchange (CEX) vs Decentralized Exchange (DEX): What are the Differences?",
+        "path": "blog/posts/basics/centralized-exchange-cex-vs-decentralized-exchange-dex-what-are-the-differences.md",
+        "date": "2022-11-08",
+        "has_content": true
+      },
+      {
+        "title": "What is a DAO (Decentralized Autonomous Organization)?",
+        "path": "blog/posts/basics/what-is-a-dao-decentralized-autonomous-organization.md",
+        "date": "2022-03-15",
+        "has_content": true
+      },
+      {
+        "title": "Is Stablecoin Adoption on the Horizon?",
+        "path": "blog/posts/basics/is-stablecoin-adoption-on-the-horizon.md",
+        "date": "2022-02-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & Blockchain: Tokenomics and Finance",
+        "path": "blog/posts/basics/ergo-blockchain-tokenomics-and-finance.md",
+        "date": "2021-11-05",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & Blockchain: Cryptocurrency Sphere",
+        "path": "blog/posts/basics/ergo-blockchain-cryptocurrency-sphere.md",
+        "date": "2021-10-26",
+        "has_content": true
+      },
+      {
+        "title": "Why Choose Crypto? Blockchain: A Better Way to Bank",
+        "path": "blog/posts/basics/why-choose-crypto-blockchain-a-better-way-to-bank.md",
+        "date": "2021-07-14",
+        "has_content": true
+      },
+      {
+        "title": "Centralized Exchange (CEX) vs Decentralized Exchange (DEX): What are the Differences?\n",
+        "path": "blog/posts/basics/centralized-exchange-cex-vs-decentralized-exchange-dex-what-are-the-differences.md",
+        "date": "2021-07-06",
+        "has_content": true
+      },
+      {
+        "title": " 2021: The Next Battlegrounds for DeFi",
+        "path": "blog/posts/basics/2021-the-next-battlegrounds-for-defi.md",
+        "date": "2020-12-18",
+        "has_content": true
+      },
+      {
+        "title": "The US Election and Blockchain: the Risk of Hard Forks",
+        "path": "blog/posts/basics/the-us-election-and-blockchain-the-risk-of-hard-forks.md",
+        "date": "2020-11-03",
+        "has_content": true
+      },
+      {
+        "title": "What will DeFi look like in 10 years?",
+        "path": "blog/posts/basics/what-will-defi-look-like-in-10-years.md",
+        "date": "2020-10-04",
+        "has_content": true
+      },
+      {
+        "title": "DeFi: Finance, but not always Decentralised?",
+        "path": "blog/posts/basics/defi-finance-but-not-always-decentralised.md",
+        "date": "2020-09-17",
+        "has_content": true
+      },
+      {
+        "title": "Some thoughts about DeFi, Yield Farming and how open systems \u2018should\u2019 be used",
+        "path": "blog/stubs/basics/some-thoughts-about-defi-yield-farming-and-how-open-systems-should-be-used.md",
+        "date": "2020-09-03",
+        "has_content": false
+      },
+      {
+        "title": "Some thoughts about DeFi, Yield Farming and how open systems \u2018should\u2019 be used",
+        "path": "blog/posts/basics/some-thoughts-about-defi-yield-farming-and-how-open-systems-should-be-used.md",
+        "date": "2020-09-03",
+        "has_content": true
+      },
+      {
+        "title": "Introduction to stablecoins",
+        "path": "blog/posts/basics/introduction-to-stablecoins.md",
+        "date": "2020-05-05",
+        "has_content": true
+      },
+      {
+        "title": "A New Quest for Decentralization, Part I: Technical Aspects",
+        "path": "blog/posts/basics/a-new-quest-for-decentralization-part-i-technical-aspects.md",
+        "date": "2019-12-12",
+        "has_content": true
+      }
+    ],
+    "Ecosystem": [
+      {
+        "title": "Bene V2 is Here: Multi-Asset Fundraising, Expanded Wallet Support, and Enhanced UI",
+        "path": "blog/posts/ecosystem/bene-v2-is-here-multi-asset-fundraising-expanded-wallet-support-and-enhanced-ui.md",
+        "date": "2025-11-28",
+        "has_content": true
+      },
+      {
+        "title": "Ecosystem Update: Duckpools Rolls Out V2 Site Preview",
+        "path": "blog/posts/ecosystem/ecosystem-update-duckpools-rolls-out-v2-site-preview.md",
+        "date": "2025-11-26",
+        "has_content": true
+      },
+      {
+        "title": "Machina Finance: Off-Chain Execution, On-Chain Trust",
+        "path": "blog/posts/ecosystem/machina-finance-off-chain-execution-on-chain-trust.md",
+        "date": "2025-09-01",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Rosen Bridge: A New and Better Way to Interact Cross-Chain",
+        "path": "blog/posts/ecosystem/ergos-rosen-bridge-a-new-and-better-way-to-interact-cross-chain.md",
+        "date": "2023-04-04",
+        "has_content": true
+      },
+      {
+        "title": "Spectrum Finance - An Update on Ergo\u2019s Cross-Chain DEX",
+        "path": "blog/posts/ecosystem/spectrum-finance-an-update-on-ergos-cross-chain-dex.md",
+        "date": "2023-03-27",
+        "has_content": true
+      },
+      {
+        "title": "Duckpools: A Lending and Borrowing Protocol on Ergo\n",
+        "path": "blog/posts/ecosystem/duckpools-a-lending-and-borrowing-protocol-on-ergo.md",
+        "date": "2023-01-22",
+        "has_content": true
+      },
+      {
+        "title": "EXLE and WEQNT Cardano Stakepool Launch First Micro Finance Cooperative\n",
+        "path": "blog/posts/ecosystem/exle-and-weqnt-cardano-stakepool-launch-first-micro-finance-cooperative.md",
+        "date": "2022-12-20",
+        "has_content": true
+      },
+      {
+        "title": "zenGate Global Signs Memorandum of Understanding with Sri Lanka Tea Factory Owners Association\n",
+        "path": "blog/posts/ecosystem/zengate-global-signs-memorandum-of-understanding-with-sri-lanka-tea-factory-owne.md",
+        "date": "2022-12-07",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s First Multi-signature Wallet Has Been Launched by Minotaur\n",
+        "path": "blog/posts/ecosystem/ergos-first-multi-signature-wallet-has-been-launched-by-minotaur.md",
+        "date": "2022-11-28",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Launches Rosen Bridge to Cardano\n",
+        "path": "blog/posts/ecosystem/ergo-launches-rosen-bridge-to-cardano.md",
+        "date": "2022-11-13",
+        "has_content": true
+      },
+      {
+        "title": "ErgoLend: The First Loans on Ergo",
+        "path": "blog/posts/ecosystem/ergolend-the-first-loans-on-ergo.md",
+        "date": "2022-08-01",
+        "has_content": true
+      },
+      {
+        "title": "The World\u2019s Most Decentralized Casino is Being Built on Ergo",
+        "path": "blog/posts/ecosystem/the-worlds-most-decentralized-casino-is-being-built-on-ergo.md",
+        "date": "2022-04-20",
+        "has_content": true
+      },
+      {
+        "title": "ErgoLearn on Ergo Raffle",
+        "path": "blog/posts/ecosystem/ergolearn-on-ergo-raffle.md",
+        "date": "2022-01-13",
+        "has_content": true
+      },
+      {
+        "title": "ErgoPad: Ergo\u2019s First IDO Platform",
+        "path": "blog/posts/ecosystem/ergopad-ergos-first-ido-platform.md",
+        "date": "2021-12-14",
+        "has_content": true
+      },
+      {
+        "title": "ErgoDEX Roadmap Updates",
+        "path": "blog/posts/ecosystem/ergodex-roadmap-updates.md",
+        "date": "2021-12-07",
+        "has_content": true
+      },
+      {
+        "title": "Raffle User Interface v2",
+        "path": "blog/posts/ecosystem/raffle-user-interface-v2.md",
+        "date": "2021-12-04",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Use Case: CityCoins",
+        "path": "blog/posts/ecosystem/ergo-use-case-citycoins.md",
+        "date": "2021-11-25",
+        "has_content": true
+      },
+      {
+        "title": "ErgoDEX New UI Launch",
+        "path": "blog/posts/ecosystem/ergodex-new-ui-launch.md",
+        "date": "2021-11-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Raffle",
+        "path": "blog/posts/ecosystem/ergo-raffle.md",
+        "date": "2021-09-02",
+        "has_content": true
+      },
+      {
+        "title": "Initial Coin Offerings on ErgoDEX: Security and Peace of Mind ",
+        "path": "blog/posts/ecosystem/initial-coin-offerings-on-ergodex-security-and-peace-of-mind.md",
+        "date": "2021-08-19",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s AgeUSD Protocol: SigRSV and SigUSD",
+        "path": "blog/posts/ecosystem/ergos-ageusd-protocol-sigrsv-and-sigusd.md",
+        "date": "2021-07-30",
+        "has_content": true
+      },
+      {
+        "title": "ErgoDEX: A Cross Chain Workhorse",
+        "path": "blog/posts/ecosystem/ergodex-a-cross-chain-workhorse.md",
+        "date": "2021-07-21",
+        "has_content": true
+      },
+      {
+        "title": "DeFi Ecosystem",
+        "path": "blog/posts/ecosystem/defi-ecosystem.md",
+        "date": "2021-05-10",
+        "has_content": true
+      },
+      {
+        "title": "ErgoDEX Model - AMM and Order Book Type Exchange",
+        "path": "blog/posts/ecosystem/ergodex-model-amm-and-order-book-type-exchange.md",
+        "date": "2021-04-06",
+        "has_content": true
+      },
+      {
+        "title": "SigmaUSD - Ergo\u2019s Community Deployed Stablecoin Is Live!",
+        "path": "blog/posts/ecosystem/sigmausd-ergos-community-deployed-stablecoin-is-live.md",
+        "date": "2021-02-26",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: How the AgeUSD stablecoin works",
+        "path": "blog/posts/ecosystem/building-ergo-how-the-ageusd-stablecoin-works.md",
+        "date": "2021-02-05",
+        "has_content": true
+      },
+      {
+        "title": "New Ergo Smart DEX Orders with buyback guarantees",
+        "path": "blog/posts/ecosystem/new-ergo-smart-dex-orders-with-buyback-guarantees.md",
+        "date": "2020-12-02",
+        "has_content": true
+      },
+      {
+        "title": "A Local Exchange Trading System On Top Of Ergo",
+        "path": "blog/posts/ecosystem/a-local-exchange-trading-system-on-top-of-ergo.md",
+        "date": "2019-04-22",
+        "has_content": true
+      }
+    ],
+    "Announcements": [
+      {
+        "title": "Rosen Bridge + Bitcoin Runes Is Live",
+        "path": "blog/stubs/announcements/rosen-bridge-bitcoin-runes-is-live.md",
+        "date": "2025-11-26",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Onramper & Banxa Integration: Fiat Access & Off-Ramps",
+        "path": "blog/posts/announcements/ergo-onramper-banxa-integration-fiat-access-off-ramps.md",
+        "date": "2025-06-05",
+        "has_content": true
+      },
+      {
+        "title": "Ergo is now available on MEXC Global",
+        "path": "blog/posts/announcements/ergo-is-now-available-on-mexc-global.md",
+        "date": "2024-04-29",
+        "has_content": true
+      },
+      {
+        "title": "Crowdfunder Announcement: Help Ergo Get Listed on MEXC Exchange",
+        "path": "blog/posts/announcements/crowdfunder-announcement-help-ergo-get-listed-on-mexc-exchange.md",
+        "date": "2023-08-29",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Crowdfund Campaign: Promoting Ergo in Partnership with Bitpanda",
+        "path": "blog/posts/announcements/ergo-crowdfund-campaign-promoting-ergo-in-partnership-with-bitpanda.md",
+        "date": "2023-08-11",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Roadmap: What\u2019s Next Part #3\n\n",
+        "path": "blog/posts/announcements/the-ergo-roadmap-whats-next-part-3.md",
+        "date": "2022-12-05",
+        "has_content": true
+      },
+      {
+        "title": "Bitrue Exchange Officially Lists Ergo\n",
+        "path": "blog/posts/announcements/bitrue-exchange-officially-lists-ergo.md",
+        "date": "2022-11-29",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Roadmap: What\u2019s Next Part #2\n",
+        "path": "blog/posts/announcements/the-ergo-roadmap-whats-next-part-2.md",
+        "date": "2022-11-23",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Roadmap: What\u2019s Next. Part #1\n",
+        "path": "blog/posts/announcements/the-ergo-roadmap-whats-next-part-1.md",
+        "date": "2022-09-25",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Mobile Wallet Officially Listed on iOS App Store\n",
+        "path": "blog/posts/announcements/ergo-mobile-wallet-officially-listed-on-ios-app-store.md",
+        "date": "2022-09-08",
+        "has_content": true
+      },
+      {
+        "title": "Huobi Officially Lists Ergo\n",
+        "path": "blog/posts/announcements/huobi-officially-lists-ergo.md",
+        "date": "2022-09-07",
+        "has_content": true
+      },
+      {
+        "title": "Zelcore Wallet Officially Adds Ergo Token Support\n",
+        "path": "blog/posts/announcements/zelcore-wallet-officially-adds-ergo-token-support.md",
+        "date": "2022-09-06",
+        "has_content": true
+      },
+      {
+        "title": "Roadmap",
+        "path": "blog/posts/announcements/roadmap.md",
+        "date": "2021-11-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & CCX: A New Partnership",
+        "path": "blog/posts/announcements/ergo-ccx-a-new-partnership.md",
+        "date": "2021-11-01",
+        "has_content": true
+      },
+      {
+        "title": "The UTXO Alliance",
+        "path": "blog/posts/announcements/the-utxo-alliance.md",
+        "date": "2021-09-26",
+        "has_content": true
+      },
+      {
+        "title": "ERG is listed on Bitcoin.com!",
+        "path": "blog/stubs/announcements/erg-is-listed-on-bitcoincom.md",
+        "date": "2021-08-05",
+        "has_content": false
+      },
+      {
+        "title": "Happy to announce that an Android wallet is now available on the Google Play store!",
+        "path": "blog/stubs/announcements/happy-to-announce-that-an-android-wallet-is-now-available-on-the-google-play-sto.md",
+        "date": "2021-07-28",
+        "has_content": false
+      },
+      {
+        "title": "Ergo & BPSAA: A Shared Vision of the Future",
+        "path": "blog/posts/announcements/ergo-bpsaa-a-shared-vision-of-the-future.md",
+        "date": "2021-07-28",
+        "has_content": true
+      },
+      {
+        "title": "Grow Ergo",
+        "path": "blog/posts/announcements/grow-ergo.md",
+        "date": "2021-07-01",
+        "has_content": true
+      },
+      {
+        "title": "Introducing the Sigmaverse",
+        "path": "blog/posts/announcements/introducing-the-sigmaverse.md",
+        "date": "2020-12-27",
+        "has_content": true
+      },
+      {
+        "title": "Magnum Wallet to be Suspended \u2013 Transfer Your ERG to Yoroi",
+        "path": "blog/posts/announcements/magnum-wallet-to-be-suspended-transfer-your-erg-to-yoroi.md",
+        "date": "2020-11-11",
+        "has_content": true
+      },
+      {
+        "title": "First steps towards interoperability with Cardano oracles",
+        "path": "blog/posts/announcements/first-steps-towards-interoperability-with-cardano-oracles.md",
+        "date": "2020-11-09",
+        "has_content": true
+      },
+      {
+        "title": "\"EMURGO is pleased to officially announce that EMURGO\u2019s Head of R&D and smart contract developer Robert Kornacki was appointed as a new board member of the Ergo Foundation.\"",
+        "path": "blog/stubs/announcements/emurgo-is-pleased-to-officially-announce-that-emurgos-head-of-rd-and-smart-contr.md",
+        "date": "2020-08-18",
+        "has_content": false
+      },
+      {
+        "title": "Ergo-Emurgo partnership yields new model for oracles",
+        "path": "blog/posts/announcements/ergo-emurgo-partnership-yields-new-model-for-oracles.md",
+        "date": "2020-06-30",
+        "has_content": true
+      },
+      {
+        "title": "Press release: Ergo Foundation partners with Emurgo to research and develop new DeFi solutions",
+        "path": "blog/posts/announcements/press-release-ergo-foundation-partners-with-emurgo-to-research-and-develop-new-d.md",
+        "date": "2020-06-09",
+        "has_content": true
+      },
+      {
+        "title": "Security Audit (by Jean Philippe Aumasson)",
+        "path": "blog/posts/announcements/security-audit-by-jean-philippe-aumasson.md",
+        "date": "2020-01-12",
+        "has_content": true
+      }
+    ],
+    "Mining": [
+      {
+        "title": "Lithos Testnet Launches the Week of November 2",
+        "path": "blog/posts/mining/lithos-testnet-launches-the-week-of-november-2.md",
+        "date": "2025-10-13",
+        "has_content": true
+      },
+      {
+        "title": "Everything You Need to Know About Proof of Work",
+        "path": "blog/posts/mining/everything-you-need-to-know-about-proof-of-work.md",
+        "date": "2024-01-04",
+        "has_content": true
+      },
+      {
+        "title": "What is a Mining Rig? - Comprehensive Guide",
+        "path": "blog/posts/mining/what-is-a-mining-rig-comprehensive-guide.md",
+        "date": "2022-11-06",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: After the Ethereum Merge\n",
+        "path": "blog/posts/mining/ergo-after-the-ethereum-merge.md",
+        "date": "2022-09-26",
+        "has_content": true
+      },
+      {
+        "title": "Merge Update: F2Pool Supports Ergo Mining\n",
+        "path": "blog/posts/mining/merge-update-f2pool-supports-ergo-mining.md",
+        "date": "2022-09-12",
+        "has_content": true
+      },
+      {
+        "title": "Ethereum Mining Community and GPU Miners: The Case for Ergo After The Merge\n",
+        "path": "blog/posts/mining/ethereum-mining-community-and-gpu-miners-the-case-for-ergo-after-the-merge.md",
+        "date": "2022-07-18",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Reemission Vote EIP27: A Path to Sustained Growth?",
+        "path": "blog/posts/mining/ergos-reemission-vote-eip27-a-path-to-sustained-growth.md",
+        "date": "2022-05-04",
+        "has_content": true
+      },
+      {
+        "title": "Mining Ergo on HiveOS",
+        "path": "blog/posts/mining/mining-ergo-on-hiveos.md",
+        "date": "2022-03-22",
+        "has_content": true
+      },
+      {
+        "title": "Mining Ergo on Windows",
+        "path": "blog/posts/mining/mining-ergo-on-windows.md",
+        "date": "2022-03-17",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Mining Rewards: The First Drop in Emission",
+        "path": "blog/posts/mining/ergo-mining-rewards-the-first-drop-in-emission.md",
+        "date": "2022-01-04",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Mining: Tools Of Decentralization",
+        "path": "blog/posts/mining/ergo-mining-tools-of-decentralization.md",
+        "date": "2021-12-23",
+        "has_content": true
+      },
+      {
+        "title": "Ergo SmartPools and Decentralized Mining",
+        "path": "blog/posts/mining/ergo-smartpools-and-decentralized-mining.md",
+        "date": "2021-11-19",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Mining: Be A Part Of Our Growing Network",
+        "path": "blog/posts/mining/ergo-mining-be-a-part-of-our-growing-network.md",
+        "date": "2021-08-24",
+        "has_content": true
+      },
+      {
+        "title": "Lots of improvements and fixes for AMD GPU & CPU miner for Autolykos v2",
+        "path": "blog/stubs/mining/lots-of-improvements-and-fixes-for-amd-gpu-cpu-miner-for-autolykos-v2.md",
+        "date": "2021-02-09",
+        "has_content": false
+      },
+      {
+        "title": "Nanominer v3.2.0 / release 05.02.21",
+        "path": "blog/stubs/mining/nanominer-v320-release-050221.md",
+        "date": "2021-02-06",
+        "has_content": false
+      },
+      {
+        "title": "\"You can mine ERGO coin with us after \"The Hardening\" protocol upgrade at block 417,792 around 16:00 February 2th\"",
+        "path": "blog/stubs/mining/you-can-mine-ergo-coin-with-us-after-the-hardening-protocol-upgrade-at-block-417.md",
+        "date": "2021-02-02",
+        "has_content": false
+      },
+      {
+        "title": "Ergo update, 14 May 2020: New exchange, wallet and first mining pool with collaterals!",
+        "path": "blog/posts/mining/ergo-update-14-may-2020-new-exchange-wallet-and-first-mining-pool-with-collatera.md",
+        "date": "2020-05-14",
+        "has_content": true
+      },
+      {
+        "title": "Mining Ergo for Fun and Profit",
+        "path": "blog/posts/mining/mining-ergo-for-fun-and-profit.md",
+        "date": "2019-12-28",
+        "has_content": true
+      },
+      {
+        "title": "Mining ERGO on AMD Cards",
+        "path": "blog/posts/mining/mining-ergo-on-amd-cards.md",
+        "date": "2019-08-07",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Withdrawal",
+        "path": "blog/posts/mining/ergo-withdrawal.md",
+        "date": "2019-07-03",
+        "has_content": true
+      },
+      {
+        "title": "Joining the Ergo main network at the very beginning",
+        "path": "blog/posts/mining/joining-the-ergo-main-network-at-the-very-beginning.md",
+        "date": "2019-06-28",
+        "has_content": true
+      },
+      {
+        "title": "How to mine Ergo on Windows(x64)",
+        "path": "blog/posts/mining/how-to-mine-ergo-on-windowsx64.md",
+        "date": "2019-05-07",
+        "has_content": true
+      }
+    ],
+    "Core": [
+      {
+        "title": "Ergo Protocol Reference Client 5.0.10\n",
+        "path": "blog/posts/core/ergo-protocol-reference-client-5010.md",
+        "date": "2023-05-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Protocol Reference Client Upgrade - 5.0.8",
+        "path": "blog/posts/core/ergo-protocol-reference-client-upgrade-508.md",
+        "date": "2023-04-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Reference Client 5.0.7 Released",
+        "path": "blog/stubs/core/ergo-reference-client-507-released.md",
+        "date": "2023-02-15",
+        "has_content": false
+      },
+      {
+        "title": "Ergo Protocol Reference Client 5.0.0: A Commitment to Continued Progress\n",
+        "path": "blog/posts/core/ergo-protocol-reference-client-500-a-commitment-to-continued-progress.md",
+        "date": "2022-10-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Node v.5.0: The Next Evolution of the Ergo Platform\n",
+        "path": "blog/posts/core/ergo-node-v50-the-next-evolution-of-the-ergo-platform.md",
+        "date": "2022-06-13",
+        "has_content": true
+      },
+      {
+        "title": "EIP 0027 Soft Fork Proposal",
+        "path": "blog/stubs/core/eip-0027-soft-fork-proposal.md",
+        "date": "2022-01-12",
+        "has_content": false
+      },
+      {
+        "title": "Tokenomics and Emission",
+        "path": "blog/posts/core/tokenomics-and-emission.md",
+        "date": "2021-03-31",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Mainnet 3.3.3 released",
+        "path": "blog/stubs/core/ergo-platform-mainnet-333-released.md",
+        "date": "2020-09-16",
+        "has_content": false
+      },
+      {
+        "title": "Building Ergo: Lite full nodes",
+        "path": "blog/posts/core/building-ergo-lite-full-nodes.md",
+        "date": "2020-05-08",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Atomic Swaps",
+        "path": "blog/posts/core/building-ergo-atomic-swaps.md",
+        "date": "2020-04-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Mainnet 3.0.2 released",
+        "path": "blog/stubs/core/ergo-mainnet-302-released.md",
+        "date": "2019-07-04",
+        "has_content": false
+      },
+      {
+        "title": "The Ergo Emission Schedule",
+        "path": "blog/posts/core/the-ergo-emission-schedule.md",
+        "date": "2019-05-20",
+        "has_content": true
+      },
+      {
+        "title": "Testnet 2.0.5 released",
+        "path": "blog/stubs/core/testnet-205-released.md",
+        "date": "2019-05-17",
+        "has_content": false
+      },
+      {
+        "title": "Testnet 2.0.3 released",
+        "path": "blog/stubs/core/testnet-203-released.md",
+        "date": "2019-04-02",
+        "has_content": false
+      },
+      {
+        "title": "Testnet 2.0 is live! Smart contracts language updated",
+        "path": "blog/stubs/core/testnet-20-is-live-smart-contracts-language-updated.md",
+        "date": "2019-03-14",
+        "has_content": false
+      }
+    ],
+    "Community": [
+      {
+        "title": "Cryptocurrency Bridges: The Future of Interoperability",
+        "path": "blog/posts/community/cryptocurrency-bridges-the-future-of-interoperability.md",
+        "date": "2023-03-23",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: The Roadmap to Success - Part 4\n",
+        "path": "blog/posts/community/ergo-the-roadmap-to-success-part-4.md",
+        "date": "2023-02-23",
+        "has_content": true
+      },
+      {
+        "title": "DeCo and the Power of Community Initiatives on Ergo",
+        "path": "blog/posts/community/deco-and-the-power-of-community-initiatives-on-ergo.md",
+        "date": "2022-04-21",
+        "has_content": true
+      },
+      {
+        "title": "Ergoitaly.it was born",
+        "path": "blog/posts/community/ergoitalyit-was-born.md",
+        "date": "2022-01-28",
+        "has_content": true
+      },
+      {
+        "title": "Good Whale\u2019s Grant Fund",
+        "path": "blog/posts/community/good-whales-grant-fund.md",
+        "date": "2021-11-02",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Manifesto",
+        "path": "blog/posts/community/the-ergo-manifesto.md",
+        "date": "2021-04-26",
+        "has_content": true
+      },
+      {
+        "title": "Ergo art competition: Winners Announced!",
+        "path": "blog/posts/community/ergo-art-competition-winners-announced.md",
+        "date": "2021-03-18",
+        "has_content": true
+      }
+    ],
+    "DAOs": [
+      {
+        "title": "Ergo Infrastructure DAO: Decentralizing the Backbone of the Ergo Ecosystem",
+        "path": "blog/posts/daos/ergo-infrastructure-dao-decentralizing-the-backbone-of-the-ergo-ecosystem.md",
+        "date": "2025-08-13",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation Announces New Initiative to Accelerate Ecosystem Growth",
+        "path": "blog/posts/daos/ergo-foundation-announces-new-initiative-to-accelerate-ecosystem-growth.md",
+        "date": "2024-07-23",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Foundation",
+        "path": "blog/posts/daos/the-ergo-foundation.md",
+        "date": "2021-01-01",
+        "has_content": true
+      },
+      {
+        "title": "The Sigmanauts Program",
+        "path": "blog/posts/daos/the-sigmanauts-program.md",
+        "date": "2021-01-01",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation is welcoming its new member Mohammad Hassan Samadani ",
+        "path": "blog/stubs/daos/ergo-foundation-is-welcoming-its-new-member-mohammad-hassan-samadani.md",
+        "date": "2020-11-06",
+        "has_content": false
+      },
+      {
+        "title": "Blog Update: We've new Foundation members and contests!",
+        "path": "blog/stubs/daos/blog-update-weve-new-foundation-members-and-contests.md",
+        "date": "2020-07-28",
+        "has_content": false
+      },
+      {
+        "title": "Introducing the Ergo Foundation, a community-driven entity",
+        "path": "blog/stubs/daos/introducing-the-ergo-foundation-a-community-driven-entity.md",
+        "date": "2020-01-17",
+        "has_content": false
+      }
+    ],
+    "Privacy": [
+      {
+        "title": "Ergo and Blockchain: What is Privacy?",
+        "path": "blog/posts/privacy/ergo-and-blockchain-what-is-privacy.md",
+        "date": "2022-04-26",
+        "has_content": true
+      },
+      {
+        "title": "Ergo & Blockchain: Privacy and Security",
+        "path": "blog/posts/privacy/ergo-blockchain-privacy-and-security.md",
+        "date": "2021-12-02",
+        "has_content": true
+      },
+      {
+        "title": "ErgoMixer",
+        "path": "blog/posts/privacy/ergomixer.md",
+        "date": "2021-05-12",
+        "has_content": true
+      },
+      {
+        "title": "DarkFund0 - ZK Fund for privacy applications",
+        "path": "blog/stubs/privacy/darkfund0-zk-fund-for-privacy-applications.md",
+        "date": "2020-11-19",
+        "has_content": false
+      },
+      {
+        "title": "\"Ergomixer v1.0.0 is available for download\"",
+        "path": "blog/stubs/privacy/ergomixer-v100-is-available-for-download.md",
+        "date": "2020-06-19",
+        "has_content": false
+      }
+    ],
+    "Ecosystem, DeFi": [
+      {
+        "title": "DexyGold Beta Hits Ergo Mainnet: A New Standard for On-Chain Gold\n",
+        "path": "blog/posts/ecosystem/dexygold-beta-hits-ergo-mainnet-a-new-standard-for-on-chain-gold.md",
+        "date": "2025-07-15",
+        "has_content": true
+      },
+      {
+        "title": "DexyGold Stablecoin Live on Testnet",
+        "path": "blog/posts/ecosystem/dexygold-stablecoin-live-on-testnet.md",
+        "date": "2024-03-16",
+        "has_content": true
+      },
+      {
+        "title": "Introducing Gluon, the future of stablecoin protocols on Ergo",
+        "path": "blog/posts/ecosystem/introducing-gluon-the-future-of-stablecoin-protocols-on-ergo.md",
+        "date": "2024-03-14",
+        "has_content": true
+      },
+      {
+        "title": "Rosen Bridge Update: Expansion of Watcher Infrastructure",
+        "path": "blog/posts/ecosystem/rosen-bridge-update-expansion-of-watcher-infrastructure.md",
+        "date": "2024-03-12",
+        "has_content": true
+      },
+      {
+        "title": "The Intersection of Blockchain: Rosen Bridge and New Liquidity Pools",
+        "path": "blog/posts/ecosystem/the-intersection-of-blockchain-rosen-bridge-and-new-liquidity-pools.md",
+        "date": "2024-01-25",
+        "has_content": true
+      }
+    ],
+    "Announcements, Tooling": [
+      {
+        "title": "Yoroi to End Support for Ergo Wallet\n",
+        "path": "blog/posts/announcements/yoroi-to-end-support-for-ergo-wallet.md",
+        "date": "2023-01-23",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Watch is now live!",
+        "path": "blog/stubs/announcements/ergo-watch-is-now-live.md",
+        "date": "2021-12-09",
+        "has_content": false
+      },
+      {
+        "title": "Ledger Integration begins",
+        "path": "blog/posts/announcements/ledger-integration-begins.md",
+        "date": "2021-05-07",
+        "has_content": true
+      },
+      {
+        "title": "Smart Contracts for the People",
+        "path": "blog/posts/announcements/smart-contracts-for-the-people.md",
+        "date": "2018-10-19",
+        "has_content": true
+      }
+    ],
+    "Roadmap": [
+      {
+        "title": "Updated 2021 RoadMap From Kushti",
+        "path": "blog/posts/roadmap/updated-2021-roadmap-from-kushti.md",
+        "date": "2021-07-13",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Roadmap",
+        "path": "blog/posts/roadmap/ergo-platform-roadmap.md",
+        "date": "2021-05-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Roadmap for 2020",
+        "path": "blog/posts/roadmap/ergo-platform-roadmap-for-2020.md",
+        "date": "2020-02-02",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Platform Roadmap for 2020",
+        "path": "blog/stubs/roadmap/ergo-platform-roadmap-for-2020.md",
+        "date": "2020-02-02",
+        "has_content": false
+      }
+    ],
+    "Explaining Ergo, Mining": [
+      {
+        "title": "Proof of Work, Energy and Ergo",
+        "path": "blog/posts/explaining-ergo/proof-of-work-energy-and-ergo.md",
+        "date": "2022-03-29",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Explainer: Storage Rent",
+        "path": "blog/posts/explaining-ergo/ergo-explainer-storage-rent.md",
+        "date": "2022-02-18",
+        "has_content": true
+      },
+      {
+        "title": "Storage Rent and the Future of Mining",
+        "path": "blog/posts/explaining-ergo/storage-rent-and-the-future-of-mining.md",
+        "date": "2022-01-27",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Storage rent",
+        "path": "blog/posts/explaining-ergo/building-ergo-storage-rent.md",
+        "date": "2020-04-21",
+        "has_content": true
+      }
+    ],
+    "Tooling, Core": [
+      {
+        "title": "Ergo Reference Client 5.0 Activated\n",
+        "path": "blog/posts/tooling/ergo-reference-client-50-activated.md",
+        "date": "2022-12-07",
+        "has_content": true
+      },
+      {
+        "title": "Babel Fees on Ergo: How-To Guide\n",
+        "path": "blog/posts/tooling/babel-fees-on-ergo-how-to-guide.md",
+        "date": "2022-11-24",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s EIP-0028: ErgoAuth",
+        "path": "blog/posts/tooling/ergos-eip-0028-ergoauth.md",
+        "date": "2022-04-29",
+        "has_content": true
+      },
+      {
+        "title": "DeFi on Ergo: Custom Token Fees",
+        "path": "blog/posts/tooling/defi-on-ergo-custom-token-fees.md",
+        "date": "2022-02-22",
+        "has_content": true
+      }
+    ],
+    "Core, Mining": [
+      {
+        "title": "Ergo\u2019s Block Reward Drops to 9 ERG",
+        "path": "blog/posts/core/ergos-block-reward-drops-to-9-erg.md",
+        "date": "2025-10-03",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Block Reward Drops to 12 ERG\n",
+        "path": "blog/posts/core/ergos-block-reward-drops-to-12-erg.md",
+        "date": "2025-07-07",
+        "has_content": true
+      },
+      {
+        "title": "EIP-27 Re-emission News",
+        "path": "blog/posts/core/eip-27-re-emission-news.md",
+        "date": "2023-05-24",
+        "has_content": true
+      },
+      {
+        "title": "EIP37 Vote Passes\n",
+        "path": "blog/posts/core/eip37-vote-passes.md",
+        "date": "2022-10-04",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Tooling": [
+      {
+        "title": "Ergo\u2019s Oracle Pools V2 - An Innovative Design",
+        "path": "blog/posts/ecosystem/ergos-oracle-pools-v2-an-innovative-design.md",
+        "date": "2023-06-04",
+        "has_content": true
+      },
+      {
+        "title": "ETH/USD Oracle Pool Now on Ergo!",
+        "path": "blog/posts/ecosystem/ethusd-oracle-pool-now-on-ergo.md",
+        "date": "2021-10-28",
+        "has_content": true
+      },
+      {
+        "title": "An ICO Example On Top Of Ergo",
+        "path": "blog/posts/ecosystem/an-ico-example-on-top-of-ergo.md",
+        "date": "2019-04-10",
+        "has_content": true
+      }
+    ],
+    "Basics, Privacy": [
+      {
+        "title": "An Introduction to Privacy and Security in Blockchain",
+        "path": "blog/posts/basics/an-introduction-to-privacy-and-security-in-blockchain.md",
+        "date": "2022-02-17",
+        "has_content": true
+      },
+      {
+        "title": "Ergo: What Are Bitcoin Mixers",
+        "path": "blog/posts/basics/ergo-what-are-bitcoin-mixers.md",
+        "date": "2021-05-19",
+        "has_content": true
+      },
+      {
+        "title": "Blockchain Privacy",
+        "path": "blog/posts/basics/blockchain-privacy.md",
+        "date": "2021-05-01",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Basics": [
+      {
+        "title": "Ergo, Inflation and the Importance of a Store of Value",
+        "path": "blog/posts/explaining-ergo/ergo-inflation-and-the-importance-of-a-store-of-value.md",
+        "date": "2021-11-23",
+        "has_content": true
+      },
+      {
+        "title": "The Evolution of Programmable Money",
+        "path": "blog/posts/explaining-ergo/the-evolution-of-programmable-money.md",
+        "date": "2020-08-20",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: UTXO vs Account",
+        "path": "blog/posts/explaining-ergo/building-ergo-utxo-vs-account.md",
+        "date": "2020-03-03",
+        "has_content": true
+      }
+    ],
+    "Community, DAOs": [
+      {
+        "title": "Ergo Foundation Announces Grant to Support CyberVerse Marketing and Ecosystem Growth",
+        "path": "blog/posts/community/ergo-foundation-announces-grant-to-support-cyberverse-marketing-and-ecosystem-gr.md",
+        "date": "2024-09-16",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Sigmanauts Program",
+        "path": "blog/posts/community/ergos-sigmanauts-program.md",
+        "date": "2023-04-25",
+        "has_content": true
+      },
+      {
+        "title": "The Ergo Foundation Logo Results",
+        "path": "blog/posts/community/the-ergo-foundation-logo-results.md",
+        "date": "2021-11-03",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, NFTs": [
+      {
+        "title": "Newest Ergo NFT Marketplace Gaining the Attention of Ergonauts",
+        "path": "blog/posts/ecosystem/newest-ergo-nft-marketplace-gaining-the-attention-of-ergonauts.md",
+        "date": "2022-04-07",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Auction House V2",
+        "path": "blog/posts/ecosystem/ergo-auction-house-v2.md",
+        "date": "2021-11-11",
+        "has_content": true
+      },
+      {
+        "title": "Announcing the Auction House, NFT Marketplace on Ergo",
+        "path": "blog/posts/ecosystem/announcing-the-auction-house-nft-marketplace-on-ergo.md",
+        "date": "2020-10-16",
+        "has_content": true
+      }
+    ],
+    "Events, Privacy": [
+      {
+        "title": "Ergo Summit: Privacy Event",
+        "path": "blog/posts/events/ergo-summit-privacy-event.md",
+        "date": "2022-02-04",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III: Building Tomorrow's Privacy and Security Tools",
+        "path": "blog/posts/events/ergohack-iii-building-tomorrows-privacy-and-security-tools.md",
+        "date": "2022-01-20",
+        "has_content": true
+      },
+      {
+        "title": "ErgoHack III: Privacy & Security",
+        "path": "blog/posts/events/ergohack-iii-privacy-security.md",
+        "date": "2021-12-22",
+        "has_content": true
+      }
+    ],
+    "Mining, Core": [
+      {
+        "title": "EIP37 Hard Fork\n",
+        "path": "blog/posts/mining/eip37-hard-fork.md",
+        "date": "2022-10-04",
+        "has_content": true
+      },
+      {
+        "title": "A New Era for Ergo: EIP-27 Begins Today\n",
+        "path": "blog/posts/mining/a-new-era-for-ergo-eip-27-begins-today.md",
+        "date": "2022-06-21",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s EIP-27 Rollout",
+        "path": "blog/posts/mining/ergos-eip-27-rollout.md",
+        "date": "2022-05-18",
+        "has_content": true
+      }
+    ],
+    "NFTs": [
+      {
+        "title": "cNFTcon: Ergo on the Mainstage\n",
+        "path": "blog/posts/nfts/cnftcon-ergo-on-the-mainstage.md",
+        "date": "2022-10-18",
+        "has_content": true
+      },
+      {
+        "title": "cNFTcon: Ergo on the Mainstage",
+        "path": "blog/posts/nfts/cnftcon-ergo-on-the-mainstage.md",
+        "date": "2022-10-18",
+        "has_content": true
+      },
+      {
+        "title": "NFTs on Ergo",
+        "path": "blog/posts/nfts/nfts-on-ergo.md",
+        "date": "2020-09-25",
+        "has_content": true
+      }
+    ],
+    "Guides": [
+      {
+        "title": "SigUSD and SigRSV: A How-To Guide",
+        "path": "blog/posts/guides/sigusd-and-sigrsv-a-how-to-guide.md",
+        "date": "2021-09-22",
+        "has_content": true
+      },
+      {
+        "title": "Trading and Staking $ERG in Swop DEX with USDN!",
+        "path": "blog/posts/guides/trading-and-staking-erg-in-swop-dex-with-usdn.md",
+        "date": "2021-05-26",
+        "has_content": true
+      },
+      {
+        "title": "How to buy Ergo",
+        "path": "blog/posts/guides/how-to-buy-ergo.md",
+        "date": "2019-01-03",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Ecosystem": [
+      {
+        "title": "Chainlink Oracles vs. Ergo Oracle Pools",
+        "path": "blog/posts/explaining-ergo/chainlink-oracles-vs-ergo-oracle-pools.md",
+        "date": "2021-04-27",
+        "has_content": true
+      },
+      {
+        "title": "Transcript of the Oracle Pools Q&A session with Robert Kornacki",
+        "path": "blog/posts/explaining-ergo/transcript-of-the-oracle-pools-qa-session-with-robert-kornacki.md",
+        "date": "2020-08-28",
+        "has_content": true
+      }
+    ],
+    "Basics, NFTs, Tutorials": [
+      {
+        "title": "How-to: Minting a Non-Fungible Token (NFT) on the Ergo Blockchain",
+        "path": "blog/posts/basics/how-to-minting-a-non-fungible-token-nft-on-the-ergo-blockchain.md",
+        "date": "2022-03-08",
+        "has_content": true
+      },
+      {
+        "title": "Mint Picture And Audio NFTs On Ergo",
+        "path": "blog/posts/basics/mint-picture-and-audio-nfts-on-ergo.md",
+        "date": "2021-05-18",
+        "has_content": true
+      }
+    ],
+    "Basics, Explaining Ergo": [
+      {
+        "title": "Blockchain and the Case for Ergo",
+        "path": "blog/posts/basics/blockchain-and-the-case-for-ergo.md",
+        "date": "2022-03-03",
+        "has_content": true
+      },
+      {
+        "title": "Ergo\u2019s Vision for DeFi: Ergo vs CBDCs",
+        "path": "blog/posts/basics/ergos-vision-for-defi-ergo-vs-cbdcs.md",
+        "date": "2020-08-17",
+        "has_content": true
+      }
+    ],
+    "Announcements, Privacy": [
+      {
+        "title": "Announcing the ZK Treasury on Ergo!",
+        "path": "blog/posts/announcements/announcing-the-zk-treasury-on-ergo.md",
+        "date": "2020-09-04",
+        "has_content": true
+      },
+      {
+        "title": "Introducing \u03a33 \u2013 ErgoMixer",
+        "path": "blog/posts/announcements/introducing-\u03c33-ergomixer.md",
+        "date": "2020-03-16",
+        "has_content": true
+      }
+    ],
+    "DAOs, Announcements": [
+      {
+        "title": "The Ergo Foundation's Path to a Robust Digital Ecosystem",
+        "path": "blog/posts/daos/the-ergo-foundations-path-to-a-robust-digital-ecosystem.md",
+        "date": "2023-10-08",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation Makes Key dApp Infrastructure Grant ",
+        "path": "blog/posts/daos/ergo-foundation-makes-key-dapp-infrastructure-grant.md",
+        "date": "2020-11-17",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Privacy": [
+      {
+        "title": "Bitcoin Taproot Upgrade and Ergo\u2019s Sigma Protocols",
+        "path": "blog/posts/explaining-ergo/bitcoin-taproot-upgrade-and-ergos-sigma-protocols.md",
+        "date": "2021-11-17",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Sigma protocols",
+        "path": "blog/posts/explaining-ergo/building-ergo-sigma-protocols.md",
+        "date": "2020-03-16",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Tooling": [
+      {
+        "title": "Building Ergo: SPV security",
+        "path": "blog/posts/explaining-ergo/building-ergo-spv-security.md",
+        "date": "2020-05-01",
+        "has_content": true
+      },
+      {
+        "title": "Building Ergo: Oracles",
+        "path": "blog/posts/explaining-ergo/building-ergo-oracles.md",
+        "date": "2020-04-23",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Announcements": [
+      {
+        "title": "Rosen Bridge Goes Live on Mainnet\n",
+        "path": "blog/posts/ecosystem/rosen-bridge-goes-live-on-mainnet.md",
+        "date": "2023-03-27",
+        "has_content": true
+      },
+      {
+        "title": "LETS start the discussion",
+        "path": "blog/posts/ecosystem/lets-start-the-discussion.md",
+        "date": "2021-07-01",
+        "has_content": true
+      }
+    ],
+    "Announcements, Events": [
+      {
+        "title": "Ergo community launches its first hackathon ERGOHACK ",
+        "path": "blog/posts/announcements/ergo-community-launches-its-first-hackathon-ergohack.md",
+        "date": "2021-06-04",
+        "has_content": true
+      },
+      {
+        "title": "Bearwhale Saga",
+        "path": "blog/posts/announcements/bearwhale-saga.md",
+        "date": "2021-05-13",
+        "has_content": true
+      }
+    ],
+    "Events, Mining": [
+      {
+        "title": "Ergohack 9: Innovations in UI/UX and Mining \u2013 Meet the Visionary Winners!",
+        "path": "blog/posts/events/ergohack-9-innovations-in-uiux-and-mining-meet-the-visionary-winners.md",
+        "date": "2024-12-09",
+        "has_content": true
+      },
+      {
+        "title": "Ergo Foundation Announces ErgoHack V: Mining and Minting\n",
+        "path": "blog/posts/events/ergo-foundation-announces-ergohack-v-mining-and-minting.md",
+        "date": "2022-09-01",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Events": [
+      {
+        "title": "Ergo's Extended UTXO and the Rise of Artificial Economic Intelligence",
+        "path": "blog/posts/explaining-ergo/ergos-extended-utxo-and-the-rise-of-artificial-economic-intelligence.md",
+        "date": "2025-05-12",
+        "has_content": true
+      },
+      {
+        "title": "Use Cases For Ergo As A Smart Layer For Bitcoin",
+        "path": "blog/posts/explaining-ergo/use-cases-for-ergo-as-a-smart-layer-for-bitcoin.md",
+        "date": "2024-05-16",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Basics": [
+      {
+        "title": "Sigma Finance: A Peer-to-Peer Bond Protocol\n",
+        "path": "blog/posts/ecosystem/sigma-finance-a-peer-to-peer-bond-protocol.md",
+        "date": "2023-01-24",
+        "has_content": true
+      },
+      {
+        "title": "Earning ERG in 2023 and Beyond\n",
+        "path": "blog/posts/ecosystem/earning-erg-in-2023-and-beyond.md",
+        "date": "2022-12-29",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, DAOs": [
+      {
+        "title": "Paideia - A DAO Management Software Suite",
+        "path": "blog/posts/ecosystem/paideia-a-dao-management-software-suite.md",
+        "date": "2023-04-08",
+        "has_content": true
+      },
+      {
+        "title": "Paideia: A Secure, Easy to Use DAO",
+        "path": "blog/posts/ecosystem/paideia-a-secure-easy-to-use-dao.md",
+        "date": "2022-07-06",
+        "has_content": true
+      }
+    ],
+    "Core, Explaining Ergo, Tooling": [
+      {
+        "title": "ChainCash: Money That Carries Its Own Story",
+        "path": "blog/posts/core/chaincash-money-that-carries-its-own-story.md",
+        "date": "2025-09-23",
+        "has_content": true
+      },
+      {
+        "title": "Sigma 6.0: A Smarter, More Flexible Ergo",
+        "path": "blog/posts/core/sigma-60-a-smarter-more-flexible-ergo.md",
+        "date": "2025-07-23",
+        "has_content": true
+      }
+    ],
+    "Ecosystem Announcement": [
+      {
+        "title": "Ecosystem Spotlight: USE, a Universal Stablecoin for Ergo",
+        "path": "blog/posts/ecosystem-announcement/ecosystem-spotlight-use-a-universal-stablecoin-for-ergo.md",
+        "date": "2025-11-24",
+        "has_content": true
+      },
+      {
+        "title": "Rosen Bridge Nears Bitcoin Runes Launch",
+        "path": "blog/posts/ecosystem-announcement/rosen-bridge-nears-bitcoin-runes-launch.md",
+        "date": "2025-11-23",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, NFTs, DeFi": [
+      {
+        "title": "Mew Finance: A Playful DeFi Toolkit for the Ergo Ecosystem",
+        "path": "blog/posts/ecosystem/mew-finance-a-playful-defi-toolkit-for-the-ergo-ecosystem.md",
+        "date": "2025-08-12",
+        "has_content": true
+      },
+      {
+        "title": "Auction House V3 Launches on Mainnet",
+        "path": "blog/posts/ecosystem/auction-house-v3-launches-on-mainnet.md",
+        "date": "2023-06-12",
+        "has_content": true
+      }
+    ],
+    "Basics, NFTs": [
+      {
+        "title": "NFTs Beyond Art: Tokenizing Real-World Assets for Global Accessibility",
+        "path": "blog/posts/basics/nfts-beyond-art-tokenizing-real-world-assets-for-global-accessibility.md",
+        "date": "2023-10-12",
+        "has_content": true
+      },
+      {
+        "title": "Ergo and NFTs: Revolutionizing Ownership in the Digital World",
+        "path": "blog/posts/basics/ergo-and-nfts-revolutionizing-ownership-in-the-digital-world.md",
+        "date": "2023-09-05",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, DeFi, Rosen": [
+      {
+        "title": "Rosen Bridge Updates: Launch Expected Within 1-2 Weeks",
+        "path": "blog/posts/ecosystem/rosen-bridge-updates-launch-expected-within-1-2-weeks.md",
+        "date": "2023-11-20",
+        "has_content": true
+      },
+      {
+        "title": "Rosen Bridge Token Launch",
+        "path": "blog/posts/ecosystem/rosen-bridge-token-launch.md",
+        "date": "2023-11-01",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Privacy": [
+      {
+        "title": "A Trustless Local Exchange Trading System",
+        "path": "blog/posts/ecosystem/a-trustless-local-exchange-trading-system.md",
+        "date": "2019-05-29",
+        "has_content": true
+      }
+    ],
+    "Events, Community": [
+      {
+        "title": "The Ergo Cast: Understanding Ergo One Episode At A Time",
+        "path": "blog/posts/events/the-ergo-cast-understanding-ergo-one-episode-at-a-time.md",
+        "date": "2019-12-16",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Explaining Ergo": [
+      {
+        "title": "Ergo\u2019s Oracle Pools, and what they mean for the ecosystem",
+        "path": "blog/posts/ecosystem/ergos-oracle-pools-and-what-they-mean-for-the-ecosystem.md",
+        "date": "2020-08-31",
+        "has_content": true
+      }
+    ],
+    "Announcements, NFTs": [
+      {
+        "title": "Introducing the \u2018Ergonaut\u2019: the Ergo Foundation NFT sale!",
+        "path": "blog/posts/announcements/introducing-the-ergonaut-the-ergo-foundation-nft-sale.md",
+        "date": "2020-11-17",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Use Case": [
+      {
+        "title": "Ergo use case: Local Exchange Trading System (LETS)",
+        "path": "blog/posts/explaining-ergo/ergo-use-case-local-exchange-trading-system-lets.md",
+        "date": "2020-04-02",
+        "has_content": true
+      }
+    ],
+    "Basics, Tooling": [
+      {
+        "title": "UTXO Model Transaction",
+        "path": "blog/posts/basics/utxo-model-transaction.md",
+        "date": "2021-10-07",
+        "has_content": true
+      }
+    ],
+    "Announcements, Ecosystem": [
+      {
+        "title": "ErgoDEX Beta - Everything you need to know",
+        "path": "blog/posts/announcements/ergodex-beta-everything-you-need-to-know.md",
+        "date": "2021-08-11",
+        "has_content": true
+      }
+    ],
+    "Mining, explainers": [
+      {
+        "title": "Mining in Logarithmic Space: NIPoPoW Power and Ergo",
+        "path": "blog/posts/mining/mining-in-logarithmic-space-nipopow-power-and-ergo.md",
+        "date": "2021-07-19",
+        "has_content": true
+      }
+    ],
+    "Community, Announcements": [
+      {
+        "title": "The Ergonaut Handbook",
+        "path": "blog/posts/community/the-ergonaut-handbook.md",
+        "date": "2021-08-04",
+        "has_content": true
+      }
+    ],
+    "Basics, DAOs": [
+      {
+        "title": "What is a Decentralized Autonomous Organization (DAO) and How can it benefit you?",
+        "path": "blog/posts/basics/what-is-a-decentralized-autonomous-organization-dao-and-how-can-it-benefit-you.md",
+        "date": "2022-12-27",
+        "has_content": true
+      }
+    ],
+    "Announcements, Ecosystem, Community": [
+      {
+        "title": "Finding The Right Balance",
+        "path": "blog/posts/announcements/finding-the-right-balance.md",
+        "date": "2021-03-04",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, NFTs": [
+      {
+        "title": "Ergo: New Standard For NFTs",
+        "path": "blog/posts/explaining-ergo/ergo-new-standard-for-nfts.md",
+        "date": "2021-11-01",
+        "has_content": true
+      }
+    ],
+    "Events, Ecosystem": [
+      {
+        "title": "ErgoHack Wonders: The Ergo Raffle",
+        "path": "blog/posts/events/ergohack-wonders-the-ergo-raffle.md",
+        "date": "2021-11-30",
+        "has_content": true
+      }
+    ],
+    "Tooling, Ecosystem": [
+      {
+        "title": "Ergo Watch: A Platform for On-Chain Analysis",
+        "path": "blog/posts/tooling/ergo-watch-a-platform-for-on-chain-analysis.md",
+        "date": "2021-12-09",
+        "has_content": true
+      }
+    ],
+    "Privacy, Tooling": [
+      {
+        "title": "Decentralized Finance and Optional Privacy on Ergo",
+        "path": "blog/posts/privacy/decentralized-finance-and-optional-privacy-on-ergo.md",
+        "date": "2022-02-01",
+        "has_content": true
+      }
+    ],
+    "Basics, Privacy, Tooling": [
+      {
+        "title": "Smart Contracts: Protection for Digital Identity and Crowdfunding",
+        "path": "blog/posts/basics/smart-contracts-protection-for-digital-identity-and-crowdfunding.md",
+        "date": "2022-02-10",
+        "has_content": true
+      }
+    ],
+    "Mining, Ecosystem": [
+      {
+        "title": "Mining Pool Innovation: Lithos Protocol Part 1",
+        "path": "blog/posts/mining/mining-pool-innovation-lithos-protocol-part-1.md",
+        "date": "2023-03-13",
+        "has_content": true
+      }
+    ],
+    "Tutorials, Community, Ecosystem, DeFi": [
+      {
+        "title": "Earning With The Rosen Bridge",
+        "path": "blog/posts/tutorials/earning-with-the-rosen-bridge.md",
+        "date": "2024-08-08",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Mining ": [
+      {
+        "title": "Ergo and the Autolykos Consensus Mechanism: Part I\n",
+        "path": "blog/posts/explaining-ergo/ergo-and-the-autolykos-consensus-mechanism-part-i.md",
+        "date": "2022-05-30",
+        "has_content": true
+      }
+    ],
+    "Tooling, Announcements": [
+      {
+        "title": "Ergo for Android Released",
+        "path": "blog/posts/tooling/ergo-for-android-released.md",
+        "date": "2021-07-29",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Announcements, DeFi, Rosen": [
+      {
+        "title": "Rosen Bridge Officially Launches on Ergo Mainnet",
+        "path": "blog/posts/ecosystem/rosen-bridge-officially-launches-on-ergo-mainnet.md",
+        "date": "2023-12-03",
+        "has_content": true
+      }
+    ],
+    "Mining, Ecosystem, DeFi": [
+      {
+        "title": "Mining Pool Innovation: Lithos Protocol Part II\n",
+        "path": "blog/posts/mining/mining-pool-innovation-lithos-protocol-part-ii.md",
+        "date": "2023-04-13",
+        "has_content": true
+      }
+    ],
+    "explaining ergo tooling core": [
+      {
+        "title": "GitCircles and Ergo: Fair Rewards for Open Source Contributions",
+        "path": "blog/posts/explaining-ergo-tooling-core/gitcircles-and-ergo-fair-rewards-for-open-source-contributions.md",
+        "date": "2025-10-12",
+        "has_content": true
+      }
+    ],
+    "Events, Core, Mining": [
+      {
+        "title": "Ergo\u2019s Emission Schedule: Latest Block Reduction",
+        "path": "blog/posts/events/ergos-emission-schedule-latest-block-reduction.md",
+        "date": "2024-02-28",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Tooling, Mining": [
+      {
+        "title": "Ergo and The Autolykos Consensus Mechanism: Part II\n",
+        "path": "blog/posts/explaining-ergo/ergo-and-the-autolykos-consensus-mechanism-part-ii.md",
+        "date": "2022-06-20",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Mining, DeFi": [
+      {
+        "title": "Lithos: Decentralizing Mining with On-Chain Pools",
+        "path": "blog/posts/ecosystem/lithos-decentralizing-mining-with-on-chain-pools.md",
+        "date": "2025-07-24",
+        "has_content": true
+      }
+    ],
+    "Tutorials, Ecosystem, DeFi": [
+      {
+        "title": "DeFi Lending and Borrowing: Duckpools",
+        "path": "blog/posts/tutorials/defi-lending-and-borrowing-duckpools.md",
+        "date": "2024-02-15",
+        "has_content": true
+      }
+    ],
+    "Events, Roadmap": [
+      {
+        "title": "Ergoversary: The Last Five Years, And The Next Five",
+        "path": "blog/posts/events/ergoversary-the-last-five-years-and-the-next-five.md",
+        "date": "2024-07-01",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Tooling, Core, Ecosystem": [
+      {
+        "title": "How Sigma Chains Will Bring Bitcoin To Ergo",
+        "path": "blog/posts/explaining-ergo/how-sigma-chains-will-bring-bitcoin-to-ergo.md",
+        "date": "2024-07-15",
+        "has_content": true
+      }
+    ],
+    "Tutorials, Tooling, Core": [
+      {
+        "title": "How To Create Smart Contracts With Ergoscript | Ergo Platform",
+        "path": "blog/posts/tutorials/how-to-create-smart-contracts-with-ergoscript-ergo-platform.md",
+        "date": "2024-02-20",
+        "has_content": true
+      }
+    ],
+    "Core, Tooling": [
+      {
+        "title": "Implementing NiPoPoWs",
+        "path": "blog/posts/core/implementing-nipopows.md",
+        "date": "2024-03-18",
+        "has_content": true
+      }
+    ],
+    "Announcement": [
+      {
+        "title": "Banxa Fiat-Ramp Support Is Live",
+        "path": "blog/posts/announcement/banxa-fiat-ramp-support-is-live.md",
+        "date": "2025-10-22",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Announcement, Explaining Ergo": [
+      {
+        "title": "Bitcoin Runes + Rosen Bridge: A Practical Path for Multi-Chain Fungible Assets",
+        "path": "blog/posts/ecosystem/bitcoin-runes-rosen-bridge-a-practical-path-for-multi-chain-fungible-assets.md",
+        "date": "2025-09-30",
+        "has_content": true
+      }
+    ],
+    "Events, NFTs": [
+      {
+        "title": "The First Ergo NFT Auction Is Under Way!",
+        "path": "blog/posts/events/the-first-ergo-nft-auction-is-under-way.md",
+        "date": "2020-10-19",
+        "has_content": true
+      }
+    ],
+    "Events, Tooling": [
+      {
+        "title": "The Benefits of Building on Ergo",
+        "path": "blog/posts/events/the-benefits-of-building-on-ergo.md",
+        "date": "2023-07-02",
+        "has_content": true
+      }
+    ],
+    "Core Mining": [
+      {
+        "title": "Ergo Block Reward Drops to 6 ERG",
+        "path": "blog/posts/core-mining/ergo-block-reward-drops-to-6-erg.md",
+        "date": "2026-01-02",
+        "has_content": true
+      }
+    ],
+    "Community, Ecosystem, DeFi": [
+      {
+        "title": "Empowering Communities: Interest-Free Loans Drive Economic Growth for Kenyan Cooperative",
+        "path": "blog/posts/community/empowering-communities-interest-free-loans-drive-economic-growth-for-kenyan-coop.md",
+        "date": "2023-06-14",
+        "has_content": true
+      }
+    ],
+    "Privacy, Basics, Explaining Ergo": [
+      {
+        "title": "Privacy on Ergo - A Fundamental Human Right ",
+        "path": "blog/posts/privacy/privacy-on-ergo-a-fundamental-human-right.md",
+        "date": "2023-02-15",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Core": [
+      {
+        "title": "Ergo\u2019s Newest Advancement: Sub Blocks",
+        "path": "blog/posts/explaining-ergo/ergos-newest-advancement-sub-blocks.md",
+        "date": "2023-11-29",
+        "has_content": true
+      }
+    ],
+    "Explaining Ergo, Tooling, Core": [
+      {
+        "title": "Exploring ErgoScript: Ergo\u2019s Native Scripting Language",
+        "path": "blog/posts/explaining-ergo/exploring-ergoscript-ergos-native-scripting-language.md",
+        "date": "2024-03-26",
+        "has_content": true
+      }
+    ],
+    "Core, Announcements": [
+      {
+        "title": "Ergo Platform Enables Babel Fees\n",
+        "path": "blog/posts/core/ergo-platform-enables-babel-fees.md",
+        "date": "2022-11-24",
+        "has_content": true
+      }
+    ],
+    "Community, Privacy, Ecosystem": [
+      {
+        "title": "Security and Privacy Tooling On Ergo\n",
+        "path": "blog/posts/community/security-and-privacy-tooling-on-ergo.md",
+        "date": "2023-02-19",
+        "has_content": true
+      }
+    ],
+    "Mining, Community, DAOs": [
+      {
+        "title": "Ergo Foundation Unveils $24,000 Grant to Empower Mining Community",
+        "path": "blog/posts/mining/ergo-foundation-unveils-24000-grant-to-empower-mining-community.md",
+        "date": "2024-12-01",
+        "has_content": true
+      }
+    ],
+    "Ecosystem, Announcements, DeFi": [
+      {
+        "title": "Rosen Bridge: Binance Smart Chain Integration Goes Live",
+        "path": "blog/posts/ecosystem/rosen-bridge-binance-smart-chain-integration-goes-live.md",
+        "date": "2025-02-27",
+        "has_content": true
+      }
+    ],
+    "DAOs, Ecosystem, DeFi": [
+      {
+        "title": "Shaping Rosen's Future: A Community Call on Five Key Treasury Proposals",
+        "path": "blog/posts/daos/shaping-rosens-future-a-community-call-on-five-key-treasury-proposals.md",
+        "date": "2025-07-09",
+        "has_content": true
+      }
+    ],
+    "Mining, Announcements": [
+      {
+        "title": "Popular PoW miner exchange, Xeggex, secures Ergo listing",
+        "path": "blog/posts/mining/popular-pow-miner-exchange-xeggex-secures-ergo-listing.md",
+        "date": "2024-02-21",
+        "has_content": true
+      }
+    ],
+    "Tutorials": [
+      {
+        "title": "How to set up and configure full Ergo node",
+        "path": "blog/stubs/tutorials/how-to-set-up-and-configure-full-ergo-node.md",
+        "date": "2019-03-17",
+        "has_content": false
+      }
+    ]
+  },
+  "by_year": {
+    "2021": 191,
+    "2019": 80,
+    "2018": 1,
+    "2022": 129,
+    "2020": 175,
+    "2023": 60,
+    "2024": 37,
+    "2025": 27,
+    "2026": 1
+  },
+  "glossary_tag_counts": {
+    "Native tokens": 240,
+    "Transaction": 236,
+    "Box": 181,
+    "Ergo Foundation": 148,
+    "Addresses": 140,
+    "ERGOHACK": 110,
+    "SigmaUSD": 105,
+    "Full node": 101,
+    "Spectrum": 101,
+    "eUTXO": 97,
+    "ErgoScript context": 95,
+    "ErgoScript": 94,
+    "Sigma protocols": 69,
+    "Oracle pools": 66,
+    "Collateral": 60,
+    "NiPoPoW": 58,
+    "ErgoMixer": 54,
+    "Ergo Explorer": 51,
+    "Autolykos": 49,
+    "Rosen Bridge": 45,
+    "Emission schedule": 43,
+    "Layer scaling": 43,
+    "EIP": 40,
+    "Auction House": 38,
+    "Storage rent": 36,
+    "AMM": 36,
+    "ErgoPad": 36,
+    "Registers": 35,
+    "Nautilus": 35,
+    "Ring signatures": 31,
+    "ErgoRaffle": 31,
+    "Soft fork": 26,
+    "Sigmanauts": 25,
+    "Sigma Chains": 24,
+    "IDO": 24,
+    "Atomic swaps": 23,
+    "Multi-stage contracts": 23,
+    "Scorex": 21,
+    "Bootstrapping": 21,
+    "EIP-12": 21,
+    "Fair launch": 19,
+    "EXLE": 19,
+    "ErgoTree": 18,
+    "Paideia": 18,
+    "Minimum transaction fee": 17,
+    "Dexy": 17,
+    "Token ID rule": 16,
+    "Difficulty adjustment": 16,
+    "AppKit": 14,
+    "Mempool": 14,
+    "Duckpools": 14,
+    "Satergo": 13,
+    "SAFEW": 13,
+    "DeCo Education": 12,
+    "ErgoPay": 12,
+    "SPV": 11,
+    "Headless dApp": 11,
+    "Liquidation": 10,
+    "Minotaur Wallet": 10,
+    "Schnorr signatures": 9,
+    "sigma-rust": 9,
+    "SigmaFi": 9,
+    "Data input": 8,
+    "Ergo Playgrounds": 8,
+    "Stealth Addresses": 8,
+    "SkyHarbor": 8,
+    "ChainCash": 8,
+    "ErgoWatch": 7,
+    "Lilium": 7,
+    "SigmaO": 7,
+    "AVL tree": 6,
+    "Context extension": 6,
+    "ErgoNames": 6,
+    "Sigmastate interpreter": 5,
+    "ZeroJoin": 5,
+    "Slippage": 5,
+    "Gluon": 5,
+    "EIP-31": 5,
+    "Phoenix Finance": 5,
+    "MEV": 4,
+    "EIP-22": 4,
+    "EIP-4": 4,
+    "GetBlok Plasma": 4,
+    "Fleet SDK": 4,
+    "Off-chain bot": 4,
+    "LP tokens": 4,
+    "Sigmaspace": 4,
+    "Grid trading": 3,
+    "Ergo GraphQL": 3,
+    "Sub-blocks": 3,
+    "Singleton / State NFT": 2,
+    "Node modes": 2,
+    "UTXO Set Snapshot": 2,
+    "Covert Addresses": 2,
+    "FlowCards": 2,
+    "Token burning": 2,
+    "EIP-24": 2,
+    "Cyberverse": 2,
+    "Mew Finance": 2,
+    "Constant segregation": 1,
+    "Kiosk": 1,
+    "State machine": 1,
+    "CruxFinance": 1,
+    "EIP-6": 1,
+    "Machina Finance": 1,
+    "ErgoAuth": 1,
+    "Off the Grid": 1,
+    "DORT": 1,
+    "EIP-34": 1,
+    "ergo-python-appkit": 1,
+    "TokenJay": 1
+  }
+}
