@@ -1,20 +1,49 @@
-import * as lancedb from "@lancedb/lancedb";
 import OpenAI from "openai";
+import fs from "fs";
 import path from "path";
 
-const VECTORDB_PATH = path.join(process.cwd(), "..", "vectordb");
-const TABLE_NAME = "ekb_chunks";
+const DATA_DIR = path.join(process.cwd(), "data");
 const EMBED_MODEL = "text-embedding-3-small";
 const EMBED_DIM = 1024;
 
-let dbConnection: lancedb.Connection | null = null;
+// In-memory index — loaded once on cold start
+let vectors: Float32Array | null = null;
+let metadata: ChunkMeta[] | null = null;
 let openaiClient: OpenAI | null = null;
 
-async function getDb(): Promise<lancedb.Connection> {
-  if (!dbConnection) {
-    dbConnection = await lancedb.connect(VECTORDB_PATH);
+interface ChunkMeta {
+  file_path: string;
+  title: string;
+  category: string;
+  project: string;
+  tags: string;
+  text: string;
+  tokens: number;
+  chunk_index: number;
+}
+
+function loadIndex(): { vectors: Float32Array; metadata: ChunkMeta[] } {
+  if (vectors && metadata) {
+    return { vectors, metadata };
   }
-  return dbConnection;
+
+  const vectorsBuf = fs.readFileSync(path.join(DATA_DIR, "vectors.bin"));
+  vectors = new Float32Array(
+    vectorsBuf.buffer,
+    vectorsBuf.byteOffset,
+    vectorsBuf.byteLength / 4
+  );
+
+  const metaJson = fs.readFileSync(
+    path.join(DATA_DIR, "metadata.json"),
+    "utf-8"
+  );
+  metadata = JSON.parse(metaJson);
+
+  const numChunks = metadata!.length;
+  console.log(`Loaded ${numChunks} chunks (${(vectorsBuf.byteLength / 1024 / 1024).toFixed(1)} MB vectors)`);
+
+  return { vectors, metadata: metadata! };
 }
 
 function getOpenAI(): OpenAI {
@@ -28,14 +57,31 @@ function getOpenAI(): OpenAI {
   return openaiClient;
 }
 
-async function embedQuery(query: string): Promise<number[]> {
+async function embedQuery(query: string): Promise<Float32Array> {
   const client = getOpenAI();
   const response = await client.embeddings.create({
     model: EMBED_MODEL,
     input: query,
     dimensions: EMBED_DIM,
   });
-  return response.data[0].embedding;
+  return new Float32Array(response.data[0].embedding);
+}
+
+/**
+ * Cosine similarity between a query vector and the i-th stored vector.
+ * Vectors are assumed to be normalized (OpenAI embeddings are unit-length).
+ */
+function cosineSim(
+  query: Float32Array,
+  allVectors: Float32Array,
+  index: number
+): number {
+  const offset = index * EMBED_DIM;
+  let dot = 0;
+  for (let j = 0; j < EMBED_DIM; j++) {
+    dot += query[j] * allVectors[offset + j];
+  }
+  return dot; // For unit vectors, dot product = cosine similarity
 }
 
 export interface SearchResult {
@@ -54,66 +100,67 @@ export async function searchDocs(
   category?: string,
   limit: number = 5
 ): Promise<SearchResult[]> {
-  const db = await getDb();
-  const table = await db.openTable(TABLE_NAME);
-  const queryVector = await embedQuery(query);
+  const { vectors: vecs, metadata: meta } = loadIndex();
+  const queryVec = await embedQuery(query);
+  const numChunks = meta.length;
 
-  let search = table.search(queryVector).limit(limit * 2); // over-fetch for filtering
+  // Compute similarities
+  const scores: { index: number; sim: number }[] = new Array(numChunks);
+  for (let i = 0; i < numChunks; i++) {
+    scores[i] = { index: i, sim: cosineSim(queryVec, vecs, i) };
+  }
 
-  const results = await search.toArray();
-
-  let filtered = results.map((r: Record<string, unknown>) => ({
-    file_path: r.file_path as string,
-    title: r.title as string,
-    category: r.category as string,
-    project: r.project as string,
-    tags: r.tags as string,
-    text: r.text as string,
-    tokens: r.tokens as number,
-    _distance: r._distance as number,
-  }));
+  // Sort descending by similarity
+  scores.sort((a, b) => b.sim - a.sim);
 
   // Filter by category if specified
+  let candidates = scores;
   if (category) {
-    filtered = filtered.filter(
-      (r) => r.category.toLowerCase() === category.toLowerCase()
+    candidates = scores.filter(
+      (s) => meta[s.index].category.toLowerCase() === category.toLowerCase()
     );
   }
 
   // Deduplicate by file_path (keep best chunk per doc)
   const seen = new Set<string>();
-  const deduped: SearchResult[] = [];
-  for (const r of filtered) {
-    if (!seen.has(r.file_path) && deduped.length < limit) {
-      seen.add(r.file_path);
-      deduped.push(r);
+  const results: SearchResult[] = [];
+  for (const s of candidates) {
+    const m = meta[s.index];
+    if (!seen.has(m.file_path) && results.length < limit) {
+      seen.add(m.file_path);
+      results.push({
+        file_path: m.file_path,
+        title: m.title,
+        category: m.category,
+        project: m.project,
+        tags: m.tags,
+        text: m.text,
+        tokens: m.tokens,
+        _distance: 1 - s.sim, // Convert similarity to distance for compatibility
+      });
     }
   }
 
-  return deduped;
+  return results;
 }
 
 export async function listProjects(): Promise<
   { project: string; title: string; category: string; file_path: string }[]
 > {
-  const db = await getDb();
-  const table = await db.openTable(TABLE_NAME);
-  const all = await table.search([0]).limit(5000).toArray();
+  const { metadata: meta } = loadIndex();
 
-  // Get unique projects from chunk_index 0 (first chunk = overview)
   const projects = new Map<
     string,
     { project: string; title: string; category: string; file_path: string }
   >();
 
-  for (const r of all as Record<string, unknown>[]) {
-    const project = r.project as string;
-    if (project && !projects.has(project)) {
-      projects.set(project, {
-        project,
-        title: r.title as string,
-        category: r.category as string,
-        file_path: r.file_path as string,
+  for (const m of meta) {
+    if (m.project && !projects.has(m.project)) {
+      projects.set(m.project, {
+        project: m.project,
+        title: m.title,
+        category: m.category,
+        file_path: m.file_path,
       });
     }
   }
