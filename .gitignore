@@ -2,6 +2,10 @@
 Ergo_Core_Protocol_SDKs.md
 ergodocs_chat.md
 
+# Community archives — moving to ergo-transcripts repo
+forum/
+blog/
+
 # Old git clone cache — no longer used (script now uses GitHub API)
 .repo-cache/
 
