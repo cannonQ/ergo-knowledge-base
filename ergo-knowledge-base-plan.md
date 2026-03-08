@@ -74,6 +74,8 @@ ergo-knowledge-base/
 │   │   │   └── endpoints/            # One file per endpoint
 │   │   ├── explorer-api/
 │   │   ├── graphql-schema/
+│   │   ├── avl-tree-rust/             # Rust AVL+ tree implementation
+│   │   ├── ergoscript-by-example/     # 13 annotated ErgoScript contract examples
 │   │   ├── eips/                     # One file per EIP (auto-generated from ergoplatform/eips)
 │   │   │   ├── eip-0004.md           # Asset standard
 │   │   │   ├── eip-0012.md           # dApp connector
@@ -110,6 +112,8 @@ ergo-knowledge-base/
 │   │   ├── python/
 │   │   │   ├── ergo-lib-python.md    # Recommended: direct sigma-rust bindings
 │   │   │   └── ergpy.md              # Older JPype-based wrapper
+│   │   ├── ergo-node-interface-rust/  # Rust node interaction library
+│   │   ├── ergo-utilities-rust/      # Off-chain Rust utilities
 │   │   ├── mosaik/                   # UI framework for mobile dApps
 │   │   └── sigma-js/                 # ErgoScript compiler (JS/WASM via Scala.js)
 │   └── ecosystem/                   # dApp docs (auto-generated from repos)
@@ -158,22 +162,19 @@ ergo-knowledge-base/
 │       ├── babel-fees.md             # EIP-31 — pay tx fees in non-ERG tokens
 │       └── grid-trading.md           # On-chain grid order contracts
 │
-├── forum/                           # ✅ ErgoForum archive (Discourse scrape)
+├── forum/                           # ✅ ErgoForum archive (Discourse scrape, curated 677 topics)
 │   ├── .gitignore                    # Excludes raw/ JSON cache
-│   ├── forum-index.md                # Category + glossary-tag clustered index
-│   ├── forum-index.json              # Machine-readable index
+│   ├── forum-index.md                # Category + glossary-tag clustered index (top 25/category)
 │   └── topics/                       # Markdown per topic, organized by category
 │       ├── announcements/
-│       ├── support/
 │       ├── dev/
 │       ├── community/
 │       ├── mining/
 │       └── uncategorized/
 │
-├── blog/                            # ✅ Ergo Platform blog archive (Strapi CMS)
+├── blog/                            # ✅ Ergo Platform blog archive (Strapi CMS, 695 posts)
 │   ├── .gitignore                    # Excludes raw/ JSON cache
-│   ├── blog-index.md                 # Tag + year + glossary-tag clustered index
-│   ├── blog-index.json               # Machine-readable index
+│   ├── blog-index.md                 # Tag + year + glossary-tag clustered index (top 10/tag)
 │   ├── posts/                        # Full-content posts by blog tag
 │   │   ├── core/
 │   │   ├── tooling/
@@ -214,12 +215,20 @@ ergo-knowledge-base/
 │
 ├── scripts/                          # Processing pipelines
 │   ├── generate_glossary_tiers.py    # ✅ BUILT — derives compact + alias tiers from master
-│   ├── process_telegram.py
+│   ├── telegram-pipeline/            # ✅ BUILT — 5 scripts, copied from ~/ergo-telegram/pipeline
+│   │   ├── process_telegram.py       #   Weekly segment processor
+│   │   ├── generate_monthly.py       #   Rolls weekly → monthly summaries
+│   │   ├── batch_api.py              #   Anthropic batch API client
+│   │   ├── claude_prompts.py         #   Prompt templates
+│   │   └── generate_index.py         #   Topic index builder
 │   ├── adapt_video_output.py         # Adapter for existing video pipeline
 │   ├── clone_and_process_repos.py    # Ecosystem code extraction + LLM docs
+│   ├── scrape_ergoforum.py           # ✅ BUILT — Discourse API scraper (350 lines)
+│   ├── scrape_ergo_blog.py           # ✅ BUILT — Strapi CMS API scraper (290 lines)
+│   ├── build_topic_index.py          # ✅ BUILT — cross-month topic map
 │   ├── generate_embeddings.py
 │   ├── generate_llms_txt.py
-│   └── ecosystem_repos.yaml          # Catalog of repos to process
+│   └── ecosystem_repos.yaml          # Catalog of 55 repos to process
 │
 ├── vectordb/                         # LanceDB data (file-based, lives in repo)
 │   └── .gitkeep
@@ -1000,8 +1009,10 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 - [ ] Run full embedding generation across all content — script ready, needs Ollama + BGE-M3 setup
 - [ ] Human review: scan 10-15 Telegram summaries, 5 video transcripts, 10 ecosystem contract docs
 - [x] Generate all 14 cross-cutting pattern docs (EIP-12, ErgoPay, tx building, headless dApp, singleton NFT, proxy contracts, oracle data, token minting, AMM/LP, Plasma/AVL, etc.) — ✅ Done
-- [x] Scrape ErgoForum archive — ✅ Done. `scrape_ergoforum.py` (350 lines). 1,008 topics, 10K+ posts scraped via Discourse API. Auto-tagged against 544 glossary aliases. Clustered by category + semantic tags. Output: `forum/topics/{category}/`, `forum/forum-index.md`, `forum/forum-index.json`.
-- [x] Scrape Ergo Platform blog archive — ✅ Done. `scrape_ergo_blog.py` (290 lines). 701 posts from Strapi CMS API (397 full-content + 304 external stubs). Auto-tagged against 544 glossary aliases. Clustered by blog tag, year, and glossary concepts. Output: `blog/posts/{tag}/`, `blog/stubs/{tag}/`, `blog/blog-index.md`, `blog/blog-index.json`.
+- [x] Scrape ErgoForum archive — ✅ Done. `scrape_ergoforum.py` (350 lines). 1,008 topics scraped via Discourse API → curated to 677 (dropped 331 support + zero-glossary-hit topics, kept all kushti/armeanio). Auto-tagged against 544 glossary aliases. Output: `forum/topics/{category}/`, `forum/forum-index.md` (top 25/category, lean).
+- [x] Scrape Ergo Platform blog archive — ✅ Done. `scrape_ergo_blog.py` (290 lines). 701 posts from Strapi CMS API (397 full-content + 304 external stubs). Auto-tagged against 544 glossary aliases. Output: `blog/posts/{tag}/`, `blog/stubs/{tag}/`, `blog/blog-index.md` (top 10/tag, lean).
+- [x] Add 4 ergoplatform repos — ✅ Done. ergo-node-interface-rust (sdk), ergo_avltree_rust (reference), ergo-utilities-rust (sdk), ergoscript-by-example (reference). Total repos: 55.
+- [x] Curate indexes for LLM context — ✅ Done. Deleted JSON indexes (forum + blog). Shrunk markdown indexes to fit context windows.
 - [ ] **Video: process batches 6-7** (~6-8 hrs human time)
 
 ### Week 4: Migration + MCP (Human: ~15 hours + video)
@@ -1010,7 +1021,7 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 - [ ] Write the missing SDK comparison guide (human + LLM)
 - [ ] Build MCP server, test with Claude Desktop
 - [ ] Set up GitHub Actions workflows
-- [ ] Fork all 51 ecosystem repos for preservation (strategy TBD: personal account vs dedicated org)
+- [ ] Fork all 55 ecosystem repos for preservation (strategy TBD: personal account vs dedicated org)
 - [ ] **Video: process batches 8-9** (~6-8 hrs human time)
 
 ### Week 5: Polish + Launch (Human: ~10 hours)
@@ -1041,8 +1052,8 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 | Video adapter script | 1-2 | 0 | $0 |
 | Telegram processing (8 years) | 3-5 (review) | ~100 monthly summaries | $2-5 |
 | Video processing (450 videos, 9 batches) | **27-36** (speaker review, spot audit) | ~450 transcripts | ~$50-70 |
-| Ecosystem code processing (51 repos) | 5-8 (review contract docs + patterns) | 242 contract/overview docs + 14 pattern guides | ~$5 |
-| ErgoForum archive (1,008 topics) | 0 | 1,008 topic docs + clustered index | $0 — ✅ Done |
+| Ecosystem code processing (55 repos) | 5-8 (review contract docs + patterns) | 246+ contract/overview docs + 14 pattern guides | ~$5 |
+| ErgoForum archive (677 curated topics) | 0 | 677 topic docs + lean index | $0 — ✅ Done |
 | Ergo Blog archive (701 posts) | 0 | 397 full-content posts + 304 stubs + clustered index | $0 — ✅ Done |
 | Docs migration | 6-8 (review) | ~50-100 migrated docs | $1-3 |
 | MCP server | 6-8 | 0 | $0 |
@@ -1052,4 +1063,4 @@ The MCP server is what makes this a true "AI-native" knowledge base rather than 
 
 Video processing remains the single largest human time commitment (~27-36 hours across 5 weeks). Ecosystem code processing adds ~5-8 hours of review but produces the most differentiated content in the entire knowledge base — production contract patterns from live dApps that no other Ergo resource consolidates.
 
-The machines process the vast majority of content by volume: 450 video transcripts + 153 Telegram summaries (102 general + 51 dev) + 242 ecosystem contract/overview docs + 14 cross-cutting pattern guides + 1,008 forum topics + 701 blog posts + full corpus embedding. Human-authored content so far: 4 concept docs + 3 DeCo-adapted guides (1,712 lines) + LangSpec integration + FRONTMATTER.md schema. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time, mostly complete), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
+The machines process the vast majority of content by volume: 450 video transcripts + 153 Telegram summaries (102 general + 51 dev) + 246+ ecosystem contract/overview docs + 14 cross-cutting pattern guides + 677 curated forum topics + 701 blog posts + full corpus embedding. Human-authored content so far: 4 concept docs + 3 DeCo-adapted guides (1,712 lines) + LangSpec integration + FRONTMATTER.md schema. The human work breaks down as: ~30% video processing (semi-automated), ~30% scaffolding and scripting (one-time, mostly complete), ~25% review and migration (diminishing over time), ~15% ecosystem code review (highest value per hour).
