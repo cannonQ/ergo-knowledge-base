@@ -9,9 +9,8 @@ blog/
 # Old git clone cache — no longer used (script now uses GitHub API)
 .repo-cache/
 
-# LanceDB vector store — large binary files, not committed
-vectordb/*.lance
-vectordb/*.idx
+# LanceDB vector store — committed for local MCP usage
+# vectordb/ is tracked (pre-built vectors for devs who clone the repo)
 
 # Python
 __pycache__/
