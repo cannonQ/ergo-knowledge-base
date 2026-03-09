@@ -624,6 +624,42 @@ repos:
     output_dir: content/ecosystem/auction-house
     description: "Ergo Auction House — decentralized NFT auctions, bid assembly, EIP-22/24 patterns"
 
+  # ── Crystal Pool (Order-book DEX) ────────────────────────────────────
+
+  - org: SavonarolaLabs
+    repo: crystal-pool
+    priority: medium
+    group: defi
+    language: [typescript, svelte]
+    extract: [contracts, readme, docs]
+    patterns: [TransactionBuilder, OutputBuilder, order, swap, ergoConnector]
+    output_dir: content/ecosystem/crystal-pool
+    description: "Crystal Pool — real-time order-based L1 exchange on Ergo, order-book contract architecture"
+
+  # ── EScript Online (ErgoScript Playground) ─────────────────────────────
+
+  - org: SavonarolaLabs
+    repo: escript-online
+    priority: low
+    group: reference
+    language: [typescript, svelte]
+    extract: [readme]
+    patterns: [compile, ErgoTree, ErgoScript]
+    output_dir: content/ecosystem/escript-online
+    description: "EScript Online — in-browser ErgoScript editor and compiler playground"
+
+  # ── HodlBox (Time-locked boxes) ────────────────────────────────────────
+
+  - org: c8e4
+    repo: hodlbox
+    priority: low
+    group: defi
+    language: [typescript, svelte]
+    extract: [contracts, readme]
+    patterns: [hodl, timelock, HEIGHT]
+    output_dir: content/ecosystem/hodlbox
+    description: "HodlBox — time-locked box dApp demonstrating HEIGHT-based contract guards on Ergo"
+
   # ── Lilium (NFT Minting) ───────────────────────────────────────────────
 
   - org: LiliumErgo
