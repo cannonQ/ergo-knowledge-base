@@ -1,7 +1,7 @@
 # Ergo Developer Knowledge Base — Full Context
 
-Total documents: 540
-Estimated tokens: ~1,044,203
+Total documents: 550
+Estimated tokens: ~1,069,990
 
 ========================================================================
 
@@ -735,6 +735,446 @@ Storage rent activated at block **1,051,200** (July 20, 2023). Before this, no b
 - [Boxes and Registers](boxes-and-registers.md) — How creation height in R3 determines rent eligibility
 - [eUTXO Model](eutxo-model.md) — The transaction model that creates and destroys boxes
 - [Guard Script Framework](../guides/ergoscript-fundamentals/02-guard-script-framework.md) — Design contracts that account for box lifecycle
+
+
+========================================================================
+
+<!-- FILE: content/cookbook/apis/crux-api-reference.md -->
+---
+title: "Crux Finance API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, crux-finance, spectrum, token-prices, defi]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Crux Finance API Reference
+
+**Base URL:** `https://api.cruxfinance.io`
+**Method:** GET
+**Auth:** None required
+**Rate Limits:** Undocumented — use 0.15s+ delays between calls for bulk queries
+**Docs:** Swagger at `https://api.cruxfinance.io/docs/`
+
+---
+
+## Overview
+
+Crux Finance provides the only reliable historical token price API on Ergo. It indexes Spectrum DEX trades and calculates token prices in ERG, USD, and USE. Useful for building historical price databases across the Ergo token ecosystem. Crux also provides current pool data and token information.
+
+**Status note:** Crux changed hands in late 2025. The API remains operational but with no guarantees on long-term availability — consider backing up any critical data to your own infrastructure.
+
+---
+
+## Key Endpoints
+
+### Token Price (Historical)
+
+```
+GET /spectrum/price?token_id={id}&time_point={ms}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `token_id` | string | Ergo token ID (64-char hex) |
+| `time_point` | integer | UNIX timestamp in **milliseconds** |
+
+**Returns:**
+```json
+{
+  "erg": 0.001234,
+  "usd": 0.00567,
+  "use": 0.00890
+}
+```
+
+**This is the money endpoint.** Returns the token's price at the specified point in time. Prices are derived from Spectrum DEX pool state.
+
+### Token Price Stats (with min/max/avg)
+
+```
+GET /spectrum/price_stats?token_id={id}&time_point={ms}&time_window={ms}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `token_id` | string | Ergo token ID |
+| `time_point` | integer | Center of time window (UNIX ms) |
+| `time_window` | integer | Window width in milliseconds |
+
+**Returns:**
+```json
+{
+  "token_info": {
+    "token_id": "...",
+    "name": "heisenbERG",
+    "description": "...",
+    "minted": 100000000000000,
+    "decimals": 5
+  },
+  "max": { "erg": 0.00001633, "usd": 0.00002809, "use": 0.10539 },
+  "min": { "erg": 0.00000500, "usd": 0.00000436, "use": 0.0000000044 },
+  "average": { "erg": 0.00001050, "usd": 0.00000514, "use": 0.00000514 }
+}
+```
+
+**Note:** `time_window` can be very large. Setting it equal to `time_point` effectively gives you "all time" stats.
+
+---
+
+## Proven Working Patterns
+
+### Historical Price Fetch (Python)
+```python
+import requests
+import time
+
+def get_token_price(token_id, timestamp_ms):
+    url = f"https://api.cruxfinance.io/spectrum/price"
+    params = {"token_id": token_id, "time_point": timestamp_ms}
+    resp = requests.get(url, params=params, timeout=10)
+    if resp.status_code == 200:
+        return resp.json()  # {"erg": ..., "usd": ..., "use": ...}
+    return None
+
+# Bulk fetch with rate limiting
+for height, ts_ms in height_timestamp_pairs:
+    price = get_token_price(token_id, ts_ms)
+    time.sleep(0.15)  # Rate limit
+```
+
+### Month-End Prices for All Tokens
+```python
+from datetime import datetime, timezone
+
+# Convert month-end date to milliseconds
+dt = datetime(2024, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+time_point = int(dt.timestamp() * 1000)
+
+# Fetch price
+price = get_token_price(token_id, time_point)
+```
+
+---
+
+## Wins
+
+- **Actually returns historical data** — unlike Spectrum's `/amm/pools/stats` which ignores timestamps and returns current state, Crux genuinely returns prices at the specified point in time
+- **Three price units** — ERG, USD, and USE in every response
+- **Token metadata included** in `/price_stats` — name, description, decimals, minted supply
+- **No auth required**
+- **Reliable** — handles thousands of price queries without errors in bulk backfills
+- **Price derivation from DEX trades** — prices reflect actual market activity on Spectrum
+
+## Stumbling Blocks
+
+- **Wrong endpoint initially** — the correct path is `/spectrum/price_stats` NOT `/spectrum/get_price_stats`. No error was thrown — just 404. Cost debugging time.
+- **Timestamps must be milliseconds** — not seconds. Easy to mess up.
+- **Returns null/zero for tokens with no trades** — if a token had no Spectrum liquidity at that date, you get back zeros. This is correct behavior but needs handling.
+- **No bulk endpoint** — must query one token at a time. For large bacfills (hundreds of tokens × dozens of months), expect thousands of individual API calls. Rate limiting to 0.15s keeps it manageable.
+- **Ownership change risk** — Crux changed hands. API could change or disappear. Back up any critical data.
+- **ERG price is relative** — the `erg` field is the token's price denominated in ERG. To get USD, use the `usd` field directly (Crux handles ERG/USD conversion internally).
+- **No pool-level data** — Crux gives token prices, not pool reserves. For LP valuation, you still need pool box queries.
+
+
+========================================================================
+
+<!-- FILE: content/cookbook/apis/ergowatch-api-reference.md -->
+---
+title: "ErgoWatch API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, ergowatch, analytics, supply, rich-list]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# ErgoWatch API Reference
+
+**Base URL:** `https://api.ergo.watch`
+**Frontend:** `https://ergo.watch`
+**Method:** GET
+**Auth:** None required
+**Docs:** Swagger at `https://api.ergo.watch/docs` (renders client-side only — can't fetch remotely)
+**Source:** `https://github.com/abchrisxyz/ergowatch`
+
+---
+
+## Overview
+
+ErgoWatch is a community-built Ergo blockchain indexer and analytics platform maintained by a single developer (abchrisxyz). It provides pre-computed time series data for network health metrics, tokenomics, and the SigmaUSD dashboard. The indexer (`ew`) is written in Rust, syncs from an Ergo node, and writes to PostgreSQL. A FastAPI layer serves the REST API (labeled "legacy" in the README). The frontend (SvelteKit) connects directly to Postgres.
+
+**Status: At risk.** The API is called "legacy." Single-maintainer project with no announced shutdown date but also no guarantees. Consider backfilling data to your own database before it potentially goes dark.
+
+---
+
+## Known Endpoints (reverse-engineered)
+
+The Swagger UI renders client-side, so the full endpoint list isn't fetchable via API. These were discovered from the frontend source, the `tidyergo` R package, and GitHub issues.
+
+### Address Metrics
+
+| Endpoint (presumed) | Description |
+|---------------------|-------------|
+| `/api/v0/addresses/p2pk/count?bal_ge=X` | P2PK wallet count at balance tier |
+| `/api/v0/addresses/contracts/count` | Contract address count |
+| `/api/v0/addresses/balance-history/{address}` | Historical balance for any address |
+
+Balance tier parameters: `bal_ge` (balance greater/equal), `bal_lt` (balance less than), `token_id` (filter by token).
+
+### Supply / Emission
+
+| Endpoint (presumed) | Description |
+|---------------------|-------------|
+| `/api/v0/tokens/{token_id}/supply` | Emitted, circulating, burned supply |
+| `/api/v0/emission/...` | Emission schedule and inflation data |
+
+### Network Metrics
+
+| Endpoint (presumed) | Description |
+|---------------------|-------------|
+| UTXO count over time | Total unspent boxes on chain |
+| Transfer volume | ERG moved per day/block |
+| Transaction count | Daily TX count |
+
+### SigmaUSD Dashboard
+
+| Endpoint (presumed) | Description |
+|---------------------|-------------|
+| SigUSD circulating supply | Over time |
+| SigRSV circulating supply | Over time |
+| Oracle price history | ERG/USD from oracle pool |
+| Reserve ratio | Over time |
+| Mint/redeem activity | Historical |
+
+### CEX Tracking
+
+| Endpoint (presumed) | Description |
+|---------------------|-------------|
+| Exchange balances | Labeled addresses (KuCoin, Gate.io) |
+
+---
+
+## Data Available on ergo.watch Frontend
+
+**Dashboards:**
+- Emission — circulating supply, block reward, inflation rate
+- SigmaUSD — SigUSD/SigRSV supply, oracle price, reserve ratio
+- Sync status
+
+**Charts (daily time series, back to genesis):**
+- Address counts at balance tiers (≥0, ≥0.001, ≥0.01, ≥0.1, ≥1, ≥10, ≥100 ERG)
+- Transfer volume
+- UTXO count
+
+**Lists:**
+- Rich list / top holders
+
+---
+
+## Backfill Strategy
+
+The plan for preserving ErgoWatch data:
+
+1. **Hit API endpoints** from your local browser (Swagger loads at `https://api.ergo.watch/docs`)
+2. **Catalog every endpoint** — screenshot or copy the full list
+3. **Write a Python backfill script** that pulls all time series data and writes to Supabase
+4. **Your own scanners** take over going forward for continued data
+
+Alternatively, run the `ew` Rust indexer against your own node to reproduce the entire database locally.
+
+---
+
+## Estimated Data Size
+
+- ~2,400 rows per metric (daily data × 6.5 years)
+- ~20-30 metrics = ~50,000-75,000 rows total
+- Well under Supabase free tier limits
+- A moderately active custom scanner can easily exceed this data volume
+
+---
+
+## What ErgoWatch Does NOT Track
+
+- DEX swap data (Spectrum/Dexy trades, volumes, pool reserves)
+- Oracle pool reward data
+- NFT marketplace activity
+- Rosen Bridge transfers
+- Gluon/neutron/proton activity
+- DuckPools lending activity
+- Storage rent claims
+
+---
+
+## Wins
+
+- **Pre-computed aggregates** — address tier counts, supply data, and SigmaUSD metrics are expensive to derive from raw chain data. ErgoWatch has years of this computed.
+- **Long history** — data back to genesis (2019)
+- **Open source** — full Rust indexer available to self-host
+- **Public node** at `node.ergo.watch` (separate from the API)
+
+## Stumbling Blocks
+
+- **No official API documentation accessible remotely** — Swagger renders client-side only. Can't fetch OpenAPI spec via curl or web_fetch.
+- **"Legacy" API label** — the developer considers it legacy. Could disappear.
+- **Single maintainer** — bus factor of 1
+- **Frontend connects to Postgres directly** — the API doesn't necessarily expose everything the frontend shows
+- **Endpoint paths unconfirmed** — the exact `/api/v0/` routes haven't been fully validated. Need to visit Swagger in a browser to confirm.
+- **No known rate limits** — but single-maintainer infra means be respectful with bulk queries
+
+
+========================================================================
+
+<!-- FILE: content/cookbook/apis/spectrum-dex-api-reference.md -->
+---
+title: "Spectrum DEX API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, spectrum, dex, lp-pools, amm, defi]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Spectrum DEX API Reference
+
+**Base URL:** `https://api.spectrum.fi/v1`
+**Method:** GET
+**Auth:** None required
+**Rate Limits:** Undocumented
+**Docs:** Partial Swagger at `https://api.spectrum.fi/docs`
+
+---
+
+## Overview
+
+The Spectrum (formerly ErgoDEX) API provides current pool state, market prices, and trading volume data for the Spectrum AMM on Ergo. It was the primary DEX API but has become unreliable — the API went down multiple times in 2025 and its historical data capabilities are limited. We used it for pool discovery and current price snapshots, but ultimately moved to Crux for historical prices and direct on-chain queries for pool state.
+
+**Status: Partially deprecated.** Some endpoints work, some don't. Use Crux or on-chain queries as primary data sources.
+
+---
+
+## Key Endpoints
+
+### Pool Stats (Current State)
+
+```
+GET /v1/amm/pools/stats
+```
+
+**Returns:** Array of all pools with current reserves, TVL, volume.
+
+**WARNING:** Despite accepting `from` and `to` timestamp parameters, this endpoint **always returns current pool state regardless of timestamps**. We discovered this the hard way — a pool created in August 2024 showed data for January 2022 queries. The timestamps are ignored.
+
+### Market Prices (Historical — WORKS)
+
+```
+GET /v1/price-tracking/markets?from={ms}&to={ms}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | integer | Start of window (UNIX ms) |
+| `to` | integer | End of window (UNIX ms) |
+
+**Returns:**
+```json
+[
+  {
+    "id": "xId_yId",
+    "baseId": "...",
+    "baseSymbol": "ERG",
+    "quoteId": "...",
+    "quoteSymbol": "SigUSD",
+    "lastPrice": 0.467111,
+    "baseVolume": { ... },
+    "quoteVolume": { ... }
+  }
+]
+```
+
+**This endpoint actually returns historical data.** January 2022 returns 8 pools. December 2024 returns 100+ pools with different prices. Confirmed working by comparing `lastPrice` across dates.
+
+### AMM Pool List
+
+```
+GET /v1/amm/pools
+```
+
+Returns all LP pools with current state.
+
+---
+
+## Pool Box Anatomy (On-Chain)
+
+Since the API is unreliable, direct on-chain pool queries became essential. Here's the pool box structure:
+
+### N2T (Native-to-Token) Pool Box
+```
+ErgoTree Template Hash: d19e23d1f7a101fef63861cd303ec5e1c1db93e9e1c244178e83556c4d082a49
+
+Assets (in order):
+  [0] Pool NFT (amount: 1)         — unique pool identifier
+  [1] LP Token (amount: remaining)  — unclaimed LP tokens
+  [2] Token Y (amount: reserve)     — the traded token
+
+Value: ERG reserve (nanoERG)
+
+R4: Fee numerator (e.g., 997 = 0.3% fee, 995 = 0.5% fee)
+```
+
+### T2T (Token-to-Token) Pool Box
+```
+ErgoTree Template Hash: 8b159b63f668c5782400b6b0a0a11db995888c0153a29e30594c8d88d5b9430c
+
+Assets (in order):
+  [0] Pool NFT (amount: 1)
+  [1] LP Token (amount: remaining)
+  [2] Token X (amount: reserve)
+  [3] Token Y (amount: reserve)
+
+Value: Minimal ERG for box storage
+
+R4: Fee numerator
+```
+
+### LP Valuation Formula
+```
+Max LP Supply = 9,223,372,036,854,774,807  (constant for ALL Spectrum pools = 2^63 - 1)
+Circulating LP = Max LP Supply - LP tokens in pool box
+Your Value = (Your_LP_Balance / Circulating_LP) × Pool_Total_Value
+Pool_Total_Value = (Reserve_X × Price_X) + (Reserve_Y × Price_Y)
+```
+
+### AMM Swap Math (Constant Product)
+```
+Buy Token (ERG → Token):
+  output_amount = (reserve_Y × input_ERG × fee_num) / (reserve_X × 1000 + input_ERG × fee_num)
+
+Sell Token (Token → ERG):
+  output_erg = (reserve_X × input_token × fee_num) / (reserve_Y × 1000 + input_token × fee_num)
+```
+
+---
+
+## Wins
+
+- **`/v1/price-tracking/markets` genuinely returns historical data** — this was a major discovery. Pool count and prices differ across dates.
+- **Pool template hashes** — N2T and T2T pools have distinct ErgoTree template hashes, enabling bulk discovery via GQL
+- **LP valuation formula** — Max LP supply is constant (2^63 - 1), simplifying circulating LP calculation
+- **Direct pool box queries** work reliably via Explorer/GQL with the Pool NFT token ID
+
+## Stumbling Blocks
+
+- **`/v1/amm/pools/stats` ignores timestamp parameters** — returns current state regardless of `from`/`to`. This invalidated an entire historical backfill attempt. Only discovered because a pool created in Aug 2024 showed data for Jan 2022.
+- **API availability is spotty** — went down multiple times in 2025. No SLA, no status page.
+- **No historical pool reserves endpoint** — current reserves only. For historical LP valuation, must query spent pool boxes on-chain (complex UTXO tracking)
+- **Historical pool state requires UTXO chain walking** — pool boxes are spent/recreated on every swap. Finding "pool state at height X" means querying ALL boxes (spent+unspent) containing the Pool NFT, building a timeline of creation/spending heights, then finding which box was active at your target height. Never fully solved.
+- **Pool box disambiguation** — when querying by Pool NFT ID via Explorer, you sometimes get the current box plus recently spent predecessors. Need to filter for the actual current UTXO.
+- **Fee numerator varies by pool** — most are 997 (0.3% fee) but some use 995, 990, or others. Always read R4 from the pool box.
 
 
 ========================================================================
@@ -41428,6 +41868,1315 @@ To integrate a custom strategy, implement the `Execution[F]` algebra and wire it
 | `orderbook.matches` | Matcher | Orders Executor |
 
 Topic names are configurable via `config.env`. Consumers use Kafka consumer groups, so multiple executor
+
+========================================================================
+
+<!-- FILE: content/guides/aneta-angels-toolchain.md -->
+---
+title: "NFT Collection Toolchain — Technical Reference"
+category: guide
+difficulty: advanced
+tags: [nft, toolchain, scraper, ipfs, registers, mint-enumeration]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# NFT Collection Toolchain — Technical Reference
+
+**Stack:** Python 3.x + Local Ergo indexed node
+
+This guide documents a reusable toolchain for enumerating, enriching, and analyzing NFT collections on the Ergo blockchain. Originally built for the Aneta Angels collection, the patterns apply to any Ergo NFT project.
+
+---
+
+## Infrastructure
+
+All scripts run against an Ergo full node with indexing enabled (`extraIndex=true` in `ergo.conf`), which enables the `/blockchain/*` API endpoints used throughout.
+
+| Component | Detail |
+|-----------|--------|
+| Ergo node | Mainnet, UTXO mode, indexed |
+| API port | 9053 |
+| Python | 3.x |
+| Only dependency | `requests` (`pip install requests`) |
+
+The public Ergo Explorer API (`api.ergoplatform.com/api/v1`) is available as a fallback in every script. All scripts auto-detect whether the local node is reachable and fall back to the public API with a 0.3s rate limit delay if not.
+
+---
+
+## Script 1: Token Enumeration from Mint Wallet
+
+The core scraper. Enumerates all tokens minted from a wallet address, fetches metadata, checks burn status, and exports structured data.
+
+**Commands:**
+
+```
+python nft_scraper.py test       # Verify node connection, peek at mint wallet
+python nft_scraper.py enumerate  # Fast ID-only enumeration (no metadata)
+python nft_scraper.py full       # Full scan: IDs + traits + burn check + holder distribution
+```
+
+**Enumeration logic:**
+
+On Ergo, `tokenId = boxId of first input in the minting transaction`. The script paginates through all transactions from the mint address and identifies mints by checking if any output asset's `tokenId` matches the first input's `boxId`.
+
+```
+For each TX from mint wallet:
+  first_input_box_id = tx.inputs[0].boxId
+  for each output in tx.outputs:
+    for each asset in output.assets:
+      if asset.tokenId == first_input_box_id:
+        → This is a MINT transaction
+        → token_id = asset.tokenId
+```
+
+**Enrichment (2 API calls per token):**
+
+1. `/blockchain/token/byId/{tokenId}` → name, description (contains traits as JSON), decimals
+2. `/blockchain/box/unspent/byTokenId/{tokenId}` → if empty array, token is burned
+
+**Output files:**
+
+| File | Contents |
+|------|----------|
+| `collection_all_TIMESTAMP.json` | Full data (active + burned tokens) |
+| `collection_active_TIMESTAMP.json` | Active tokens only (the registry) |
+| `collection_active_TIMESTAMP.csv` | Flat CSV for spreadsheets |
+
+---
+
+## Script 2: Trait Distribution Analysis
+
+Reads the active tokens JSON and produces trait frequency counts across all categories.
+
+```
+python trait_analyzer.py collection_active.json
+```
+
+**Outputs:**
+
+| File | Contents |
+|------|----------|
+| `trait_summary.json` | Per-category value counts with percentages |
+| `trait_summary.csv` | Flat CSV: Category, Value, Count, Pct |
+
+Console output includes ASCII bar charts per trait value. Useful for identifying rare traits, minting errors (e.g. typo categories), and distribution anomalies.
+
+---
+
+## Script 3: IPFS Artwork URL Enrichment
+
+Fetches the IPFS artwork URL and SHA-256 hash for each token from the minting box registers.
+
+```
+python ipfs_enricher.py collection_traits.json
+python ipfs_enricher.py collection_traits.json --source collection_active.json  # faster
+```
+
+**Register layout (EIP-004 NFTs):**
+
+| Register | Content | Example |
+|----------|---------|---------|
+| R4 | Token name | `Collection #1304` |
+| R5 | Description JSON (traits) | `{"721":{"1304":{"name":"...","traits":{...}}}}` |
+| R6 | Decimals | `0` |
+| R7 | NFT type flags | `0x01 0x01` (Image NFT) |
+| R8 | SHA-256 hash of artwork | `ef623174ac21c147c655bb6afa910dee...` |
+| R9 | Artwork URL (IPFS) | `http://ipfs.io/ipfs/Qmacqao3z7hUsgJfz...` |
+
+**Two-step API flow (without `--source`):**
+
+1. `/blockchain/token/byId/{tokenId}` → get `boxId` (issuance box)
+2. `/blockchain/box/byId/{boxId}` → read `additionalRegisters.R9` and `.R8`
+
+With `--source`, step 1 is skipped using the `outputBoxId` from the scraper data (halves API calls).
+
+---
+
+## Ergo Node API Reference (What Worked, What Didn't)
+
+### The Big Gotcha: POST vs GET on Local Node
+
+The critical bug that blocked initial development. The local indexed node's `/blockchain/transaction/byAddress` endpoint uses **POST** with the address in the request body — not GET with query params. The public Explorer API uses GET.
+
+**What failed:**
+
+```python
+# WRONG for local node — returns 400 Bad Request
+url = f"{node_url}/blockchain/transaction/byAddress"
+params = {"address": address, "offset": 0, "limit": 100}
+resp = requests.get(url, params=params)  # ← GET doesn't work
+```
+
+**What works:**
+
+```python
+# CORRECT for local node — POST with address as JSON string body
+url = f"{node_url}/blockchain/transaction/byAddress"
+params = {"offset": 0, "limit": 100}  # offset/limit stay as query params
+resp = requests.post(
+    url,
+    params=params,
+    headers={"Content-Type": "application/json"},
+    data=json.dumps(address),  # address goes in body as a quoted string
+    timeout=30
+)
+```
+
+The public Explorer API uses a completely different pattern:
+
+```python
+# Public API — GET with address in URL path
+url = f"https://api.ergoplatform.com/api/v1/addresses/{address}/transactions"
+params = {"offset": 0, "limit": 100}
+resp = requests.get(url, params=params)
+```
+
+### Endpoints That Work with GET (Local Node)
+
+These take the ID as a path parameter and work fine with GET:
+
+| Endpoint | Method | Returns |
+|----------|--------|---------|
+| `/blockchain/token/byId/{tokenId}` | GET | Token metadata (name, description, decimals, boxId) |
+| `/blockchain/box/byId/{boxId}` | GET | Full box data including `additionalRegisters` |
+| `/blockchain/box/unspent/byTokenId/{tokenId}` | GET | Array of unspent boxes containing this token |
+| `/blockchain/indexedHeight` | GET | Current indexed height (verifies node is indexed) |
+| `/info` | GET | Node info (name, height, network, stateType) |
+| `/utxo/byId/{boxId}` | GET | Unspent box by ID (returns 404 if spent) |
+
+### Local Node vs Public API Response Differences
+
+| Field | Local Node | Public API |
+|-------|-----------|------------|
+| Token ID field | `id` | `tokenId` |
+| Token type field | Not returned | `type` (e.g., "EIP-004") |
+| TX list from address | Returns raw array | Returns `{"items": [...], "total": N}` |
+| Box registers | Raw hex in `additionalRegisters` | May include `renderedValue` dict |
+| Token name in TX output | Not embedded | Included in asset data |
+
+### Register Decoding (Coll[Byte] → String)
+
+Ergo registers store values as serialized bytes. For string values (URLs, names, descriptions), the format is:
+
+```
+0e          ← Type prefix: Coll[Byte]
+XX          ← VLQ-encoded length (1+ bytes)
+[hex data]  ← UTF-8 bytes encoded as hex
+```
+
+**VLQ (Variable Length Quantity) decoding:**
+
+```python
+pos = 2  # skip "0e" prefix
+length = 0
+shift = 0
+while pos < len(hex_str):
+    byte_val = int(hex_str[pos:pos+2], 16)
+    pos += 2
+    length |= (byte_val & 0x7F) << shift
+    shift += 7
+    if (byte_val & 0x80) == 0:
+        break
+# Then: bytes.fromhex(hex_str[pos:pos + length * 2]).decode('utf-8')
+```
+
+**Example:** R9 register `0e42687474703a2f2f...`
+
+- `0e` = Coll[Byte] type
+- `42` = length 66 (0x42, single byte since < 128)
+- Remaining hex decodes to `http://ipfs.io/ipfs/Qmacqao3z7hUsgJfzJsY35eHiyFR9muB1epLmLtb76bjEP`
+
+### The R7/R9 Mixup
+
+Initial assumption was R7 = artwork URL (matching some EIP-004 documentation). The actual layout for many collections is:
+
+- R7 = NFT type flags (`0e020101` → 2 bytes: `0x01, 0x01` = Image NFT). Decoding this as a string produces `\u0001\u0001`.
+- R9 = Artwork URL (IPFS)
+
+This was diagnosed by fetching a raw box (`curl .../blockchain/box/byId/{boxId}`) and manually decoding each register. Always verify register layout against actual on-chain data.
+
+---
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ERGO_NODE_URL` | `http://localhost:9053` | Local node address |
+| `ERGO_USE_PUBLIC` | `0` | Set to `1` to force public API |
+
+
+========================================================================
+
+<!-- FILE: content/guides/cyberverse_nft_toolchain.md -->
+---
+title: "Cyberverse NFT Enumeration & Data Toolchain"
+category: guide
+difficulty: advanced
+tags: [nft, cyberverse, enumeration, scraper, explorer-api, github-actions]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Cyberverse NFT Enumeration & Data Toolchain — Technical Reference
+
+**Date:** January 2026
+**Scope:** Complete registry of 15,349 Cyberverse NFTs across 11 Ergo collections + Ronin cross-chain data
+**Stack:** Python 3.x + requests + Ergo Explorer API + ergexplorer API + GitHub Actions
+**Repository:** github.com/cannonQ/cyberverse-viewer
+
+---
+
+## Background
+
+Cyberverse is the flagship playable game on the Ergo blockchain — multiple NFT collections, active in-game economy, cross-chain presence on Ronin. Despite this, no open database or public registry of all NFTs existed. This toolchain was built to fill that gap: enumerate every collection, extract metadata and traits, track holders, monitor marketplace activity, and feed it all into a viewer website deployed on Vercel.
+
+The original motivation was a wallet statement tool that needed to categorize Cyberverse tokens separately from generic NFTs and collectibles, since these are the only NFTs on Ergo with real game utility and in-game value.
+
+### Why This Didn't Already Exist
+
+Cyberverse is the only truly developed game on Ergo — playable, multi-collection, active economy — yet no one had published an open dataset of all the NFTs. No public repo, no API, no community database. The Cyberverse team has their own internal data, but it was never exposed for third-party builders. The Cyberverse wiki had partial data, but it was incomplete and undocumented.
+
+This gap means the ecosystem was missing the infrastructure needed for rarity tools, price tracking, holder analytics, game integration by third parties, and even basic collection verification (distinguishing legitimate Cyberverse tokens from unrelated tokens with similar names). Ergo's NFT tooling in general lags behind — no equivalent of Etherscan's token tracker or Solana's Metaplex metadata standard with universal indexing.
+
+**Important: No data was scraped from the Cyberverse game or the wiki.** Every token ID, every trait, every property in this dataset was enumerated directly from the Ergo blockchain via public Explorer APIs. The wiki's `cc2.json`/`cc3.json` files were discovered during research but not used — the on-chain enumeration was authoritative and complete without them. The only non-chain resources used were NFT images, sourced from two places with permission: A Cyberverse community dev granted access to the wiki's image set, and the creator of ergexplorer.com allowed use of his database of NFT images. Combined, the two sources provide the complete image set across all 11 collections. The viewer caches these images on-site to avoid hammering their infrastructure with repeated requests.
+
+The toolchain documented here is now the most complete public Cyberverse dataset that exists. It was built entirely from on-chain data using public APIs, with no access to Cyberverse team internals beyond the image permission. The data files are hosted on GitHub and served via the viewer at cyberverse-viewer.vercel.app — available for any builder in the ecosystem to use.
+
+---
+
+## Infrastructure
+
+| Component | Detail |
+|-----------|--------|
+| Runtime | Python 3.x (Windows 10 / PowerShell) |
+| HTTP library | `requests` (only external dependency) |
+| Primary API | `https://api.ergoplatform.com/api/v1` |
+| Fallback API | `https://api.ergexplorer.com` (for high-tx wallets) |
+| GraphQL | `https://gql.ergoplatform.com/` and `https://explore.sigmaspace.io/api/graphql` |
+| Automation | GitHub Actions (cron workflows in cyberverse-viewer repo) |
+| Hosting | Vercel (Next.js app at cyberverse-viewer.vercel.app) |
+| Data format | JSON files served from `public/data/` in the repo |
+
+---
+
+## The Core Enumeration Pattern
+
+Every script in the toolchain uses the same fundamental approach, rooted in a key Ergo blockchain property.
+
+**Ergo Minting Rule:** A token's ID equals the Box ID of the first input in its minting transaction. This means you can enumerate every token minted by an address by scanning that address's transaction history and checking whether any output contains a token whose ID matches the first input's box ID.
+
+```python
+def enumerate_minted_tokens(mint_address: str) -> list:
+    token_ids = []
+    offset = 0
+    
+    while True:
+        url = f"{ERGO_API}/addresses/{mint_address}/transactions"
+        resp = requests.get(url, params={"offset": offset, "limit": 100}, timeout=30)
+        items = resp.json().get("items", [])
+        if not items:
+            break
+        
+        for tx in items:
+            first_input_box_id = tx["inputs"][0]["boxId"]
+            for output in tx["outputs"]:
+                for asset in output.get("assets", []):
+                    if asset["tokenId"] == first_input_box_id:
+                        token_ids.append(asset["tokenId"])
+        
+        offset += 100
+        time.sleep(0.5)
+    
+    return token_ids
+```
+
+This pattern was used for Gen2, Gen3, Cars, Apartments, Pets, Skins, VIP Cards, Emotes, and Audio Tracks. The only exceptions were Eggs and Jackhammers, which required the ergexplorer API shortcut (see below).
+
+---
+
+## API Lessons
+
+### Rate Limiting Is Your Friend (and Enemy)
+
+The Ergo Explorer API at `api.ergoplatform.com` has no documented rate limits, but it will time out or drop connections under sustained load. The scripts evolved a pattern:
+
+```python
+# Rate limiting: pause 1 second every 10 requests, 0.2-0.3 seconds between others
+if (i + 1) % 10 == 0:
+    time.sleep(1)
+else:
+    time.sleep(0.2)
+```
+
+Early versions used `time.sleep(0.5)` uniformly, which was too slow for large collections (Gen3 at 5,999 tokens). Too fast and the API starts returning timeouts. The 10-request burst with 1-second pauses proved reliable across all collections.
+
+**Timeouts on first request:** The API sometimes needed to "warm up" — the first few requests would hang or fail, then subsequent requests would flow normally. Adding a 60-90 second timeout on the initial request and retry logic solved this:
+
+```python
+for attempt in range(3):
+    result = get_token_holder(token_id)
+    if result["holder"]:
+        break
+    if attempt < 2:
+        time.sleep(3)
+```
+
+### The ergexplorer API Shortcut
+
+For wallets with extremely high transaction counts, scanning transaction-by-transaction becomes impractical. The CyberEggs mint wallet had 75,000+ transactions — at 100 per page with rate limiting, that's hours of scanning.
+
+The ergexplorer API provides a direct "issued tokens" endpoint:
+
+```
+GET https://api.ergexplorer.com/tokens/byIssuedAddress?onlyNft=true&address={address}
+```
+
+This returns all tokens minted by an address in a single response, complete with an `isBurned` flag. No need to check each token individually. This endpoint was used for CyberEggs (599 tokens, 451 burned) and Jackhammers (5,203 tokens, none burned).
+
+**Discovery process:** This endpoint wasn't documented anywhere. It was found by watching the Network tab in browser DevTools while viewing the ergexplorer.com address page — when the "Issued Assets" section loaded, the XHR request revealed the API URL.
+
+### GraphQL: Useful but Fragile
+
+The Ergo GraphQL endpoint (`gql.ergoplatform.com`) was essential for marketplace analysis — specifically querying by `ergoTree` to find all boxes matching a smart contract. The REST API doesn't support ErgoTree-based queries.
+
+**Key GraphQL lesson:** The schema differs between endpoints. `gql.ergoplatform.com` does not have `spentTransactionId` as a field — you must use `spentBy { transactionId }` instead. This caused a validation error that was initially confusing:
+
+```
+Cannot query field "spentTransactionId" on type "Box". 
+Did you mean "transactionId" or "transaction"?
+```
+
+**Pagination:** GraphQL uses `take` and `skip` (not `limit` and `offset`). Maximum `take` is typically 500. For large result sets (like SkyHarbor's 50,000+ contract interactions), you must paginate and save each batch to separate JSON files, then merge locally.
+
+### Explorer API Pagination
+
+The REST API defaults to 20 items per page (`limit` parameter) and supports up to 100. The total count is returned in the response, allowing pre-calculation of required pages. Always use `offset` parameter to paginate — never assume all results fit in one response.
+
+---
+
+## Token Status: Circulating vs. Burned vs. Unissued
+
+Not all minted tokens are in circulation. Three categories exist:
+
+| Status | Meaning | Detection |
+|--------|---------|-----------|
+| Circulating | Held by a non-mint wallet | `boxes/unspent/byTokenId` returns a box with non-mint address |
+| Burned | No unspent box exists | `boxes/unspent/byTokenId` returns empty |
+| Unissued | Still in mint wallet | Box exists but address matches mint wallet |
+
+The `ergo_nft_filter.py` script implements this three-way classification. CyberPets and CyberEggs share a mint wallet — tokens remaining in that wallet were never distributed (per game lore, some NFTs were burned due to mint issues).
+
+**The ergexplorer shortcut makes this easier:** Its `isBurned` flag eliminates the need to query each token individually. For the Eggs collection: 599 minted, 148 circulating, 451 burned — all determined from a single API call.
+
+---
+
+## EIP-24 Property Extraction
+
+CyberCars and CyberApartments store properties in the issuer box's R6 register using a custom hex encoding with length-prefixed key-value pairs. This follows the EIP-24 artwork contract standard.
+
+**Critical distinction:** The properties are in the **issuer box** (first input of the mint transaction), not the output box. Since token ID equals the issuer box ID, you can fetch properties by looking up the box with the same ID as the token:
+
+```python
+# Token ID = Issuer Box ID (per EIP-24)
+box_data = requests.get(f"{ERGO_API}/boxes/{token_id}").json()
+r6_hex = box_data["additionalRegisters"]["R6"]["serializedValue"]
+```
+
+**R6 decoding:** The hex value contains ASCII strings separated by length prefix bytes. A regex approach extracts readable sequences and pairs them as key-value:
+
+```python
+data = bytes.fromhex(hex_value)
+text = data.decode('latin-1')
+parts = re.findall(r'[A-Za-z0-9 \-\_\.]+', text)
+# Filter noise, pair as key-value
+```
+
+**Parsing noise:** The regex approach catches some false positives. For apartments, "SMALL", "MEDIUM", and "LARGE" appeared as standalone keys when they were actually part of the APARTMENT value. The per-token JSON output was clean, but the summary statistics showed artifacts. Acceptable for the registry use case — individual token data was correct.
+
+**Property keys discovered:**
+
+| Collection | Keys | Example Values |
+|------------|------|----------------|
+| CyberCars | CAR BRAND, TYPE | HYRON, RX-ERG |
+| CyberApartments | LOCATION, BUILDING, APARTMENT, SIZE | Neon Night St., 12, YACHT, 342 |
+
+---
+
+## Register Decoding
+
+Ergo stores metadata in box registers R4-R9. The encoding follows a pattern: type prefix byte, VLQ-encoded length, then the data bytes.
+
+```python
+def decode_register_string(hex_value: str) -> str:
+    if hex_value.startswith("0e"):  # 0e = Coll[Byte] type prefix
+        hex_value = hex_value[2:]
+        length_byte = int(hex_value[:2], 16)
+        if length_byte < 128:
+            data_hex = hex_value[2:2 + length_byte * 2]
+        else:
+            data_hex = hex_value[4:]  # VLQ for larger lengths
+        return bytes.fromhex(data_hex).decode('utf-8', errors='ignore')
+```
+
+**Register layout varies by collection:**
+
+| Register | Gen2/Gen3 | Audio Tracks | Aneta Angels |
+|----------|-----------|--------------|--------------|
+| R4 | Token name | Track name | Token name |
+| R5 | Description/traits JSON | Creator/album/rarity JSON | Description/traits JSON |
+| R6 | Decimals | Decimals | Decimals |
+| R7 | NFT type flags | NFT type flags (`0x01 0x01`) | NFT type flags |
+| R8 | SHA-256 hash | SHA-256 hash | SHA-256 hash (hex string) |
+| R9 | IPFS URL | IPFS URL | IPFS URL |
+
+**Lesson:** Never assume a register's purpose from its name. R7 was initially mistaken for a URL field in the Aneta Angels scraper — it's actually 2-byte NFT type flags (`01 01` = image NFT). The actual URL is in R9. Always decode and inspect before coding assumptions.
+
+---
+
+## Collection-Specific Challenges
+
+### Audio Tracks (5 Mint Wallets)
+
+Audio tracks were minted across 5 different wallets — the only collection with multiple mint addresses. The first wallet had many transactions and caused API timeouts. Solution: enumerate each wallet separately with a single-wallet variant of the scraper, then merge results into a combined audio JSON.
+
+### CyberSkins (Fungible EIP-004 Tokens)
+
+Unlike all other collections (1:1 NFTs), CyberSkins are fungible tokens. Each skin type has multiple copies (e.g., Razor has 300 copies). This required treating them differently — enumerate 23 unique token IDs rather than thousands of individual NFTs. The scraper's `CYBERSKINS` list hardcodes the 23 known skin names.
+
+### Shared Mint Wallets (Pets + Eggs)
+
+CyberPets and CyberEggs share the same mint wallet (`9fFMwTZ...`). Enumeration returns both types intermingled. Filtering relies on the token name prefix ("CyberPet" vs "CyberEgg") and burn status to separate them.
+
+### Gen2 Traits (Pre-EIP-24, On-Chain in Description)
+
+Gen2 Citizens were minted before EIP-24 was established. Their traits aren't stored in structured registers or external metadata — they're embedded directly in the token's `description` field as a 721-format JSON string:
+
+```json
+{
+  "721": {
+    "2080": {
+      "Cybercitizen": "2080",
+      "traits": {
+        "Background": "Pink Fever",
+        "Skin tone": "Tanned White",
+        "Eyebrows": "Brown",
+        "Eyes": "Purple",
+        "Hair": "Brown buzzcut",
+        "Shirt": "Purple T-shirt",
+        "Chain": "Golden",
+        "Clothes": "Luxury pimp",
+        "Gender": "Male"
+      }
+    }
+  }
+}
+```
+
+This means Gen2 is fully self-contained — the scraper's `enumerate-rest` command captures token ID, citizen number, and complete traits in a single pass. No external file or second API call needed. The same 721-format pattern was later reused for Aneta Angels and CyberEggs, making it the de facto pre-EIP-24 trait standard on Ergo.
+
+Parsing is straightforward: `json.loads(description)` → navigate `["721"][number]["traits"]`. The only wrinkle is that the description is a JSON string stored as a string (escaped quotes), not a nested object.
+
+### Gen3 Traits (External Source, No On-Chain Storage)
+
+Gen3 Citizens do not have traits on-chain at all. The `description` field contains only a generic string ("Generation 3 of creatures living in CyberVerse..."). R8 holds a SHA-256 hash of the image, and R9 holds an IPFS CID pointing to the image folder — but no `.json` metadata files exist alongside the images (confirmed by attempting to fetch `{CID}/2878.json` via IPFS gateways — "no link named" error).
+
+Traits for Gen3 live exclusively in an external JavaScript file hosted by the game site. This file maps citizen number → trait set. To get full Gen3 data, the scraper output (which provides `token_id` → `number` mapping) must be joined with this traits file on the `number`/`id` field.
+
+This is the key difference: Gen2 data is fully recoverable from the blockchain alone. Gen3 depends on an external file that could disappear if the game site goes offline. The traits file should be cached locally as part of any archival effort.
+
+---
+
+## Holder Analysis
+
+The holder analysis script queries the current holder of every token in a collection by checking the unspent box:
+
+```python
+def get_token_holder(token_id: str) -> dict:
+    url = f"{ERGO_API}/boxes/unspent/byTokenId/{token_id}"
+    response = requests.get(url, timeout=60)
+    items = response.json().get("items", [])
+    if items:
+        return {"holder": items[0]["address"], "box_id": items[0]["boxId"]}
+    return {"holder": None, "box_id": None}
+```
+
+**Checkpoint saves:** For large collections (Gen3 = 5,999 tokens), the script saves a checkpoint every 500 tokens. If the API drops or the script crashes, you resume from the last checkpoint rather than starting over. This was added after losing progress on a Gen2 run that timed out at token 1,800.
+
+**Results:**
+
+| Collection | Tokens | Unique Holders | Avg per Holder |
+|------------|--------|----------------|----------------|
+| Gen2 | 2,083 | 418 | 5.0 |
+| Gen3 | 5,999 | 363 | 16.5 |
+
+Gen3 holder concentration is notable — the top 10 holders control 39.8% of all Gen3 Citizens, with the largest single holder at 370 tokens (6.2%).
+
+---
+
+## Marketplace Data Extraction
+
+### MewMart (Current Ergo Marketplace)
+
+MewMart listings live in smart contract boxes with a known ErgoTree. The approach:
+
+1. Use GraphQL to query all spent boxes matching the MewMart ErgoTree
+2. Parse R4 (price in nanoERG) and R5 (seller proposition bytes) from each box
+3. Cross-reference token IDs against `cyberverse_ids.json` to identify Cyberverse sales
+4. Enrich with USD values using CoinGecko historical price data
+
+**Old vs. New MewMart contract:** MewMart has at least two contract versions with different ErgoTrees. Both must be queried to get complete sales history.
+
+**Token payment discovery:** Some MewMart sales are denominated in tokens (CYPX, USE, RSN) rather than ERG. The script discovers payment tokens dynamically from the box data and queries current prices for conversion.
+
+### SkyHarbor (Shut Down)
+
+SkyHarbor used a different contract pattern — each listing had a unique ErgoTree with the seller's address baked into the contract constants. This means you cannot query all SkyHarbor listings by a single ErgoTree. Instead, query by the factory/proxy contract address (`26tpZU6i...`).
+
+**Sale vs. Withdrawal:** With 50,000+ transactions on the SkyHarbor contract, distinguishing sales from withdrawals (tokens returned to sellers during shutdown) required checking whether the spending transaction sent ERG to the seller address or just returned the NFT.
+
+---
+
+## Cross-Chain Schema Comparison (Ergo vs. Ronin)
+
+Cyberverse exists on both Ergo and Ronin (Gen4 Citizens and Apartments are Ronin-native). Working with both chains exposed fundamental differences in how NFT data is structured and accessed.
+
+### Data Storage Model
+
+| Aspect | Ergo | Ronin (EVM) |
+|--------|------|-------------|
+| Metadata location | On-chain in box registers (R4-R9) | Off-chain via tokenURI → IPFS/HTTP JSON |
+| Property encoding | Custom hex in R6 (length-prefixed key-value) | Standard ERC-721 metadata JSON |
+| Trait storage | R5 JSON string or external file | `attributes` array in metadata JSON |
+| Token ID format | 64-char hex (= minting box ID) | Sequential uint256 |
+| Burn detection | Query `boxes/unspent/byTokenId` → empty = burned | Check `ownerOf()` → reverts or zero address |
+| Holder lookup | `boxes/unspent/byTokenId` → box address | `ownerOf(tokenId)` contract call |
+
+### API Access Patterns
+
+| Operation | Ergo | Ronin |
+|-----------|------|-------|
+| Enumerate collection | Scan mint wallet tx history | Query contract `totalSupply` + `tokenByIndex` |
+| Get metadata | Fetch box registers, decode hex | Fetch `tokenURI`, follow to JSON |
+| Sales history | GraphQL by ErgoTree (MewMart) or address (SkyHarbor) | Marketplace API (Sky Mavis) with structured endpoints |
+| Floor price | No native source, must derive from listings | Sky Mavis API provides floor directly |
+| Price denomination | nanoERG (or token ID for non-ERG sales) | RON with USD conversion via API |
+
+### Practical Implications
+
+Ergo's on-chain storage means metadata survives even if external services go down — you can always reconstruct a token's properties from the chain. But the encoding is non-standard and collection-specific (R6 hex for Cars vs. R5 JSON for Eggs vs. external JS file for Gen3 traits).
+
+Ronin follows EVM conventions — standardized metadata JSON, marketplace APIs with pagination and filtering, direct floor/volume endpoints. The tradeoff is dependence on external metadata hosting (IPFS or HTTP) and marketplace uptime.
+
+For the viewer, this means two completely different data pipelines. Ergo data is scraped once and updated manually. Ronin data is fetched daily via GitHub Actions from the Sky Mavis API, with prices already denominated in both RON and USD.
+
+---
+
+## GitHub Actions Automation
+
+Three automated workflows run in the `cyberverse-viewer` repo:
+
+| Workflow | Schedule | Script Location | Output |
+|----------|----------|-----------------|--------|
+| Floor Tracker | 23:59 UTC daily | `public/data/cyberverse_RON_floor_tracker.py` | `cyberverse_RON_floor_history.json` |
+| Price Tracker | 00:05 UTC daily | `public/data/token_price_tracker.py` | `token_price_history.json` |
+| MewMart Listings | 06:00 UTC daily | `scripts/update_mewmart_listings.py` | `mew_listings_cyber.json`, `.csv` |
+
+**Workflow pattern (all three follow this):**
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
+  - run: pip install requests
+  - run: python scripts/the_script.py
+  - run: |
+      git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      git config --local user.name "github-actions[bot]"
+      git add public/data/*.json
+      git diff --staged --quiet || git commit -m "Update data $(date -u +%Y-%m-%d)"
+      git push
+```
+
+**Critical setting:** GitHub Actions must have **Read and write permissions** under Settings → Actions → General → Workflow permissions. Without this, the commit step silently fails.
+
+**The `git diff --staged --quiet ||` guard** prevents empty commits when the data hasn't changed (e.g., if the external API returned identical data).
+
+### Ronin Floor Tracker
+
+The floor tracker queries the Sky Mavis Ronin marketplace API for Gen4 Citizens and Apartments (Cyberverse collections on Ronin). It captures floor price, supply count, owner count, and owner distribution (wallets grouped by holding count).
+
+### CoinGecko Price Tracker
+
+Fetches daily ERG and RON prices at midnight UTC. Used to convert historical sale prices to USD and to display price charts on the viewer site. CoinGecko's free API tier was sufficient (no API key required for basic price queries).
+
+---
+
+## Data Freshness & Refresh Strategy
+
+Not all datasets in the toolchain age at the same rate. Understanding what goes stale and when determines which scripts need re-running and which data can be treated as permanent.
+
+### Static Data (Never Changes)
+
+| Dataset | Why It's Static |
+|---------|----------------|
+| `cyberverse_ids.json` (token ID index) | Token IDs are immutable on-chain. A minted token's ID never changes. |
+| Collection metadata (names, descriptions) | Set at mint time in registers, never modified. |
+| EIP-24 properties (Cars, Apartments) | Stored in issuer box R6, immutable after minting. |
+| Burn status (for completed collections) | Once burned, always burned. Eggs/Pets won't have new mints. |
+
+These files can be generated once and committed to the repo permanently. The only reason to regenerate would be if a new collection launches or a data error is discovered.
+
+### Slow-Changing Data (Monthly Refresh)
+
+| Dataset | Change Driver | Refresh Cadence |
+|---------|--------------|-----------------|
+| Holder data (`_with_holders.json`) | Trades, transfers, marketplace sales | Monthly or after major sales events |
+| Circulating supply (for active collections) | New mints (if any), additional burns | Monthly or on announcement |
+| Holder rankings / concentration stats | Derived from holder data | Regenerate after holder refresh |
+
+Holder data is the most expensive to refresh (3+ hours for Gen3). Only worth re-running if you need current whale tracking or concentration analysis. For the viewer's basic "who owns this token" feature, slightly stale data is acceptable.
+
+### Fast-Changing Data (Daily via GitHub Actions)
+
+| Dataset | Workflow | Staleness Threshold |
+|---------|----------|-------------------|
+| Ronin floor prices | `floor-tracker.yml` | 24 hours |
+| ERG/RON token prices | `price-tracker.yml` | 24 hours |
+| MewMart active listings | `update-mewmart.yml` | 24 hours |
+
+These are handled by the three GitHub Actions cron jobs. If a workflow fails (API down, rate limit, GitHub outage), the data is stale but the viewer still serves the last-known-good JSON. No crash, just slightly old data.
+
+### Event-Driven Data (Manual Trigger)
+
+| Dataset | Trigger |
+|---------|---------|
+| MewMart historical sales | New contract version deployed, or periodic backfill |
+| SkyHarbor sales | One-time extraction (marketplace shut down) |
+| New collection enumeration | Cyberverse announces new collection |
+
+SkyHarbor data is frozen — the marketplace shut down, so the 9,090 confirmed sales are the final dataset. MewMart historical sales should be backfilled periodically (quarterly) to capture new sales that accumulate between the daily listing snapshots.
+
+### Recommended Maintenance Cadence
+
+| Frequency | Action |
+|-----------|--------|
+| Daily | Automated — floor prices, token prices, active listings |
+| Monthly | Re-run holder analysis if needed for analytics |
+| Quarterly | Backfill MewMart historical sales, verify burn counts |
+| On announcement | Enumerate any new collection, update `cyberverse_ids.json` |
+
+---
+
+## Data Output Structure
+
+### Token ID Index (`cyberverse_ids.json`, ~650KB)
+
+The master lookup file. Contains just token IDs grouped by collection — designed for O(1) membership testing in the frontend:
+
+```javascript
+const cvSets = Object.fromEntries(
+  Object.entries(cv).filter(([k]) => k !== '_metadata')
+    .map(([k, v]) => [k, new Set(v)])
+);
+
+function getCollection(tokenId) {
+  for (const [name, set] of Object.entries(cvSets)) {
+    if (set.has(tokenId)) return name;
+  }
+  return null;
+}
+```
+
+### Detailed Collection Files (~29MB total)
+
+Each collection has a full JSON file with token metadata, traits, and properties. Filtered versions (`_filtered.json`) exclude burned and unissued tokens.
+
+### Holder Data
+
+Separate files for Gen2 and Gen3 with `current_holder` field on each token, plus aggregated ranking files in both JSON and CSV format.
+
+---
+
+## Public Scripts
+
+Two scripts are published alongside this document. Together they cover the foundational workflow for enumerating and classifying any Ergo NFT collection.
+
+**`ergo_nft_scraper.py`** — General-purpose Ergo NFT enumeration tool. Given a mint wallet address, scans transaction history to identify all minted tokens using the Ergo minting rule (token ID = first input box ID). Supports both REST API and GraphQL modes, with built-in rate limiting, retry logic, and checkpoint saves every 500 tokens. Outputs a JSON file per collection with token IDs, names, descriptions, and parsed item numbers. Works with any Ergo NFT collection — just supply the mint address.
+
+```
+python ergo_nft_scraper.py enumerate <mint_address> <collection_name>
+python ergo_nft_scraper.py enumerate <mint_address> <collection_name> --graphql
+python ergo_nft_scraper.py fetch-details <collection_name>_rest.json
+```
+
+**`ergo_nft_filter.py`** — Token status classifier. Takes the output of the scraper and a mint wallet address, then queries each token's current unspent box to determine whether it is circulating (held by a non-mint wallet), burned (no unspent box exists), or unissued (still in the mint wallet). Outputs separate JSON files for each category.
+
+```
+python ergo_nft_filter.py <collection_name>_rest.json <mint_wallet_address>
+```
+
+These two scripts are the minimum viable toolkit for anyone working with Ergo NFT collections — without them, you can't do anything meaningful with a collection (holder analysis, trait-based airdrops, rarity scoring, marketplace tracking, etc.).
+
+Additional tooling was built on top of these foundations for property extraction, holder analytics, marketplace data mining, cross-chain tracking, and automated daily updates. The patterns and lessons from that work are documented throughout this reference.
+
+---
+
+## Debugging Checklist
+
+When a script hangs, returns unexpected results, or crashes:
+
+1. **API timeout?** Increase `timeout` parameter to 60-90 seconds. The Ergo API sometimes needs to warm up.
+2. **Empty results?** Check if the `offset` has exceeded total items. The API returns an empty `items` array, not an error.
+3. **Rate limited?** Increase `time.sleep()` values. The 10-request burst pattern (0.2s between, 1s every 10th) is the tested sweet spot.
+4. **Wrong mint address?** Double-check against the registry. CyberPets and CyberEggs share a wallet. Audio spans 5 wallets.
+5. **Token appears burned but shouldn't be?** The `boxes/unspent/byTokenId` endpoint might have indexing lag. Retry after 30 seconds.
+6. **R6 properties garbled?** The regex decoder catches noise. Check individual token JSONs — per-token output is usually clean even when the summary shows artifacts.
+7. **GraphQL validation error?** Use `spentBy { transactionId }` not `spentTransactionId`. Schema varies by endpoint.
+8. **GitHub Action didn't commit?** Verify workflow permissions are set to "Read and write" in repo Settings → Actions → General.
+9. **High-tx wallet (75k+)?** Use the ergexplorer `byIssuedAddress` endpoint instead of scanning transactions.
+10. **PowerShell vs CMD?** `(Get-Item file.json).Length` is PowerShell syntax. Use `dir file.json` in CMD.
+
+---
+
+## Reuse: The Aneta Angels Pattern
+
+The entire enumeration approach was later reused for Aneta Angels (a separate Ergo NFT collection) with minimal adaptation. The key differences were:
+
+- Different mint address
+- R9 contains the IPFS URL (not R7 as initially assumed)
+- R7 contains 2-byte type flags (`01 01` = image NFT)
+
+**Lesson:** Any Ergo NFT collection can be enumerated with this toolchain if you know the mint address. The pattern is: scan mint wallet → identify mints via token ID = first input box ID → fetch metadata from registers → filter burned/unissued → export JSON. The only variables are which registers hold which data.
+
+---
+
+## Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Total tokens indexed | 15,349 |
+| Ergo collections | 11 |
+| Ronin collections | 2 (Gen4 Citizens, Apartments) |
+| Unique mint wallets | 14 |
+| Data files generated | ~29MB |
+| Lookup index size | 650KB |
+| GitHub Actions workflows | 3 (daily cron) |
+| MewMart Cyberverse sales tracked | 230 (3,898 ERG / $3,067 USD volume) |
+| Gen2 unique holders | 418 |
+| Gen3 unique holders | 363 |
+
+---
+
+## Environment
+
+All scripts run on Windows 10 with Python 3.x and a single dependency (`pip install requests`). No virtual environment needed. Output files are JSON with `indent=2` for readability. The `cyberverse-viewer` repo on GitHub hosts the processed data and serves it through Vercel.
+
+The local Ergo indexed node (`http://localhost:9053`) was available but not used for enumeration — the public Explorer API was sufficient for all scraping tasks. The local node could serve as a fallback if the public API became unreliable.
+
+
+========================================================================
+
+<!-- FILE: content/guides/dort_buyback_bot_toolchain.md -->
+---
+title: "DORT/GORT Buyback Bot — Technical Reference"
+category: guide
+difficulty: advanced
+tags: [dexy, dort, gort, buyback, spectrum-dex, transaction-building, ergo-lib-wasm]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# DORT/GORT Buyback Bot — Technical Reference
+
+**Date:** January 2026
+**Protocol:** Dexy USD (USE stablecoin on Ergo blockchain)
+**Stack:** Node.js + ergo-lib-wasm-nodejs + Local/Remote Ergo node
+
+---
+
+## Infrastructure
+
+The bot runs on a Windows 10 workstation via Task Scheduler, executing buyback swaps against Spectrum Finance LP pools on Ergo mainnet. It interacts with an Ergo full node for block headers and transaction submission, and the Explorer API for box discovery.
+
+| Component | Detail |
+|-----------|--------|
+| Runtime | Node.js (ESM modules) |
+| Signing library | `ergo-lib-wasm-nodejs` |
+| Environment | `dotenv` loading `.env.local` |
+| Primary node | `http://<LOCAL_NODE_IP>:9053` (local indexed node) |
+| Backup node | `http://<REMOTE_NODE_IP>:9053` (remote) |
+| Explorer API | `https://api.ergoplatform.com/api/v1` |
+| Scheduling | Windows Task Scheduler (9 AM + 9 PM daily) |
+| Notifications | Telegram bot + Windows toast + log file |
+
+---
+
+## What the Bot Does
+
+The buyback bot executes small, automated ERG→Token swaps through the Dexy protocol's buyback contract boxes. These boxes accumulate ERG from protocol fees (every $USE mint/purchase contributes). The bot applies gentle, sustained buy pressure on DORT (and GORT) by swapping 1% of the buyback box's ERG balance per run, twice daily.
+
+The buyback box is a permissionless smart contract — anyone can build and submit a valid swap transaction. The bot operator only pays the miner fee (~0.0011 ERG); the swap ERG comes from the contract box itself.
+
+---
+
+## Token Configuration
+
+| Parameter | DORT | GORT |
+|-----------|------|------|
+| Token ID | `ae399fcb...3cb2dd` | (separate config) |
+| LP Pool NFT | `35bc7189...035f0e` | (separate config) |
+| Buyback Contract NFT | `dcce07af...92da4f` | `bf24ed4a...3755c` |
+| LP Fee | 990/1000 (1%) | 997/1000 (0.3%) |
+| Token Decimals | 0 | 0 |
+
+**GORT Buyback NFT gotcha:** The deployment documentation had a truncated 62-character NFT ID. Ergo token IDs are always 64 hex characters. The missing two characters caused lookup failures until the full ID was sourced from the actual on-chain box.
+
+---
+
+## Transaction Structure
+
+Every buyback swap produces exactly 4 outputs from 3+ inputs:
+
+**Inputs:**
+1. LP Box (no context extension — permissionless contract)
+2. Buyback Box with `ContextExtension {0: 0x0400}` (action=0 for swap)
+3. Fee funding box(es) from operator wallet (P2PK, requires signature)
+
+**Outputs:**
+1. LP Box (updated reserves)
+2. Buyback Box (less ERG, more token, R4 = input box ID)
+3. Change box (fee wallet remainder)
+4. Miner fee box (explicit output to the EIP-27 miner fee contract)
+
+**Critical contract requirement (DORT):** The output buyback box must have `R4 = Coll[Byte]` containing the input buyback box's `boxId`. The contract validates `OUTPUTS(1).R4[Coll[Byte]].get == SELF.id`. Omitting R4 causes the contract to fail with `Option.get on None`. This was discovered only after the bot failed on-chain — the GORT contract documentation did not mention this requirement, and initial development was based on GORT examples.
+
+---
+
+## LP Swap Math (Constant Product AMM)
+
+The Spectrum LP uses a constant product formula with a fee deduction on the input side.
+
+**Buy (ERG → Token):**
+
+```
+tokenOutput = (tokenReserve × ergInput × feeNum) / (ergReserve × feeDenom + ergInput × feeNum)
+```
+
+**Slippage calculation:**
+
+```
+spotPrice     = tokenReserve / ergReserve
+effectiveRate = tokenOutput / ergInput
+slippage      = (spotPrice - effectiveRate) / spotPrice × 100
+```
+
+**Fee is stored in the LP box's R4 register.** For DORT, `R4 = 990` means 990/1000 = 99% retained → 1% fee. For GORT, `R4 = 997` means 0.3% fee. The bot reads R4 at runtime rather than hardcoding, though a default is provided as fallback.
+
+**Optimal swap sizing:** A binary search finds the maximum ERG amount that keeps slippage at or below a target (default 2%):
+
+```javascript
+function calcOptimalBuyback(ergAvailable, ergReserve, tokenReserve, maxSlippage = 2.0) {
+  let low = 100_000_000n;   // 0.1 ERG min
+  let high = ergAvailable - 10_000_000n;
+  let best = low;
+  while (low <= high) {
+    const mid = (low + high) / 2n;
+    const slippage = calcSlippage(mid, ergReserve, tokenReserve);
+    if (slippage <= maxSlippage) {
+      best = mid;
+      low = mid + 100_000_000n;
+    } else {
+      high = mid - 100_000_000n;
+    }
+  }
+  return best;
+}
+```
+
+For a pool with ~146 ERG / 79,881 DORT, 2% slippage caps at ~2.28 ERG per swap. The daily 1% auto-mode typically swaps ~0.84 ERG per run (1% of ~84 ERG balance), well under the 2% slippage ceiling.
+
+---
+
+## The Big Bug: JavaScript Number Precision Loss
+
+This was the single hardest issue in the entire project, consuming multiple debugging sessions before root cause was identified.
+
+### The Problem
+
+Spectrum LP boxes contain an LP token with an amount near `2^63`: `9223372036747791116`. JavaScript's `Number` type can only represent integers accurately up to `2^53` (~9 quadrillion). When `response.json()` parses the Explorer API response, this value silently truncates to `9223372036747791000` — a difference of 116.
+
+This causes a cascade:
+
+1. `ErgoBox.from_json()` receives the truncated amount
+2. ergo-lib recalculates the box ID from the (now incorrect) serialized bytes
+3. The calculated box ID doesn't match the Explorer-provided box ID
+4. Error: `Box id parsed from JSON ... differs from calculated from box serialized bytes ...`
+
+Even when the box parsed successfully, the signed transaction contained the wrong LP token amount. The node correctly rejected it with the misleading error `Amount of Ergs in inputs should be equal to amount of Erg in outputs`, which sent debugging in the wrong direction for hours.
+
+### The Fix (Two Parts)
+
+**Part 1 — Preserve large numbers during JSON parsing:**
+
+```javascript
+async function fetchJsonSafe(url) {
+  const response = await fetch(url);
+  const text = await response.text();
+  // Wrap any integer with 12+ digits in quotes before parsing
+  const safeText = text.replace(/:(\s*)(\d{12,})(\s*[,\}\]])/g, ':"$2"$3');
+  return JSON.parse(safeText);
+}
+```
+
+**Part 2 — Use binary serialization for transaction submission:**
+
+Even with string-preserved amounts flowing through the build pipeline correctly, `signedTx.to_json()` converts I64 values back to JavaScript Number, re-introducing precision loss. The fix is to bypass JSON entirely for submission:
+
+```javascript
+const txBytes = Buffer.from(signedTx.sigma_serialize_bytes()).toString('hex');
+const response = await fetch(`${ERGO_NODE}/transactions/bytes`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(txBytes)  // hex string, not a JS object
+});
+```
+
+The `/transactions/bytes` endpoint accepts a hex-encoded sigma-serialized transaction. This preserves full 64-bit integer precision and is the reason the first successful DORT buyback transaction worked.
+
+### Lesson
+
+Any time an Ergo box contains token amounts exceeding `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991), standard `JSON.parse()` will silently corrupt the data. Always use a text-first approach with regex number preservation, and always submit transactions via binary serialization.
+
+---
+
+## Box Cleaning for ergo-lib
+
+The Explorer API returns box data with extra fields and nested register objects that ergo-lib cannot parse. A cleaning function strips the response down to the exact fields ergo-lib expects:
+
+```javascript
+function cleanBoxForErgoLib(box) {
+  const cleaned = {
+    boxId: box.boxId,
+    value: typeof box.value === 'string' ? box.value : box.value.toString(),
+    ergoTree: box.ergoTree,
+    creationHeight: box.creationHeight,
+    assets: (box.assets || []).map(a => ({
+      tokenId: a.tokenId,
+      amount: typeof a.amount === 'string' ? a.amount : a.amount.toString()
+    })),
+    additionalRegisters: {},
+    transactionId: box.transactionId,
+    index: box.index
+  };
+  
+  if (box.additionalRegisters) {
+    for (const [reg, data] of Object.entries(box.additionalRegisters)) {
+      if (data) {
+        if (typeof data === 'object' && data.serializedValue) {
+          cleaned.additionalRegisters[reg] = data.serializedValue;
+        } else if (typeof data === 'string') {
+          cleaned.additionalRegisters[reg] = data;
+        }
+      }
+    }
+  }
+  
+  return cleaned;
+}
+```
+
+**Key points:**
+
+- `value` and `amount` must be strings (not numbers) to preserve precision for large values.
+- Explorer wraps registers as objects with `serializedValue` and `renderedValue` — ergo-lib needs only the raw hex string.
+- `transactionId` and `index` are required for box identity — without them, ergo-lib can't match the box ID.
+- Extra Explorer fields like `globalIndex`, `settlementHeight`, `mainChain`, `spentTransactionId`, token `name`, `decimals`, and `type` must be omitted — they cause parsing failures.
+
+---
+
+## Wallet and Signing
+
+### Key Derivation (EIP-3)
+
+The bot uses BIP-44/EIP-3 derivation at path `m/44'/429'/0'/0/0`:
+
+```javascript
+const seed = lib.Mnemonic.to_seed(mnemonic, '');
+const root = lib.ExtSecretKey.derive_master(seed);
+const path = lib.DerivationPath.new(0, new Uint32Array([0]));
+const derived = root.derive(path);
+const secretKey = lib.SecretKey.dlog_from_bytes(derived.secret_key_bytes());
+const address = derived.public_key().to_address().to_base58(lib.NetworkPrefix.Mainnet);
+```
+
+**Do not use `Wallet.from_mnemonic()`** — use `Wallet.from_secrets()` with the manually derived key. The manual derivation matches what Nautilus wallet produces.
+
+### ErgoStateContext
+
+Signing requires block headers for script evaluation context:
+
+```javascript
+async function createStateContext(lib) {
+  const response = await fetch(`${ERGO_NODE}/blocks/lastHeaders/10`);
+  const headersData = await response.json();
+  
+  const blockHeaders = lib.BlockHeaders.from_json(headersData);  // Array directly, NOT JSON string
+  const latestHeader = lib.BlockHeader.from_json(JSON.stringify(headersData[0]));
+  const preHeader = lib.PreHeader.from_block_header(latestHeader);
+  
+  if (lib.Parameters?.default) {
+    return new lib.ErgoStateContext(preHeader, blockHeaders, lib.Parameters.default());
+  }
+  return new lib.ErgoStateContext(preHeader, blockHeaders);
+}
+```
+
+**Critical: `BlockHeaders.from_json()` takes a JavaScript array, not a JSON string.** Passing `JSON.stringify(headersData)` produces `Failed to parse BlockHeader from JSON string: JsValue("{")`. This wasted an entire debugging session.
+
+**Also critical:** ergo-lib 0.28+ requires a third `Parameters` argument to `ErgoStateContext`. Older versions do not. The bot feature-detects `lib.Parameters?.default` to handle both.
+
+### Signing Mechanics
+
+Only the fee-funding input box requires a wallet signature. The LP box and buyback box are smart contracts — ergo-lib generates empty proofs for them:
+
+```
+Input 0 (LP):      proof EMPTY (contract)
+Input 1 (Buyback): proof EMPTY (contract)
+Input 2 (Fee):     proof 112 bytes
+```
+
+---
+
+## Context Extension: The action=0 Pattern
+
+The buyback contract uses a context variable at index 0 to determine the action. For a swap, the value is `Int(0)`, serialized as `0x0400` (SInt type tag `04` + ZigZag-encoded `0`).
+
+```javascript
+const contextExt = new lib.ContextExtension();
+contextExt.set_pair(0, lib.Constant.from_i32(0));
+```
+
+In the unsigned transaction JSON, this appears as:
+
+```json
+{ "boxId": "...", "extension": { "0": "0400" } }
+```
+
+The LP box input has an empty extension (`{}`). The fee funding box also has an empty extension.
+
+---
+
+## Miner Fee as Explicit Output
+
+The miner fee is an explicit 4th output box, not implicit. Using ergo-lib's `UnsignedTransaction` constructor, the fee parameter is set to `MIN_BOX_VALUE` (not the actual fee), and the real fee appears as a dedicated output to the EIP-27 miner fee contract:
+
+```javascript
+const minerFeeTree = lib.ErgoTree.from_base16_bytes(MINER_FEE_ERGO_TREE);
+const feeOutBuilder = new lib.ErgoBoxCandidateBuilder(
+  lib.BoxValue.from_i64(lib.I64.from_str(TX_FEE.toString())),
+  lib.Contract.pay_to_address(lib.Address.recreate_from_ergo_tree(minerFeeTree)),
+  height
+);
+```
+
+The balance check is: total input nanoERG = total output nanoERG (all 4 outputs). The difference must be exactly 0. Earlier iterations omitted the miner fee output and relied on the UnsignedTransaction constructor's fee parameter, which produced valid-looking transactions that were silently rejected.
+
+---
+
+## Multiple Buyback Boxes
+
+The GORT buyback NFT exists in multiple UTXO boxes (3 were observed). The bot queries for all unspent boxes containing the buyback NFT and selects the one with the most ERG (`selectRichest` flag). Without this, it would pick the first result, which might have only 1 ERG — enough for exactly 1 swap that buys ~1 token.
+
+```javascript
+if (selectRichest && data.items.length > 1) {
+  const sorted = data.items.sort((a, b) => {
+    const aVal = BigInt(a.value);
+    const bVal = BigInt(b.value);
+    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+  });
+  return sorted[0];
+}
+```
+
+---
+
+## Multi-Buyback Mode
+
+For spending a larger portion of the buyback balance efficiently, the bot supports a multi-swap mode. Binary search determines the optimal ERG amount per swap at a target slippage, then executes them sequentially with a 5-second delay between each.
+
+**Example at 2% slippage with ~90 ERG available:**
+
+| Metric | Value |
+|--------|-------|
+| Swaps | 17 |
+| Total ERG spent | 44.90 ERG |
+| Total DORT received | 18,732 DORT |
+| Avg slippage | 1.90% |
+| Total miner fees | 0.019 ERG |
+| Effective rate | 417.2 DORT/ERG |
+
+Compared to a single 45 ERG swap which would exceed 25% slippage and be rejected by the contract.
+
+**Slippage efficiency tradeoff:**
+
+| Target Slippage | Swaps | Effective Rate |
+|-----------------|-------|----------------|
+| 1% | 20 | 494.5 DORT/ERG |
+| 2% | 17 | 417.2 DORT/ERG |
+
+Lower slippage per swap yields better effective rates but requires more transactions. For daily automated operation, the 1% auto-mode (1% of balance, ~0.84 ERG per swap) achieves excellent per-swap efficiency.
+
+---
+
+## Race Conditions
+
+Multiple operators may be running buyback bots or manually executing swaps against the same LP and buyback boxes. When two transactions target the same input boxes, one will be mined and the other will fail with a "double spent" error. This is expected behavior, not a bug. The bot should handle this gracefully — log the error and try again on the next scheduled run.
+
+The first live DORT buyback transaction succeeded, but a simultaneous operator was observed submitting their own swap at the same time. Their transaction used a lower miner fee (0.002 ERG vs our 0.0011 ERG).
+
+---
+
+## Notification System
+
+Three notification channels run in parallel after every execution:
+
+**Telegram bot:** Sends HTML-formatted message via the Bot API with the swap summary and a clickable Explorer link. Uses `parse_mode: 'HTML'` and `disable_web_page_preview: false` for the link preview.
+
+**Windows toast:** Uses `node-notifier` for a system notification popup. Installed via `npm install node-notifier`. Fails silently if the package isn't installed.
+
+**Log file:** Appends timestamped entries to `./logs/buyback.log`. The log file revealed a UTF-8 encoding issue where the arrow character `→` rendered as `â†'` in the Windows console log — a cosmetic issue only.
+
+---
+
+## Windows Task Scheduler Setup
+
+Two tasks are configured: DORT AM (9:00 AM) and DORT PM (9:00 PM).
+
+| Field | Value |
+|-------|-------|
+| Program/script | `node` |
+| Add arguments | `buyback-bot.js --token DORT` |
+| Start in | `C:\Users\...\DORT+GORT BOT` |
+
+The "Start in" field is critical — without it, the task can't find `.env.local` or the bot script. "Run whether user is logged on or not" must be selected for unattended operation (requires entering the Windows password).
+
+The first scheduled run fired but produced no notification, leading to a manual run for verification. After confirming the Telegram integration worked, subsequent scheduled runs operated correctly.
+
+---
+
+## Node Fallback Pattern
+
+The bot tries the local node first, then falls back to the remote backup:
+
+```javascript
+const nodes = [
+  'http://<LOCAL_NODE_IP>:9053',   // Local
+  'http://<REMOTE_NODE_IP>:9053'   // Remote backup
+];
+```
+
+Early runs using only a remote node encountered intermittent `fetch failed` errors — likely network timeouts or node restarts. Adding the local node as primary eliminated these. If the local node is down, the bot automatically tries the backup.
+
+The Explorer API (`api.ergoplatform.com`) is used for box discovery (finding LP and buyback boxes by NFT ID, fetching wallet UTXOs) but not for transaction submission. The node API's `/transactions/bytes` endpoint is always used for submission.
+
+---
+
+## Minimum Swap Amounts
+
+Through testing, the following minimum thresholds were established:
+
+| Amount | Result |
+|--------|--------|
+| 0.1 ERG | ✅ Works (posted live on mainnet) |
+| 0.2 ERG | ✅ Works (initially adjusted to 0.3 by floor, then floor lowered) |
+| 0.3 ERG | ✅ Works (original minimum) |
+
+The minimum was initially set at 0.3 ERG and later lowered to 0.2 ERG after testing confirmed 0.1 ERG transactions posted successfully. The minimum protects against dust transactions where the token output rounds to 0.
+
+---
+
+## DORT vs GORT Contract Differences
+
+Despite using the same general buyback pattern, the two contracts have a critical difference:
+
+| Feature | DORT Buyback | GORT Buyback |
+|---------|-------------|-------------|
+| R4 on output | **Required** (input box ID) | Not required |
+| LP Fee | 1% (990/1000) | 0.3% (997/1000) |
+| Buyback box count | 1 | 3+ (select richest) |
+| Typical balance | ~84 ERG | ~1 ERG per box |
+
+This difference was discovered the hard way: the bot was initially built from GORT buyback documentation which didn't mention R4. When deployed against the DORT contract, the transaction failed on-chain with `v4.getReg(4).get == SELF.id → Not found: calling Option.get on None`. Adding R4 as `Coll[Byte]` of the input box ID fixed it.
+
+---
+
+## Evolution Timeline
+
+| Phase | Key Milestone |
+|-------|--------------|
+| v0.1 | `lp-swap.js` unified CLI — builds and signs TX, but Explorer returns 200 without confirming |
+| v0.2 | Diagnosed JSON precision loss in LP token amount |
+| v0.3 | Added `fetchJsonSafe` regex for large number preservation |
+| v0.4 | Discovered `sigma_serialize_bytes()` for binary submission |
+| v0.5 | First successful DORT buyback posted to mainnet via `/transactions/bytes` |
+| v1.0 | `dort-buyback-bot.js` — clean single-purpose bot with auto/custom swap modes |
+| v1.5 | Multi-buyback mode added (batch sequential swaps with slippage targeting) |
+| v2.0 | `buyback-bot.js` — DORT + GORT dual-token support, Telegram/Windows notifications, local node with fallback, Task Scheduler automation |
+
+---
+
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `ERGO_SERVER_MNEMONIC` | 15-word BIP39 mnemonic for fee-funding wallet |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather |
+| `TELEGRAM_CHAT_ID` | Target chat/group ID for notifications |
+
+All stored in `.env.local` (never committed to version control).
+
+---
+
+## Ergo Node API Patterns Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/blocks/lastHeaders/10` | GET | Block headers for ErgoStateContext |
+| `/info` | GET | Current blockchain height |
+| `/transactions/bytes` | POST | Submit signed TX as hex bytes |
+
+| Explorer Endpoint | Method | Purpose |
+|-------------------|--------|---------|
+| `/boxes/unspent/byTokenId/{id}` | GET | Find LP box and buyback box by NFT |
+| `/boxes/unspent/byAddress/{addr}` | GET | Find fee-funding UTXOs |
+
+---
+
+## Debugging Checklist
+
+When a buyback transaction fails, check in this order:
+
+1. **Has the input box been spent?** Another operator may have beat you (race condition).
+2. **Is the LP token amount correct?** Check for Number precision loss — the LP token near `2^63` is the most common failure cause.
+3. **Is R4 set on the buyback output?** DORT requires it, GORT does not.
+4. **Is the context extension correct?** Must be `{0: 0x0400}` for action=0 swap.
+5. **Are all registers preserved on LP output?** Copy R4 (fee numerator) from input.
+6. **Is the token order preserved?** LP output tokens must appear in the same order as the input.
+7. **Is the balance exactly zero?** Sum of all output nanoERG must equal sum of all input nanoERG.
+8. **Are you using binary submission?** JSON submission via `/transactions` will fail due to precision loss.
+
+---
+
+## Prior Art
+
+The signing infrastructure was adapted from `ergo-sign-tx.js` and `ergo-tx_2_.js`, which had been successfully posting transactions to Ergo mainnet for other projects. The key derivation pattern, `Wallet.from_secrets()` approach, and ErgoStateContext construction were proven in that context before being adapted for the more complex multi-input buyback transaction.
+
 
 ========================================================================
 
@@ -93668,6 +95417,314 @@ proveDlog(pubKey)
 
 ========================================================================
 
+<!-- FILE: content/reference/data-model/ergo-register-decoding-reference.md -->
+---
+title: "Ergo Register Encoding & Decoding Reference"
+category: reference
+difficulty: advanced
+tags: [registers, decoding, hex, zigzag, sigma-types, data-model]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Ergo Register Encoding & Decoding Reference
+
+---
+
+## Overview
+
+Ergo box registers (R4-R9) store typed data in a compact binary encoding. The raw hex values returned by Explorer, GQL, and node APIs must be decoded to extract meaningful data. This document covers every encoding we encountered across marketplace sales extraction, LP pool analysis, and oracle pool queries.
+
+**This is essential knowledge.** Every on-chain data extraction project we did — MewMart sales, SkyHarbor sales, LP pool reserves, oracle datapoints — required register decoding.
+
+---
+
+## Type Prefix Table
+
+| Hex Prefix | Sigma Type | Description | Decoding Method |
+|------------|-----------|-------------|-----------------|
+| `04` | SInt | 32-bit signed integer | Zigzag + VLQ |
+| `05` | SLong | 64-bit signed integer (variant 1) | Zigzag + VLQ |
+| `06` | SLong/BigInt | 64-bit signed or arbitrary precision | Zigzag + VLQ, or length-prefixed big-endian |
+| `08` | SigmaProp | Cryptographic proposition | `08cd` + 33-byte compressed public key |
+| `0e` | Coll[Byte] | Byte array | VLQ length + raw bytes |
+
+---
+
+## Zigzag + VLQ Encoding (SInt / SLong)
+
+Used for R4 prices, R6 royalty basis points, R9 fee values.
+
+### Zigzag Encoding
+Converts signed integers to unsigned for efficient VLQ encoding:
+```
+encode: zigzag(n) = (n << 1) ^ (n >> 63)
+decode: original(z) = (z >> 1) ^ -(z & 1)
+
+Examples:
+   0 → 0
+   1 → 2
+  -1 → 1
+  88 → 176
+  92 → 184
+  95 → 190
+```
+
+### VLQ (Variable Length Quantity)
+Encodes unsigned integers in 7-bit chunks, high bit = continuation:
+```
+0-127:    single byte (high bit 0)
+128+:     multiple bytes (high bit 1 on all but last)
+
+Examples:
+  0   → 0x00
+  2   → 0x02
+  176 → 0xB0 0x01  (176 = 0b10110000 → split: 0110000 | 0000001)
+  190 → 0xBE 0x01
+```
+
+### Quick Reference (Common Values)
+
+| Value | Zigzag | VLQ Hex | Full Register |
+|-------|--------|---------|---------------|
+| 0 | 0 | `00` | `0500` |
+| 1 | 2 | `02` | `0502` |
+| 2 | 4 | `04` | `0504` |
+| 87 | 174 | `ae01` | `05ae01` |
+| 88 | 176 | `b001` | `05b001` or `060158` |
+| 92 | 184 | `b801` | `05b801` |
+| 95 | 190 | `be01` | `05be01` |
+| 997 | 1994 | `ca0f` | `05ca0f` |
+
+**Note:** Some encoders use prefix `05`, others use `06`. Both decode the same way for SLong values.
+
+---
+
+## Coll[Byte] Encoding
+
+Used for R7 payment token IDs, R8 labels, R9 JSON metadata.
+
+**Format:** `0e` + VLQ(length) + raw bytes
+
+### Examples
+
+| String | Full Hex |
+|--------|----------|
+| `"0"` | `0e0130` |
+| `"Hello"` | `0e0548656c6c6f` |
+| `"MewMart,Cyberverse,Sell"` | `0e174d65774d6172742c437962657276657273652c53656c6c` |
+
+### Decoding Steps
+1. Skip `0e` prefix
+2. Read VLQ-encoded length
+3. Read that many bytes
+4. Decode as UTF-8 (or keep as hex for token IDs)
+
+---
+
+## BigInt Encoding
+
+Used for large prices (nanoERG values in marketplace contracts).
+
+**Format:** `06` + VLQ(byte_length) + big-endian bytes
+
+### Example
+```
+R4: 060510ca174780
+  06     = BigInt type
+  05     = 5 bytes follow
+  10ca174780 = big-endian value
+```
+
+### Decoding
+```python
+def decode_bigint(hex_str):
+    if hex_str.startswith("06"):
+        hex_str = hex_str[2:]
+    data = bytes.fromhex(hex_str)
+    # VLQ decode length
+    length, idx = decode_vlq(data)
+    # Read big-endian bytes
+    value_bytes = data[idx:idx + length]
+    return int.from_bytes(value_bytes, 'big', signed=True)
+```
+
+---
+
+## SigmaProp Encoding
+
+Used for R5 seller public keys in marketplace contracts.
+
+**Format:** `08cd` + 33-byte compressed EC point (ProveDlog)
+
+### Example
+```
+08cd02b30612080af7f82aba4a21095b2f515c923c7dcd545ff3a554aa7ba602375f01
+  08   = SigmaProp type
+  cd   = ProveDlog marker
+  02b30612... = 33-byte compressed public key
+```
+
+### Converting to Address
+The 33-byte public key (`02...` or `03...`) is a compressed secp256k1 point. To get the Ergo address, you need `ergo-lib` or equivalent — there's no simple hex→address conversion.
+
+---
+
+## Marketplace Register Conventions
+
+### MewMart Listing Box Registers
+| Register | Type | Content |
+|----------|------|---------|
+| R4 | SLong or BigInt | Price in nanoERG (or token smallest unit) |
+| R5 | SigmaProp | Seller's proposition bytes (public key) |
+| R6 | SLong | Royalty basis points |
+| R7 | Coll[Byte] | Payment token ID (empty hex = ERG payment) |
+| R8 | Coll[Byte] | Label string (e.g., `"MewMart,Cyberverse,Sell"`) |
+| R9 | SLong | Fee basis points |
+
+### SkyHarbor Listing Box Registers
+| Register | Type | Content |
+|----------|------|---------|
+| R4 | SLong | Price in nanoERG |
+| R5 | Coll[Byte] | Seller proposition bytes |
+| R6 | Coll[Byte] | Embedded box data (fee/royalty info) |
+| R7 | GroupElement | Seller's public key |
+
+### Spectrum Pool Box Registers
+| Register | Type | Content |
+|----------|------|---------|
+| R4 | SInt | Fee numerator (e.g., 997 = 0.3% fee) |
+
+---
+
+## Python Decoder (Complete)
+
+```python
+def decode_vlq(data: bytes):
+    """Returns (value, bytes_consumed)"""
+    result = 0
+    shift = 0
+    for i, byte in enumerate(data):
+        result |= (byte & 0x7F) << shift
+        if not (byte & 0x80):
+            return result, i + 1
+        shift += 7
+    return result, len(data)
+
+def zigzag_decode(n):
+    return (n >> 1) ^ -(n & 1)
+
+def decode_slong(hex_str):
+    if hex_str.startswith(("05", "06")):
+        hex_str = hex_str[2:]
+    data = bytes.fromhex(hex_str)
+    value, _ = decode_vlq(data)
+    return zigzag_decode(value)
+
+def decode_bigint(hex_str):
+    if hex_str.startswith("06"):
+        hex_str = hex_str[2:]
+    data = bytes.fromhex(hex_str)
+    length, idx = decode_vlq(data)
+    if length <= 0:
+        return 0
+    return int.from_bytes(data[idx:idx+length], 'big', signed=True)
+
+def decode_coll_byte(hex_str):
+    if hex_str.startswith("0e"):
+        hex_str = hex_str[2:]
+    data = bytes.fromhex(hex_str)
+    length, idx = decode_vlq(data)
+    content = data[idx:idx+length]
+    try:
+        return content.decode('utf-8')
+    except UnicodeDecodeError:
+        return content.hex()
+
+def decode_sigmaprop(hex_str):
+    if hex_str.startswith("08"):
+        hex_str = hex_str[2:]
+    if hex_str.startswith("cd"):
+        return hex_str[2:2+66]  # 33-byte compressed pubkey
+    return hex_str
+
+def decode_register(hex_str):
+    """Auto-detect type and decode."""
+    if not hex_str:
+        return None
+    prefix = hex_str[:2]
+    if prefix == "04":
+        return decode_slong(hex_str)  # SInt uses same VLQ
+    elif prefix in ("05", "06"):
+        if prefix == "06" and len(hex_str) > 6:
+            try:
+                return decode_bigint(hex_str)
+            except:
+                pass
+        return decode_slong(hex_str)
+    elif prefix == "0e":
+        return decode_coll_byte(hex_str)
+    elif prefix == "08":
+        return decode_sigmaprop(hex_str)
+    return hex_str
+
+def encode_slong(value):
+    """Encode integer as SLong hex (for building register filters)."""
+    zigzag = value * 2 if value >= 0 else (-value * 2) - 1
+    vlq = []
+    while zigzag >= 0x80:
+        vlq.append((zigzag & 0x7F) | 0x80)
+        zigzag >>= 7
+    vlq.append(zigzag & 0x7F)
+    return "05" + bytes(vlq).hex()
+```
+
+---
+
+## JavaScript Decoder
+
+```javascript
+function decodeVLQ(bytes) {
+    let result = 0, shift = 0, consumed = 0;
+    for (const byte of bytes) {
+        consumed++;
+        result |= (byte & 0x7F) << shift;
+        if (!(byte & 0x80)) break;
+        shift += 7;
+    }
+    return [result, consumed];
+}
+
+function zigzagDecode(n) {
+    return (n >> 1) ^ -(n & 1);
+}
+
+function decodeSLong(hex) {
+    if (hex.startsWith("05") || hex.startsWith("06")) hex = hex.slice(2);
+    const bytes = Buffer.from(hex, 'hex');
+    const [val] = decodeVLQ(bytes);
+    return zigzagDecode(val);
+}
+```
+
+---
+
+## Common Gotchas
+
+1. **`05` vs `06` prefix ambiguity** — both can encode SLong. `06` is also used for BigInt. If the hex after `06` decodes to a suspiciously small "length" value followed by reasonable bytes, it's BigInt. Otherwise treat as SLong.
+
+2. **Price type varies by marketplace** — MewMart uses both SLong (`05`) and BigInt (`06`) for R4 prices. Always try both decoders.
+
+3. **Empty R7 = ERG payment** — in MewMart, if R7 decodes to an empty hex string, the listing is priced in ERG. A non-empty R7 is the payment token ID.
+
+4. **R4 `060158`** — this decodes to SLong value 88 (not BigInt). The `06` prefix with a small value following is SLong, not BigInt. Context matters.
+
+5. **Explorer API returns rendered values** — if using `api.ergoplatform.com`, the `additionalRegisters` include `renderedValue` and `sigmaType` fields that are pre-decoded. GQL only returns raw hex.
+
+
+========================================================================
+
 <!-- FILE: content/reference/data-model/extension-section.md -->
 ---
 title: "Ergo Block Structure: The Extension Section"
@@ -101329,6 +103386,531 @@ Access elements with `._1` and `._2`. Nest arbitrarily: `(Int, (Long, Boolean))`
 - [Built-in Functions](built-in-functions.md)
 - [Context Variables](context-variables.md)
 - [Language Specification](language-spec.md)
+
+
+========================================================================
+
+<!-- FILE: content/reference/explorer-api/ergo-explorer-api-reference.md -->
+---
+title: "Ergo Explorer REST API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, explorer, rest, blocks, transactions, boxes, tokens]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Ergo Explorer REST API Reference
+
+**Base URL:** `https://api.ergoplatform.com/api/v1`
+**Method:** GET (all endpoints)
+**Auth:** None required
+**Rate Limits:** Undocumented — appears lenient but use 0.15s+ delays for bulk queries
+**Docs:** Swagger at `https://api.ergoplatform.com/api/v1/docs/`
+
+---
+
+## Overview
+
+The Explorer API is the standard REST interface for querying the Ergo blockchain. It provides indexed, structured access to blocks, transactions, addresses, boxes, and tokens. Unlike the GraphQL endpoint, it returns richer metadata (rendered register values, token names/decimals) but has less flexible filtering. Backed by a PostgreSQL indexer that polls the Ergo node.
+
+---
+
+## Key Endpoints
+
+### Blocks
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /blocks?offset={n}&limit=1` | Get block by offset | **offset is 0-indexed from genesis**. To get block at height H, use `offset=H-1&limit=1` |
+| `GET /blocks/{blockId}` | Get block by header ID | Returns full block with transactions |
+
+**Key fields returned:** `id`, `height`, `timestamp` (millis), `transactionsCount`, `miner.address`, `difficulty`, `minerReward`
+
+**Stumbling block:** The `?height=` parameter does NOT filter to that height — it returns recent blocks paginated. Use `?offset={height-1}&limit=1` instead. This wasted significant debugging time.
+
+### Transactions
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /transactions/{txId}` | Full transaction details | Includes inputs, outputs, confirmation count |
+| `GET /mempool/transactions/byId/{txId}` | Check if TX is in mempool | Returns 404 if not in mempool |
+| `GET /addresses/{addr}/transactions?limit=N` | TX history for address | Paginated, newest first |
+
+### Boxes
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /boxes/unspent/byAddress/{addr}?limit=N` | Current UTXOs for address | Primary wallet balance query |
+| `GET /boxes/unspent/byTokenId/{tokenId}` | Boxes holding a specific token | Find pool boxes, NFT holders |
+| `GET /boxes/unspent/byErgoTree/{ergoTree}` | Boxes at a contract address | For smart contract queries |
+| `GET /boxes/{boxId}` | Specific box details | Includes spending info if spent |
+
+**Key fields returned:** `boxId`, `transactionId`, `value`, `creationHeight`, `settlementHeight`, `address`, `ergoTree`, `assets[]` (with `name`, `decimals`), `additionalRegisters`, `spentTransactionId`, `mainChain`
+
+### Tokens
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /tokens/{tokenId}` | Token metadata | Returns name, description, decimals, emissionAmount |
+
+---
+
+## Proven Working Patterns
+
+### Height → Timestamp Conversion
+```python
+url = f"https://api.ergoplatform.com/api/v1/blocks?offset={height-1}&limit=1"
+resp = requests.get(url)
+block = resp.json()["items"][0]
+timestamp_ms = block["timestamp"]  # milliseconds since epoch
+```
+
+**Win:** This works reliably. We used it for bulk conversion (built a CSV of all block heights to timestamps).
+
+**Stumbling block:** Initially tried `?height={H}` which returns paginated recent blocks, not the block at that height. The correct parameter is `offset` (0-indexed).
+
+### Find Current Pool Box by Pool NFT
+```python
+url = f"https://api.ergoplatform.com/api/v1/boxes/unspent/byTokenId/{pool_nft_id}"
+resp = requests.get(url)
+pool_box = resp.json()["items"][0]
+reserves = pool_box["assets"]
+```
+
+### Check Transaction Confirmation
+```python
+url = f"https://api.ergoplatform.com/api/v1/transactions/{tx_id}"
+resp = requests.get(url)
+confirmations = resp.json()["summary"]["confirmationsCount"]
+```
+
+### NFT Metadata from Issuance Box
+```python
+url = f"https://api.ergoplatform.com/api/v1/tokens/{token_id}"
+resp = requests.get(url)
+name = resp.json().get("name")
+decimals = resp.json().get("decimals")
+```
+
+---
+
+## Wins
+
+- **Rich metadata** — token names, decimals, and rendered register values come back automatically
+- **No auth** — fully public API
+- **Swagger docs** available at `/api/v1/docs/`
+- **Reliable** — has been running for years with good uptime
+- **`spentTransactionId`** is available as a direct field (unlike GQL where you need `spentBy`)
+
+## Stumbling Blocks
+
+- **`?height=` parameter on /blocks is NOT a filter** — it returns paginated recent blocks. Use `?offset={height-1}&limit=1` instead. This is the single biggest gotcha.
+- **No register value filtering** — you can't query "boxes where R4 = X." Must fetch all boxes and filter locally.
+- **No ErgoTree template hash filtering** — must use the exact ErgoTree hex (GQL is better for template-based queries)
+- **No historical box state** — can't query "what did this box look like at height X." Only current state or spent state.
+- **TX submission via Explorer is unreliable** — Explorer returns 200 but TX may never make it to mempool. Always verify confirmation separately. Node submission (`/transactions`) is more reliable.
+- **Pagination** — some endpoints default to small page sizes. Always specify `?limit=100` or higher.
+- **CORS** — may not be set for browser-based requests. Use server-side fetches.
+
+
+========================================================================
+
+<!-- FILE: content/reference/graphql-schema/ergo-gql-reference.md -->
+---
+title: "Ergo GraphQL API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, graphql, gql, boxes, queries]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Ergo GraphQL API Reference
+
+**Endpoint:** `https://gql.ergoplatform.com/`
+**Alt Endpoint:** `https://explore.sigmaspace.io/api/graphql`
+**Method:** POST with `Content-Type: application/json`
+**Auth:** None required
+**Rate Limits:** Unknown — no documented limits, but be reasonable
+
+---
+
+## Overview
+
+The Ergo GraphQL API provides flexible querying of on-chain box, transaction, and token data. It is the single best tool for bulk data extraction on Ergo — far more flexible than the Explorer REST API for filtering by ErgoTree, token ID, registers, and spent/unspent status. No official documentation exists; everything below was discovered through introspection and trial-and-error.
+
+---
+
+## How to Use
+
+**Browser:** Paste queries directly into `https://gql.ergoplatform.com/` — it has a built-in GraphQL Playground UI.
+
+**curl:**
+```bash
+curl -s -X POST https://gql.ergoplatform.com/ \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ boxes(tokenId: \"YOUR_TOKEN_ID\", spent: false) { boxId value assets { tokenId amount } } }"}'
+```
+
+**Python:**
+```python
+import requests
+resp = requests.post("https://gql.ergoplatform.com/",
+    json={"query": query_string, "variables": {}},
+    headers={"Content-Type": "application/json"},
+    timeout=15)
+data = resp.json().get("data", {})
+```
+
+---
+
+## Box Schema (discovered via introspection)
+
+Available fields on the `Box` type:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `boxId` | String! | Unique box identifier |
+| `transactionId` | String! | TX that created this box |
+| `value` | String! | nanoERG value |
+| `creationHeight` | Int! | Block height when created |
+| `index` | Int! | Output index in transaction |
+| `ergoTree` | String! | Contract script (hex) |
+| `ergoTreeTemplateHash` | String! | Hash of contract template |
+| `address` | String! | Encoded address |
+| `additionalRegisters` | JSON! | R4-R9 register values |
+| `assets` | [Asset!]! | Tokens in this box |
+| `settlementHeight` | Int! | Block height when settled |
+| `globalIndex` | Int! | Global box index |
+| `mainChain` | Boolean! | Whether on main chain |
+| `headerId` | String! | Block header ID |
+| `spentBy` | Input | Spending input (null if unspent) |
+| `beingSpent` | Boolean! | Mempool spending status |
+| `transaction` | Transaction! | Parent transaction |
+
+**Fields that DO NOT exist** (common mistakes):
+- ~~`spentTransactionId`~~ → Use `spentBy { transactionId }` instead
+- ~~`spentHeight`~~ → Use `spentBy` to get spending TX, then query that TX for height
+
+---
+
+## Box Query Parameters
+
+```graphql
+boxes(
+  address: String        # Filter by encoded address
+  ergoTree: String       # Filter by ErgoTree hex (exact match)
+  ergoTreeTemplateHash: String  # Filter by template hash
+  tokenId: String        # Filter by token ID in box
+  boxId: String          # Filter by specific box ID
+  spent: Boolean         # true = spent only, false = unspent only
+  minHeight: Int         # Minimum creation height
+  maxHeight: Int         # Maximum creation height
+  take: Int              # Pagination limit (default ~20)
+  skip: Int              # Pagination offset
+)
+```
+
+---
+
+## Proven Working Queries
+
+### 1. Find current holder of a token
+```graphql
+{
+  boxes(tokenId: "YOUR_TOKEN_ID", spent: false) {
+    boxId
+    address
+    value
+    assets { tokenId amount }
+    creationHeight
+  }
+}
+```
+
+### 2. All spent boxes from a contract (for marketplace sales extraction)
+```graphql
+{
+  boxes(
+    ergoTree: "PASTE_ERGOTREE_HEX"
+    spent: true
+    take: 200
+    skip: 0
+  ) {
+    boxId
+    transactionId
+    value
+    creationHeight
+    settlementHeight
+    assets {
+      tokenId
+      amount
+    }
+    additionalRegisters
+    spentBy { transactionId }
+  }
+}
+```
+Paginate by incrementing `skip` by 200 until results are empty.
+
+### 3. Boxes by address with height filter
+```graphql
+{
+  boxes(
+    address: "9f4QF8jQSBpGULoi2hHCErnpMgqHJuqsXqGGF3UFHGUZQY8RMCH"
+    minHeight: 1690000
+  ) {
+    boxId
+    transactionId
+    creationHeight
+    value
+    additionalRegisters
+  }
+}
+```
+
+### 4. Find all LP pool boxes by template hash
+```graphql
+{
+  boxes(
+    ergoTreeTemplateHash: "d19e23d1f7a101fef63861cd303ec5e1c1db93e9e1c244178e83556c4d082a49"
+    spent: false
+    take: 200
+    skip: 0
+  ) {
+    boxId
+    address
+    value
+    creationHeight
+    assets { tokenId amount }
+    additionalRegisters
+  }
+}
+```
+N2T pool template: `d19e23d1f7a101fef63861cd303ec5e1c1db93e9e1c244178e83556c4d082a49`
+T2T pool template: `8b159b63f668c5782400b6b0a0a11db995888c0153a29e30594c8d88d5b9430c`
+
+### 5. Token metadata lookup
+```graphql
+{
+  tokens(tokenId: "YOUR_TOKEN_ID") {
+    boxId
+    name
+    decimals
+  }
+}
+```
+
+### 6. Transaction outputs
+```graphql
+{
+  transactions(transactionId: "TX_ID") {
+    transactionId
+    inclusionHeight
+    outputs {
+      boxId
+      value
+      address
+      assets { tokenId amount name decimals }
+      additionalRegisters
+    }
+  }
+}
+```
+
+### 7. Schema introspection (discover available fields)
+```graphql
+{
+  __type(name: "Box") {
+    fields { name type { name kind } }
+  }
+}
+```
+
+```graphql
+{
+  __type(name: "Query") {
+    fields { name args { name type { name } } }
+  }
+}
+```
+
+---
+
+## Wins
+
+- **ErgoTree filtering** is the killer feature — lets you query all boxes from a smart contract (MewMart, SkyHarbor, LP pools) without knowing individual addresses
+- **ergoTreeTemplateHash** filtering lets you find all pools of a given type (N2T vs T2T) in one query
+- **spent: true/false** combined with ErgoTree = complete marketplace history extraction
+- **Pagination** via `take`/`skip` works reliably up to ~200 per page
+- **No auth** required — fully public
+- **Introspection** is enabled — you can discover the schema dynamically
+
+## Stumbling Blocks
+
+- **No official documentation** — everything discovered via introspection and trial-and-error
+- **`spentTransactionId` doesn't exist** — this is the #1 gotcha. Use `spentBy { transactionId }` instead
+- **`maxHeight` doesn't reliably filter historical state** — for spent boxes, it doesn't show you "what existed at height X." You need to query all boxes (spent+unspent) and filter by `creationHeight` yourself
+- **`data` vs `results`** field naming varies by type — always introspect first
+- **Large result sets** can timeout — keep `take` at 200 or less
+- **Register values are raw hex** — you need a decoder (zigzag VLQ for integers, Coll[Byte] for strings)
+- **The `height` parameter on the Explorer REST API is NOT the same as GQL's `minHeight`/`maxHeight`**
+- **Address vs ErgoTree** — some contracts embed constants (like seller PK) into the ErgoTree, making each listing have a unique ErgoTree. In those cases, query by the factory/proxy address instead
+
+
+========================================================================
+
+<!-- FILE: content/reference/node-api/ergo-node-api-reference.md -->
+---
+title: "Ergo Node REST API Reference"
+category: reference
+difficulty: intermediate
+tags: [api, node, rest, utxo, wallet, transactions]
+author: CannonQ
+license: AGPL-3.0
+source: original
+updated: 2026-03-09
+---
+# Ergo Node API Reference
+
+**Base URL:** `http://localhost:9053` (or `http://{IP}:9053` for remote)
+**Method:** GET (read endpoints), POST (tx submission)
+**Auth:** Some endpoints require `api_key` header (wallet operations). Read-only blockchain endpoints typically don't.
+**Docs:** Swagger at `http://localhost:9053/swagger`
+
+---
+
+## Overview
+
+The Ergo full node exposes a REST API for direct chain queries, wallet operations, and transaction submission. With `extraIndex = true` in `ergo.conf`, it provides indexed access to historical transactions by global index — the foundation for building custom scanners. This is the most reliable data source and has zero external dependencies.
+
+**Key distinction from Explorer:** The node has the raw UTXO set and full transaction history. It doesn't have the higher-level indexing (token names, address grouping) that the Explorer provides. But it's authoritative — if data comes from your node, it's truth.
+
+---
+
+## Key Endpoints
+
+### Node Info
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /info` | Node status | Returns `fullHeight`, `headersHeight`, `peersCount`, `appVersion` |
+| `GET /blockchain/indexedHeight` | Extra-index sync status | Returns `indexedHeight` and `fullHeight`. If equal, fully indexed. |
+
+### Block Data
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /blocks/at/{height}` | Block header IDs at height | Returns array of block IDs |
+| `GET /blocks/{blockId}` | Full block with transactions | Heavy response — includes all TX details |
+| `GET /blocks/{blockId}/transactions` | Block transactions only | Lighter than full block |
+
+### Transaction Data (requires extraIndex)
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /blockchain/transaction/byIndex/{globalIndex}` | TX by global index | Sequential scanning. Index 0 = genesis TX |
+| `GET /blockchain/transaction/byId/{txId}` | TX by ID | Full TX with inputs/outputs |
+
+### Box Data (requires extraIndex)
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /blockchain/box/byId/{boxId}` | Box by ID | Includes `spentTransactionId` if spent |
+| `GET /blockchain/box/range?offset={n}&limit={m}` | Box IDs by global index range | Returns array of box ID strings |
+| `GET /blockchain/box/unspent/byAddress/{addr}` | Current UTXOs for address | No auth needed |
+| `GET /utxo/byId/{boxId}` | Unspent box only | Returns 404 if spent — useful for checking UTXO status |
+
+### Mempool
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `GET /transactions/unconfirmed?limit=N` | Pending transactions | Competition detection for SR/oracle |
+| `POST /transactions` | Submit signed transaction | **Most reliable submission method** |
+
+### Wallet (requires api_key)
+
+| Endpoint | Description | Notes |
+|----------|-------------|-------|
+| `POST /wallet/transaction/sign` | Sign a transaction | Used by oracle-core, swap tools |
+| `GET /wallet/boxes` | Wallet UTXOs | Filtered view of wallet's boxes |
+
+---
+
+## Scanner Pattern (Storage Rent Example)
+
+The storage rent scanner established the pattern used for all subsequent scanners:
+
+```python
+def scan_block(height):
+    # 1. Get block header IDs
+    block_ids = requests.get(f"{NODE}/blocks/at/{height}").json()
+    
+    # 2. Get transactions for each block
+    for block_id in block_ids:
+        txs = requests.get(f"{NODE}/blocks/{block_id}/transactions").json()
+        
+        # 3. Check each transaction
+        for tx in txs["transactions"]:
+            for inp in tx["inputs"]:
+                # Check spendingProof, box age, etc.
+                if is_sr_claim(inp, height):
+                    record_claim(tx, inp)
+```
+
+**Key fields per input:**
+- `boxId` — the box being spent
+- `spendingProof.proofBytes` — empty string for SR claims
+- `value` — nanoERG in the box
+- `assets` — tokens in the box
+
+**Key fields per output:**
+- `boxId`, `value`, `ergoTree`, `address`
+- `assets[]` — tokens
+- `creationHeight`
+- `additionalRegisters`
+
+---
+
+## Wins
+
+- **Authoritative data** — direct from the chain, no intermediary
+- **extraIndex** — sequential scanning by global index enables full-chain backfills
+- **No external dependencies** — runs on your own hardware
+- **TX submission is reliable** — `/transactions` POST is the most trustworthy submission path (Explorer submission returned 200 but TXs often vanished)
+- **Box range queries** — `GET /blockchain/box/range` enables batch box ID lookups
+- **UTXO check** — `GET /utxo/byId/{boxId}` returns 404 for spent boxes, making it a quick spent/unspent check
+- **Full block data** — every transaction with all inputs/outputs, no pagination needed
+
+## Stumbling Blocks
+
+- **extraIndex must be enabled** — add `extraIndex = true` to `ergo.conf`. Without it, `/blockchain/transaction/byIndex/` returns 404. Node must re-sync after enabling.
+- **No token metadata** — the node doesn't know token names/decimals. You need Explorer or Crux for that.
+- **No address-based transaction history** — can't easily ask "all TXs involving address X" without scanning blocks
+- **Wallet endpoints need API key** — set `apiKeyHash` in `ergo.conf`, pass key via `api_key` header
+- **Large responses** — full block queries can return massive JSON for blocks with many TXs
+- **Rate limiting** — when scanning thousands of blocks, add small delays (0.05-0.1s) to avoid overwhelming your own node
+- **Remote access** — by default only listens on localhost. Need to bind to `0.0.0.0` for remote access, and consider firewall rules
+- **No filtering in block TX queries** — you get ALL transactions in a block. Filtering by ErgoTree/token must be done locally.
+
+---
+
+## Configuration
+
+**ergo.conf additions for scanner use:**
+```
+scorex.restApi.bindAddress = "0.0.0.0:9053"  # Remote access
+ergo.node.extraIndex = true                   # Enable indexed queries
+```
+
+**Verify indexing:**
+```bash
+curl http://localhost:9053/blockchain/indexedHeight
+# Should return: {"indexedHeight": N, "fullHeight": N}
+```
 
 
 ========================================================================

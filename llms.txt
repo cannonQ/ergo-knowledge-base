@@ -25,6 +25,7 @@
 - [The Ergo Data Model](content/reference/data-model/data-model.md) (~3131 tokens)
 - [Data Structures in Ergo](content/reference/data-model/data-structures.md) (~2901 tokens)
 - [Discrete Logarithm Proofs in Ergo](content/reference/data-model/dlog.md) (~501 tokens)
+- [Ergo Register Encoding & Decoding Reference](content/reference/data-model/ergo-register-decoding-reference.md) (~2193 tokens)
 - [Ergo Block Structure: The Extension Section](content/reference/data-model/extension-section.md) (~1328 tokens)
 - [Merkle Trees in Ergo](content/reference/data-model/merkle-tree-overview.md) (~1250 tokens)
 - [Non-Interactive Zero-Knowledge Proofs in Ergo](content/reference/data-model/nizk.md) (~1371 tokens)
@@ -71,6 +72,9 @@
 - [ErgoScript Language Specification](content/reference/ergoscript/language-spec.md): Complete reference for the ErgoScript smart contract language: types, operations, context variables, predefined functions, Box/SigmaProp/AvlTree/Coll APIs, and known limitations. (~13392 tokens)
 - [ergoplatform/sigmastate-interpreter — Overview](content/reference/ergoscript/overview_ergoscript.md): ErgoScript compiler internals, ErgoTree spec, test cases as usage examples (~2041 tokens)
 - [ErgoScript Types](content/reference/ergoscript/types.md): Quick reference for all ErgoScript data types, their properties, and methods. (~1858 tokens)
+- [Ergo Explorer REST API Reference](content/reference/explorer-api/ergo-explorer-api-reference.md) (~1338 tokens)
+- [Ergo GraphQL API Reference](content/reference/graphql-schema/ergo-gql-reference.md) (~1724 tokens)
+- [Ergo Node REST API Reference](content/reference/node-api/ergo-node-api-reference.md) (~1563 tokens)
 - [ergoplatform/ergo — Overview](content/reference/node-api/overview_node-api.md): Ergo node — REST API endpoints (Swagger), config options, mining parameters (~1933 tokens)
 - [BlockP2P: The Backbone of Ergo's Decentralized Communication](content/reference/p2p/BlockP2P.md) (~1950 tokens)
 - [Modifier Exchange](content/reference/p2p/modifiers-exchange.md) (~1136 tokens)
@@ -89,6 +93,9 @@
 - [ergoplatform/sigma-rust — Overview](content/sdks/sigma-rust/overview_sigma-rust.md): Rust sigma-state implementation — WASM bindings, wallet features, ErgoTree interpreter (~1934 tokens)
 
 ## Cookbook
+- [Crux Finance API Reference](content/cookbook/apis/crux-api-reference.md) (~1213 tokens)
+- [ErgoWatch API Reference](content/cookbook/apis/ergowatch-api-reference.md) (~1298 tokens)
+- [Spectrum DEX API Reference](content/cookbook/apis/spectrum-dex-api-reference.md) (~1331 tokens)
 - [Cookbook: Multi-Signature Guard (Threshold)](content/cookbook/contracts/multi-sig.md): Lock a box with a k-of-n threshold SigmaProp so any k signers can spend (~1251 tokens)
 - [Cookbook: Simple ERG Transfer (P2PK)](content/cookbook/contracts/simple-send.md): Send ERG to a P2PK address using Fleet SDK — the minimal Ergo transaction (~993 tokens)
 - [Cookbook: State Machine with Singleton NFT](content/cookbook/contracts/state-machine.md): Multi-stage contract using a singleton NFT to authenticate state transitions (~1596 tokens)
@@ -98,6 +105,9 @@
 - [Transfer Tokens](content/cookbook/tokens/transfer-token.md): Send native Ergo tokens to another address using Fleet SDK (~1021 tokens)
 
 ## Guides
+- [NFT Collection Toolchain — Technical Reference](content/guides/aneta-angels-toolchain.md) (~2062 tokens)
+- [Cyberverse NFT Enumeration & Data Toolchain](content/guides/cyberverse_nft_toolchain.md) (~7770 tokens)
+- [DORT/GORT Buyback Bot — Technical Reference](content/guides/dort_buyback_bot_toolchain.md) (~5295 tokens)
 - [The Blockchain Context](content/guides/ergodocs-tutorials/blockchain-context.md) (~1000 tokens)
 - [Boxes and Registers](content/guides/ergodocs-tutorials/boxes-and-registers.md) (~491 tokens)
 - [ErgoScript Contracts](content/guides/ergodocs-tutorials/contracts.md) (~2066 tokens)
@@ -564,4 +574,4 @@
 - [Topic Index](content/topics/topic-index.md) (~12799 tokens)
 
 ---
-Total: 540 documents, ~1,044,203 tokens
+Total: 550 documents, ~1,069,990 tokens

@@ -1,6 +1,6 @@
 # Ergo Knowledge Base (EKB)
 
-MCP server for Ergo blockchain development. Semantic search across 550+ documents, 65 ecosystem projects, EIPs, ErgoScript reference, API references, and cookbook recipes.
+MCP server for Ergo blockchain development. Semantic search across 560+ documents, 65 ecosystem projects, EIPs, ErgoScript reference, API references, and cookbook recipes.
 
 **Setup instructions:** [ergo-knowledge-base.vercel.app](https://ergo-knowledge-base.vercel.app/)
 
@@ -62,8 +62,8 @@ content/
   cookbook/
     tokens/        # Mint, transfer, burn (Fleet SDK)
     contracts/     # Simple send, timelock, multi-sig, state machine
-    apis/          # Crux, ErgoWatch, Spectrum, Ronin API references
-    queries/       # Python scripts: LP supply, price history, SR scanner
+    apis/          # Crux, ErgoWatch, Spectrum API references
+    queries/       # Python/JS: LP supply, NFT scraper, buyback bot, SR scanner
   reference/
     eips/          # 22 Ergo Improvement Proposals
     ergoscript/    # Built-in functions, types, context variables
@@ -77,7 +77,7 @@ content/
   sdks/            # Fleet SDK, AppKit, ergo-lib, Sigma.js, etc.
 ```
 
-3,390+ chunks embedded with OpenAI `text-embedding-3-small` (1024 dims). Pure-JS cosine similarity search — no native dependencies.
+3,420+ chunks embedded with OpenAI `text-embedding-3-small` (1024 dims). Pure-JS cosine similarity search — no native dependencies.
 
 ## Local Development
 

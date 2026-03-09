@@ -4,6 +4,7 @@ category: reference
 difficulty: intermediate
 tags: [api, node, rest, utxo, wallet, transactions]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---

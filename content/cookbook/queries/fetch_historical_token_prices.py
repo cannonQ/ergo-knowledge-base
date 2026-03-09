@@ -23,6 +23,7 @@ Usage:
 Requirements:
   pip install requests
 Author: CannonQ
+License: AGPL-3.0
 """
 
 import requests

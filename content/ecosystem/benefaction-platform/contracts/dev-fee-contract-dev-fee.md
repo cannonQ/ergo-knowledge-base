@@ -11,109 +11,145 @@ source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/dev_fee_contract/dev_fee.es
 project: stabilitynexus-benefactionplatform-ergo
 ---
-# ErgoScript Contract Analysis: Dev Fee Contract
+# ErgoScript Contract Analysis: BeneFactionPlatform Dev Fee Contract
 
 ## Purpose
 
-This contract guards a fee collection box for the BenefactionPlatform fundraising protocol and ensures that accumulated fees are distributed proportionally to four designated beneficiaries (Bruno, Lgd, Josemi, and The Stable Order). The contract validates that fee distribution transactions split the collected value (ERG or tokens) according to predetermined ratios before releasing funds.
+This contract guards a fee collection box for the Bene Fundraising Platform and enforces deterministic distribution of accumulated fees (ERG or tokens) to four pre-configured recipients. It validates that collected fees are split according to fixed proportions (32% Bruno, 32% Lgd, 32% Jossemi, 4% The Stable Order) in a single atomic transaction.
 
 ## Inputs / Outputs
 
-| Aspect | Details |
-|--------|---------|
-| **Input Boxes** | One or more `BeneFee` boxes containing accumulated fees (ERG or native tokens) guarded by this contract |
-| **Output Boxes** | Exactly 4 boxes: `brunoBoxOUT`, `lgdBoxOUT`, `jmBoxOUT`, `orderBoxOUT` — one for each beneficiary, each containing their proportional share |
-| **Data Inputs** | None |
+### Inputs
+- **Self Box (SELF)**: The fee box containing:
+  - ERG value (minimum 5,000,000 nanoERG for box preservation)
+  - Optional tokens to distribute
+  - Register R4: Token ID (if distributing non-ERG assets; empty/absent for ERG distribution)
 
-**Box Structure (Input):**
-- **Value**: ERG amount (minimum box value + stored fees)
-- **Tokens** (optional): Native token(s) to distribute
-- **R4** (optional): `Coll[Byte]` — Token ID to distribute; empty if distributing ERG
+### Outputs
+Exactly 4 output boxes in fixed order:
+1. **OUTPUTS(0)**: Bruno's recipient box (receiving 32% of devAmount)
+2. **OUTPUTS(1)**: Lgd's recipient box (receiving 32% of devAmount)
+3. **OUTPUTS(2)**: Jossemi's recipient box (receiving 32% of devAmount)
+4. **OUTPUTS(3)**: The Stable Order recipient box (receiving 4% of devAmount)
+
+Each output must:
+- Hold the correct proportional amount (ERG or specified token)
+- Match the recipient's hardcoded address (via `propositionBytes` comparison)
 
 ## Key Logic
 
-1. **Distribution Mode Detection**: Reads R4 to determine if distributing tokens or ERG. If R4 is defined and non-empty, the contract treats the box as holding tokens; otherwise, it distributes raw ERG.
+### Validation Flow
 
-2. **Output Count Validation**: Enforces exactly 4 outputs corresponding to the 4 beneficiaries.
+1. **Token Type Detection**
+   - Reads R4 for optional token ID
+   - If R4 contains data: token distribution mode
+   - If R4 empty/absent: ERG distribution mode
 
-3. **Minimum Value Check**: Verifies total output value ≥ 5,000,000 nanoERG to satisfy storage rent and minimum box value requirements.
+2. **Amount Extraction** (`getDistributionAmount`)
+   - Token mode: filters recipient's tokens for matching token ID, returns amount
+   - ERG mode: returns box's ERG value (`box.value`)
 
-4. **Proportional Split Calculation**: Computes each beneficiary's share using the formula:
-   - `amount = (numerator × devAmount) / 100`
-   - Bruno: 32/100 (32%)
-   - Lgd: 32/100 (32%)
-   - Josemi: 32/100 (32%)
-   - Order: 4/100 (4%)
+3. **Proportional Splitting**
+   - Calculates total devAmount from all four outputs
+   - Applies fee shares: `(numerator × devAmount) / 100`
+     - Bruno: 32/100
+     - Lgd: 32/100
+     - Jossemi: 32/100
+     - Order: 4/100
 
-5. **Output Verification**: For each output box, confirms:
-   - The distribution amount (ERG or token amount) matches the calculated share
-   - The `propositionBytes` match the hardcoded beneficiary address
+4. **Constraints Enforced**
+   - **Minimum total value**: All outputs combined ≥ 5,000,000 nanoERG (storage rent requirement)
+   - **Recipient validation**: Each output's `propositionBytes` must match hardcoded addresses
+   - **Amount precision**: Each recipient receives *exact* proportional amount (no rounding tolerance)
 
-6. **All-or-Nothing**: Uses `allOf()` to enforce that all conditions must pass atomically; a single failed check invalidates the transaction.
+5. **Context Requirements**
+   - No data inputs required
+   - No context variables (`_`) used
+   - No miner fee paid from this box (externally funded)
 
 ## Registers Used
 
-| Register | Type | Purpose |
-|----------|------|---------|
-| **R4** | `Option[Coll[Byte]]` | Stores optional Token ID for token distributions. If defined and non-empty, signals token distribution mode; if absent or empty, signals ERG distribution mode. |
+| Register | Type | Purpose | Read/Write |
+|----------|------|---------|-----------|
+| **R4** | `Coll[Byte]` | Optional token ID for non-ERG distributions. Empty byte collection for ERG mode. | Read-only |
 
-**Note**: Registers R5–R9 are not used. The contract relies on compile-time constants for beneficiary addresses rather than runtime registers.
+**Register Semantics**:
+- Absent or empty R4 → distribute native ERG (`box.value`)
+- Non-empty R4 → token ID identifying which token to distribute across recipients
 
 ## Tokens
 
-- **Token Distribution Support**: The contract is polymorphic and can distribute any native token whose ID is stored in R4.
-- **No NFT/Singleton Pattern**: Unlike state-machine contracts, this is not a Singleton with a state NFT; it is a simple multi-signature fee splitter.
-- **Optional Token Payload**: Input boxes may hold native tokens; the contract extracts amounts via token filtering on output boxes.
+### Native Token Handling
+- **Optional token distribution**: Box may contain a secondary token specified by R4
+- **Token ID rule**: Only one token type supported (R4 stores single ID)
+- **Distribution logic**: `box.tokens.filter` extracts matching token by ID, uses tuple `(Coll[Byte], Long)` format
+
+### Authentication
+- No NFT/singleton pattern used
+- Recipient validation via hardcoded Sigma propositions (`PK` addresses) embedded as compile-time constants
 
 ## Integration Pattern
 
-**Off-chain Bot / Headless dApp Responsibilities:**
+### Off-Chain Requirements
 
-1. **Fee Accumulation Phase**:
-   - Monitor one or more fee boxes guarded by this contract.
-   - Aggregate accumulated fees from the fundraising platform.
+An off-chain bot or fee aggregation service must:
 
-2. **Transaction Construction**:
-   - Create a transaction with all fee boxes as inputs.
-   - Calculate each beneficiary's share: `(numerator × total) / 100`.
-   - Construct 4 output boxes in order: Bruno (index 0), Lgd (1), Josemi (2), Order (3).
-   - Ensure each output:
-     - Contains exactly the calculated amount (ERG or tokens matching R4 ID).
-     - Has `propositionBytes` matching the hardcoded beneficiary public key.
-     - Meets minimum box value (1.5 ERG = 1,500,000 nanoERG).
+1. **Monitor fee accumulation**
+   - Track this box's ERG/token balance over time
 
-3. **Context Extension**:
-   - No context variables (`_`) are required.
+2. **Trigger fee distribution transaction**
+   - Construct transaction with:
+     - Input: current fee box (SELF)
+     - Outputs: 4 recipient boxes in exact order
+     - Each output funded to correct proportional amount
+   - No additional outputs (strict output count)
 
-4. **Signing**:
-   - The transaction must be signed by the entity controlling the fee box (or authorized via a multi-sig setup).
-   - Output boxes are locked to beneficiary addresses; beneficiaries must sign to spend them in subsequent transactions.
+3. **Verify box construction**
+   - Ensure total output ≥ 5,000,000 nanoERG
+   - Set each output's `ergoTree` to recipient's address (PK proposition)
+   - If token distribution: include matching token in each recipient's tokens list
+   - If ERG distribution: fund recipient boxes entirely via `.value` field
 
-**Example Off-chain Flow**:
-```
-1. Query fee box state (value, tokens, R4)
-2. Determine distribution mode (isTokenDistribution)
-3. Calculate 4 output amounts based on fee ratios
-4. Build tx: fee_box → [bruno_out, lgd_out, josemi_out, order_out]
-5. Verify box values ≥ 1.5 ERG each
-6. Submit and sign
-```
+4. **Transaction signing**
+   - Input box guarded by this ErgoScript must satisfy `sigmaProp(validFeeDistributionTx)`
+   - Wallet provides Sigma proof of fee distribution validity
+
+### Constant Segregation
+Compile-time constants (`$bruno`, `$lgd`, `$jm`, `$order`) injected during contract compilation; enables address updates without bytecode changes.
 
 ## Related Contracts
 
-Based on the code structure and naming, this contract is part of the **BenefactionPlatform** (formerly referenced as "Bene Fundraising Platform"). Likely related contracts include:
+**Identifiable Dependencies** (from comments):
 
-- **Fundraising Campaign Contract**: Collects donations/pledges and routes fees to this dev fee box.
-- **Campaign State Machine**: Manages campaign lifecycle (active → closed → distributing) and triggers fee collection.
-- **Beneficiary Distribution Contract** (potential): May handle downstream distribution from beneficiary addresses to final recipients.
+1. **Phoenix HodlERG Fee Contract** (ancestor/inspiration)
+   - Referenced as original design basis
+   - Similar multi-recipient fee distribution pattern
 
-**Note**: The contract references "Phoenix HodlERG Fee" as its original inspiration, suggesting it adapted a fee-splitting pattern from the Phoenix protocol's vault mechanics.
+2. **Bene Fundraising Platform** (parent system)
+   - This contract is a component; likely composed with:
+     - **Campaign box contracts**: accumulate funds and forward to this fee box
+     - **Benefactor reward contracts**: may trigger fee distributions
+     - **Treasury/order management**: The Stable Order recipient may manage overall platform treasury
+
+### Contract Composition Pattern
+```
+Fundraising Inputs
+    ↓
+Campaign/Collection Boxes
+    ↓
+Dev Fee Box (this contract)
+    ↓ (Fee Distribution Tx)
+Recipient Boxes (Bruno, Lgd, Jm, Order)
+```
 
 ---
 
-## Security Considerations
+## Technical Notes
 
-- **Hardcoded Addresses**: Beneficiary addresses are baked into the ErgoTree at compile-time. Changes require recompilation and new contract deployment.
-- **No Governance**: No upgrade mechanism; fee split ratios are immutable.
-- **Minimum Box Value**: Enforces 5 ERG minimum, but individual outputs must each have ≥ 1.5 ERG; off-chain code must ensure this.
-- **Token Filtering**: If R4 specifies a token ID but no matching tokens exist in outputs, the contract will assign 0 amounts; off-chain validation should prevent this state.
+### Storage Rent Compliance
+- Minimum box value (5M nanoERG) ensures output boxes survive storage rent decay
+- Ergo's storage rent mechanism requires periodic activity; outputs must maintain minimum balance
+
+### Invariants Maintained
+- **Fee ratio invariant**: `bruno + lgd + jm + order = 100%` (32+32+32+4)
+- **All-or-nothing**: Either all 4 recipients receive exact amounts, or entire transaction fails (atomic execution)

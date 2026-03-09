@@ -4,6 +4,7 @@ category: reference
 difficulty: intermediate
 tags: [api, explorer, rest, blocks, transactions, boxes, tokens]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---
