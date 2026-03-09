@@ -113,7 +113,7 @@ const handler = createMcpHandler(
     server.tool(
       "get_contract",
       "Retrieve contract analysis or project overview for an Ergo ecosystem project. " +
-        "Covers 55 projects including spectrum-dex, sigmausd, rosen-bridge, " +
+        "Covers 65 projects including spectrum-dex, sigmausd, rosen-bridge, " +
         "oracle-pools, paideia, skyharbor, and more.",
       {
         project: z

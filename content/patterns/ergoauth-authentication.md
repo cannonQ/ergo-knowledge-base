@@ -5,7 +5,7 @@ tags: [ergoauth, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [paideiadao/paideia-app]
 ---
@@ -13,205 +13,201 @@ source_repos: [paideiadao/paideia-app]
 
 ## Overview
 
-ErgoAuth is a challenge-response authentication protocol defined in [EIP-28](https://github.com/ergoplatform/eips/blob/master/eip-0028.md) that enables dApps to verify ownership of an Ergo address without requiring the user to submit an on-chain transaction. Instead of spending a Box or paying a fee, the user proves control of a **SigmaProp** (a Sigma protocol statement) by signing a server-issued challenge message with their wallet's private key.
+ErgoAuth is a standardized authentication protocol for the Ergo blockchain, defined in [EIP-28](https://github.com/ergoplatform/eips/blob/master/eip-0028.md). It enables decentralized, wallet-native user authentication without passwords, sessions cookies baked into centralized servers, or custodial key management. Instead, ErgoAuth leverages **Sigma protocols** — the cryptographic foundation of Ergo's **ErgoScript** — to prove ownership of a wallet address through a challenge-response signature flow.
 
 ### Why It Exists
 
-Traditional blockchain authentication forces users to pay a **Minimum transaction fee** (currently 0.001 ERG) every time they log in — an unnecessary cost for off-chain identity verification. ErgoAuth solves this by leveraging Ergo's native **Sigma protocols** (specifically Schnorr signatures over the secp256k1 curve) purely at the cryptographic layer, with no eUTXO interaction required.
+Traditional web authentication (username/password, OAuth) requires a trusted third party or a server-side secret store. On Ergo, every address is derived from a **SigmaProp** (a Sigma protocol proposition, typically `proveDlog(pk)` for a standard P2PK address). ErgoAuth exploits this: if you can produce a valid Sigma proof for a SigmaProp, you *are* the owner of that address — no password required.
 
-### When to Use ErgoAuth
+This fits naturally into Ergo's **eUTXO** model, where identity and authorization are cryptographic rather than administrative.
 
-| Use Case | ErgoAuth? |
+### When to Use It
+
+| Use Case | Use ErgoAuth? |
 |---|---|
-| Gating a dApp dashboard behind wallet ownership | ✅ Yes |
-| Signing into a DAO governance portal (e.g., Paideia) | ✅ Yes |
-| Authorizing a multi-stage contract transaction | ❌ Use ErgoScript guards instead |
-| Proving ownership of a **Native token** / NFT for off-chain perks | ✅ Yes |
-| On-chain access control | ❌ Use SigmaProp in ErgoTree |
+| "Sign in with Ergo wallet" for a dApp | ✅ Yes |
+| Proving address ownership before whitelisting | ✅ Yes |
+| Authorizing off-chain actions tied to an on-chain identity | ✅ Yes |
+| Signing an on-chain **Transaction** | ❌ Use standard tx signing |
+| Anonymous credential proofs (Ring signatures) | ❌ Separate pattern |
 
-ErgoAuth is the correct pattern whenever you need **off-chain proof of key ownership** tied to an Ergo address, without touching the eUTXO ledger.
+ErgoAuth is used in production by [Paideia DAO](https://github.com/paideiadao/paideia-app), Ergopad, and other ecosystem projects as the canonical "Sign In with Ergo" mechanism.
 
 ---
 
 ## How It Works
 
-ErgoAuth follows a classic challenge-response flow, but the "response" is a **Sigma protocol proof** — the same cryptographic primitive that guards Boxes on-chain via **ErgoTree**.
+ErgoAuth follows a classic **challenge-response** protocol, but the "response" is a Sigma protocol proof rather than a simple HMAC or JWT signature.
 
 ```
-┌────────┐        1. Auth Request URL          ┌──────────┐
-│        │ ◄─────────────────────────────────── │          │
-│ Wallet │                                      │  Server  │
-│  App   │  2. GET /ergoauth/request/{address}  │  (dApp)  │
-│        │ ─────────────────────────────────── ► │          │
-│        │                                      │          │
-│        │  3. ErgoAuthRequest JSON response    │          │
-│        │ ◄─────────────────────────────────── │          │
-│        │                                      │          │
-│        │  4. User signs challenge locally     │          │
-│        │     (Schnorr sig over SigmaProp)     │          │
-│        │                                      │          │
-│        │  5. POST proof to replyTo endpoint   │          │
-│        │ ─────────────────────────────────── ► │          │
-│        │                                      │          │
-│        │  6. Server verifies, returns token   │          │
-│        │ ◄─────────────────────────────────── │          │
-└────────┘                                      └──────────┘
+┌─────────┐          ┌──────────────┐          ┌────────────────┐
+│  User   │          │  dApp/Server │          │  Ergo Wallet   │
+│ Browser │          │  (Verifier)  │          │  (Prover)      │
+└────┬────┘          └──────┬───────┘          └───────┬────────┘
+     │                      │                          │
+     │  1. "Login" click     │                          │
+     │─────────────────────>│                          │
+     │                      │                          │
+     │  2. ErgoAuth request  │                          │
+     │     URI / QR code     │                          │
+     │<─────────────────────│                          │
+     │                      │                          │
+     │  3. Open in wallet    │                          │
+     │─────────────────────────────────────────────────>
+     │                      │                          │
+     │                      │                          │ 4. Wallet fetches
+     │                      │                          │    request from
+     │                      │<─────────────────────────│    replyTo URL
+     │                      │                          │
+     │                      │  5. Return challenge     │
+     │                      │─────────────────────────>│
+     │                      │                          │
+     │                      │                          │ 6. User confirms;
+     │                      │                          │    wallet signs
+     │                      │                          │    sigmaBoolean with
+     │                      │                          │    secret key (dlog proof)
+     │                      │                          │
+     │                      │  7. POST signed proof    │
+     │                      │<─────────────────────────│
+     │                      │                          │
+     │                      │ 8. Server verifies       │
+     │                      │    SigmaProp proof       │
+     │                      │                          │
+     │  9. Auth token / JWT  │                          │
+     │<─────────────────────│                          │
+     │                      │                          │
 ```
 
 ### Step-by-Step Breakdown
 
-**Step 1 — Initiate: dApp generates a deep-link or QR code**
+**Step 1 — User initiates login**  
+The user clicks "Connect Wallet" in the dApp frontend.
 
-The dApp constructs a URI of the form:
-```
-ergoauth://<host>/api/ergoauth/request/<address>
-```
-This URI is handed to a compatible wallet (Nautilus, SAFEW, Ergo Wallet App). The `address` segment tells the wallet which key to use.
+**Step 2 — Server generates an ErgoAuth Request**  
+The server constructs an `ErgoAuthRequest` object containing:
+- `address` — the Ergo address whose ownership must be proved
+- `signingMessage` — a unique, server-generated challenge string (e.g., a nonce or UUID)
+- `sigmaBoolean` — the **SigmaProp** (serialized as Base16 ErgoTree bytes) that corresponds to the address; the wallet must produce a valid proof for this proposition
+- `userMessage` — a human-readable message shown in the wallet UI
+- `messageSeverity` — display hint (`"INFORMATION"`, `"WARNING"`)
+- `replyTo` — the callback URL where the wallet POSTs the signed proof
 
-**Step 2 — Request: Wallet GETs the challenge**
+The request is encoded as an `ergoauth://` URI (or a QR code for mobile wallets).
 
-The wallet HTTP-GETs the URL, substituting `ergoauth://` with `https://` (or `http://` for localhost). The server receives the user's Ergo address and generates a fresh, time-limited challenge.
+**Step 3–5 — Wallet fetches the challenge**  
+The wallet parses the URI, fetches the full request JSON from `replyTo`, and displays `userMessage` to the user.
 
-**Step 3 — Challenge: Server returns `ErgoAuthRequest`**
+**Step 6 — Wallet produces a Sigma proof**  
+The wallet uses the user's secret key to produce a **Schnorr signature** (a non-interactive Sigma protocol proof via Fiat-Shamir transform) over a hash of `signingMessage`. This proves knowledge of the discrete logarithm corresponding to the public key embedded in the `sigmaBoolean` ErgoTree — without revealing the secret key.
 
-The server responds with a JSON object conforming to the EIP-28 schema:
-
-```jsonc
+**Step 7 — Wallet POSTs the proof**  
+The wallet sends back:
+```json
 {
-  "address": "9f...",                        // P2PK address (Base58)
-  "signingMessage": "paideia-auth-<nonce>",  // The challenge string
-  "sigmaBoolean": "0008cd<pubkey-hex>",      // Serialised SigmaProp (ErgoTree prefix)
-  "userMessage": "Sign in to Paideia DAO",   // Displayed to user in wallet UI
-  "messageSeverity": "INFORMATION",          // UI hint
-  "replyTo": "https://app.paideia.im/api/ergoauth/verify"
+  "proof": "<base16-encoded sigma proof bytes>",
+  "pk": "<base16-encoded public key>"
 }
 ```
 
-The `sigmaBoolean` field is critical: it is the **serialised SigmaProp** corresponding to the address. For a standard P2PK address this is `0008cd` followed by the compressed public key bytes. The wallet uses this to know *which* Sigma protocol statement to prove.
+**Step 8 — Server verifies**  
+The server reconstructs the challenge bytes, verifies the Sigma proof against the `sigmaBoolean`, and checks that the proved public key matches the claimed address. This uses `ergo-lib` (Rust/JVM/WASM).
 
-**Step 4 — Sign: Wallet creates a Sigma proof**
-
-The wallet signs `signingMessage` using the private key that satisfies `sigmaBoolean`. For a P2PK address this is a standard Schnorr signature. For more complex **ErgoTree** guards (e.g., threshold multisig using **Ring signatures**), the wallet produces the appropriate Sigma proof tree. No transaction is created; no Box is consumed.
-
-**Step 5 — Reply: Wallet POSTs the proof**
-
-```jsonc
-{
-  "address": "9f...",
-  "signingMessage": "paideia-auth-<nonce>",
-  "proof": "<base64-encoded-sigma-proof>"
-}
-```
-
-**Step 6 — Verify: Server checks the proof**
-
-The server reconstructs the `sigmaBoolean`, verifies the Sigma proof against the challenge bytes, and — if valid — issues a session token (JWT, cookie, etc.).
+**Step 9 — Session established**  
+On success, the server creates a session (JWT, database session, etc.) tied to the verified address.
 
 ---
 
 ## Implementation
 
-### Server Side — TypeScript / Next.js
+### Prerequisites
 
-The following is drawn from the Paideia DAO application:
+```bash
+# Node.js / TypeScript
+npm install ergo-lib-wasm-nodejs @prisma/client
 
-#### `request.ts` — Issue the Challenge
+# Scala (sbt)
+# "org.ergoplatform" %% "ergo-appkit" % "5.0.4"
+
+# Python
+pip install ergpy
+```
+
+---
+
+### 1. Server: Generate the ErgoAuth Request (TypeScript / Next.js)
+
+This is the endpoint the wallet fetches to receive its challenge. Drawn from the Paideia pattern in `request.ts`:
 
 ```typescript
-// api/ergoauth/request.ts
-import { UserLoginStatus } from "@prisma/client";
-import { prisma } from "@server/prisma";
-import { deleteEmptyUser } from "@server/services/user";
-import { Address } from "ergo-lib-wasm-nodejs";
+// pages/api/auth/ergo/request.ts
 import { NextApiRequest, NextApiResponse } from "next";
-import crypto from "crypto";
+import { Address } from "ergo-lib-wasm-nodejs";
+import { prisma } from "@server/prisma";
+import { UserLoginStatus } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
 
+/**
+ * EIP-28 ErgoAuth request shape.
+ * The wallet will GET this endpoint to receive the challenge,
+ * then POST the signed proof back to `replyTo`.
+ */
 interface ErgoAuthRequest {
-  address: string;
-  signingMessage: string;
-  sigmaBoolean: string;
-  userMessage: string;
-  messageSeverity: "INFORMATION" | "WARNING" | "ERROR";
-  replyTo: string;
+  address: string;          // Ergo address to authenticate
+  signingMessage: string;   // Server-generated nonce / challenge
+  sigmaBoolean: string;     // Base16 ErgoTree of the address's SigmaProp
+  userMessage: string;      // Human-readable text shown in wallet
+  messageSeverity: "INFORMATION" | "WARNING";
+  replyTo: string;          // Where wallet POSTs the proof
 }
 
+/**
+ * Derive the sigmaBoolean (ErgoTree hex) from an Ergo address.
+ *
+ * For a standard P2PK address, the ErgoTree encodes:
+ *   proveDlog(pk)
+ * where pk is the compressed SEC public key.
+ * ergo-lib handles the derivation automatically.
+ */
+function getSigmaBoolean(address: string): string {
+  // Address.from_mainnet_str parses the Base58Check address
+  // and exposes the underlying ErgoTree
+  const addr = Address.from_mainnet_str(address);
+  // to_ergo_tree() returns the ErgoTree; script_hex() gives Base16 bytes
+  return Buffer.from(addr.to_ergo_tree().sigma_serialize_bytes()).toString("hex");
+}
+
+/**
+ * GET /api/auth/ergo/request?address=<ergo_address>
+ *
+ * Returns an EIP-28 ErgoAuthRequest JSON.
+ * The wallet scans a QR / follows an ergoauth:// URI that points here.
+ */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<ErgoAuthRequest | { error: string }>
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { address } = req.query as { address: string };
+  const { address } = req.query;
 
-  if (!address) {
-    return res.status(400).json({ error: "Address is required" });
+  if (!address || typeof address !== "string") {
+    return res.status(400).json({ error: "Missing address parameter" });
   }
 
+  // Validate the address is a legitimate Ergo address
+  let sigmaBoolean: string;
   try {
-    // Validate the address is a legitimate Ergo P2PK address.
-    // ergo-lib-wasm will throw if the address is malformed or
-    // belongs to the wrong network (mainnet vs testnet).
-    const ergAddress = Address.from_base58(address);
-
-    // Derive the sigmaBoolean (serialised SigmaProp) directly from
-    // the address. For P2PK this produces the "0008cd<pubkey>" hex
-    // that the wallet needs to construct its Sigma proof.
-    const ergoTree = ergAddress.to_ergo_tree();
-    const sigmaBoolean = Buffer.from(ergoTree.sigma_serialize_bytes()).toString("hex");
-
-    // Generate a cryptographically random nonce and persist it so
-    // we can replay-check it during verification. Store with a TTL.
-    const nonce = crypto.randomBytes(32).toString("hex");
-    const signingMessage = `paideia-auth-${nonce}`;
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // Upsert a pending auth record. If the user already has a
-    // UserLoginStatus.PENDING row from a previous attempt, reset it.
-    await prisma.ergoAuthChallenge.upsert({
-      where: { address },
-      create: { address, nonce, signingMessage, expiresAt },
-      update: { nonce, signingMessage, expiresAt,
-                status: UserLoginStatus.PENDING },
-    });
-
-    const authRequest: ErgoAuthRequest = {
-      address,
-      signingMessage,
-      sigmaBoolean,
-      userMessage: "Sign in to Paideia DAO — no transaction required.",
-      messageSeverity: "INFORMATION",
-      // The wallet will POST the signed proof to this URL.
-      replyTo: `${process.env.NEXT_PUBLIC_API_URL}/api/ergoauth/verify`,
-    };
-
-    return res.status(200).json(authRequest);
-  } catch (err) {
-    console.error("[ErgoAuth] Request error:", err);
+    sigmaBoolean = getSigmaBoolean(address);
+  } catch {
     return res.status(400).json({ error: "Invalid Ergo address" });
   }
-}
-```
 
-#### `verify.ts` — Validate the Sigma Proof
+  // Generate a cryptographically unique nonce as the challenge.
+  // This MUST be stored server-side and validated on reply — never trust
+  // a nonce sent by the client.
+  const nonce = uuidv4();
+  const signingMessage = `paideia-login-${nonce}`;
 
-```typescript
-// api/ergoauth/verify.ts
-import { Address, ErgoStateContext, Wallet } from "ergo-lib-wasm-nodejs";
-import { prisma } from "@server/prisma";
-import { NextApiRequest, NextApiResponse } from "next";
-import { signJwt } from "@server/auth/jwt";
-
-interface ErgoAuthProof {
-  address: string;
-  signingMessage: string;
-  proof: string; // Base64-encoded serialised Sigma proof bytes
-}
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed"
+  // Persist pending login state so we can verify the

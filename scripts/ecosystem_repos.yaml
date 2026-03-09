@@ -250,6 +250,17 @@ repos:
     output_dir: content/ecosystem/dexy
     description: "Dexy stablecoin — oracle-pegged minting, LP, cross-tracker, anti-drain mechanisms"
 
+  - org: kushti
+    repo: dexy-stable
+    branch: use
+    priority: high
+    group: defi
+    language: [ergoscript, scala]
+    extract: [contracts, readme, docs]
+    patterns: []
+    output_dir: content/ecosystem/dexy-use
+    description: "Dexy $USE stablecoin — USD-pegged fork of dexy-stable, ~$400K TVL, oracle-pegged minting"
+
   - org: DjedAlliance
     repo: Djed-Ergo
     priority: high
@@ -279,6 +290,36 @@ repos:
     patterns: [ergoConnector, ReactorSwap, WalletConnector]
     output_dir: content/ecosystem/gluon/ui
     description: "Gluon Gold stablecoin frontend — Next.js dApp with EIP-12 wallet connector, swap UI"
+
+  - org: StabilityNexus
+    repo: Gluon-Ergo-Contracts
+    priority: medium
+    group: defi
+    language: [ergoscript]
+    extract: [contracts, readme]
+    patterns: [gluon, fission, fusion, transmute, neutron, proton]
+    output_dir: content/ecosystem/gluon/contracts
+    description: "Gluon Gold stablecoin ErgoScript contracts — fission/fusion/transmute mechanics"
+
+  - org: StabilityNexus
+    repo: Bountiful-BountyPlatform-Ergo
+    priority: medium
+    group: dao
+    language: [ergoscript, typescript]
+    extract: [contracts, readme, docs]
+    patterns: [bounty, claim, submission, reward]
+    output_dir: content/ecosystem/bountiful
+    description: "Bountiful — decentralized bounty platform on Ergo with on-chain reward distribution"
+
+  - org: StabilityNexus
+    repo: BenefactionPlatform-Ergo
+    priority: medium
+    group: dao
+    language: [ergoscript, typescript]
+    extract: [contracts, readme, docs]
+    patterns: [benefaction, donation, campaign, fund]
+    output_dir: content/ecosystem/benefaction-platform
+    description: "Benefaction Platform — decentralized fundraising/donation platform on Ergo"
 
   # ── Lending / Options ────────────────────────────────────────────────────
 
