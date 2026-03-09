@@ -176,6 +176,36 @@ repos:
     output_dir: content/ecosystem/ergo-wallet
     description: "Official Ergo Android/iOS wallet — key management, mobile wallet patterns"
 
+  - org: minotaur-ergo
+    repo: minotaur-wallet
+    priority: medium
+    group: infrastructure
+    language: [typescript]
+    extract: [readme, docs]
+    patterns: [ergoConnector, sign_tx, multisig, TransactionBuilder]
+    output_dir: content/ecosystem/minotaur
+    description: "Minotaur — multi-platform Ergo wallet with multi-sig support, dApp connector, ErgoPay"
+
+  - org: Satergo
+    repo: Satergo
+    priority: medium
+    group: infrastructure
+    language: [java]
+    extract: [readme]
+    patterns: []
+    output_dir: content/ecosystem/satergo
+    description: "Satergo — Java desktop wallet for Ergo with full node support, Ledger integration"
+
+  - org: arobsn
+    repo: ergo-paper-wallet
+    priority: low
+    group: infrastructure
+    language: [typescript]
+    extract: [readme]
+    patterns: []
+    output_dir: content/ecosystem/paper-wallet
+    description: "Ergo paper wallet — offline cold storage wallet generator for secure ERG storage"
+
   - org: ergoplatform
     repo: ledger-app-ergo
     priority: low
