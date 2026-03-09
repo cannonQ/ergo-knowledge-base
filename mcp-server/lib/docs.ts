@@ -113,3 +113,81 @@ export function listAvailablePatterns(): string[] {
     return [];
   }
 }
+
+export function getCookbook(name: string): string | null {
+  const cookbookDir = path.join(CONTENT_DIR, "cookbook");
+  const filePath = findFile(cookbookDir, name);
+  if (filePath) {
+    return fs.readFileSync(filePath, "utf-8");
+  }
+  return null;
+}
+
+export function listAvailableCookbooks(): string[] {
+  const cookbookDir = path.join(CONTENT_DIR, "cookbook");
+  const results: string[] = [];
+  try {
+    for (const sub of fs.readdirSync(cookbookDir, { withFileTypes: true })) {
+      if (sub.isDirectory()) {
+        const subDir = path.join(cookbookDir, sub.name);
+        for (const f of fs.readdirSync(subDir)) {
+          if (f.endsWith(".md") && !f.startsWith("_")) {
+            results.push(`${sub.name}/${f.replace(/\.md$/, "")}`);
+          }
+        }
+      }
+    }
+  } catch {
+    // directory doesn't exist
+  }
+  return results;
+}
+
+export function getEip(number: string): string | null {
+  const eipDir = path.join(CONTENT_DIR, "reference", "eips");
+  const padded = number.replace(/^eip-?0*/i, "").padStart(4, "0");
+  const filePath = path.join(eipDir, `eip-${padded}.md`);
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, "utf-8");
+  }
+  // fallback: fuzzy search
+  const found = findFile(eipDir, `eip-${padded}`);
+  if (found) {
+    return fs.readFileSync(found, "utf-8");
+  }
+  return null;
+}
+
+export function listAvailableEips(): string[] {
+  const eipDir = path.join(CONTENT_DIR, "reference", "eips");
+  try {
+    return fs
+      .readdirSync(eipDir)
+      .filter((f) => f.startsWith("eip-") && f.endsWith(".md"))
+      .map((f) => f.replace(/\.md$/, ""))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+export function getErgoscriptRef(name: string): string | null {
+  const esDir = path.join(CONTENT_DIR, "reference", "ergoscript");
+  const filePath = findFile(esDir, name);
+  if (filePath) {
+    return fs.readFileSync(filePath, "utf-8");
+  }
+  return null;
+}
+
+export function listAvailableErgoscriptRefs(): string[] {
+  const esDir = path.join(CONTENT_DIR, "reference", "ergoscript");
+  try {
+    return fs
+      .readdirSync(esDir)
+      .filter((f) => f.endsWith(".md") && !f.startsWith("_") && !f.startsWith("overview"))
+      .map((f) => f.replace(/\.md$/, ""));
+  } catch {
+    return [];
+  }
+}

@@ -111,7 +111,19 @@ npm install && npm run dev`}
               "get_pattern",
               "Cross-cutting development pattern guides",
             ],
-            ["list_projects", "List all 55 ecosystem projects"],
+            [
+              "get_cookbook",
+              "Code recipes with ErgoScript + Fleet SDK (tokens, contracts)",
+            ],
+            [
+              "get_eip",
+              "Ergo Improvement Proposals by number (EIP-1 through EIP-44)",
+            ],
+            [
+              "get_ergoscript_ref",
+              "ErgoScript language reference (built-ins, types, context vars)",
+            ],
+            ["list_projects", "List all 61 ecosystem projects"],
           ].map(([name, desc]) => (
             <tr key={name} style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: "0.5rem" }}>

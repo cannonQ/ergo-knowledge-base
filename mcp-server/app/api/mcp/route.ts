@@ -5,8 +5,14 @@ import {
   getConcept,
   getPattern,
   getContract,
+  getCookbook,
+  getEip,
+  getErgoscriptRef,
   listAvailableConcepts,
   listAvailablePatterns,
+  listAvailableCookbooks,
+  listAvailableEips,
+  listAvailableErgoscriptRefs,
 } from "@/lib/docs";
 
 const handler = createMcpHandler(
@@ -173,7 +179,106 @@ const handler = createMcpHandler(
       }
     );
 
-    // Tool 5: List all ecosystem projects
+    // Tool 5: Get a cookbook recipe
+    server.tool(
+      "get_cookbook",
+      "Retrieve a specific cookbook recipe with working code examples. " +
+        "Recipes cover token operations (mint, transfer, burn), contract patterns " +
+        "(simple-send, timelock, multi-sig, state-machine), and more. " +
+        "Each recipe includes ErgoScript + Fleet SDK TypeScript code.",
+      {
+        name: z
+          .string()
+          .describe(
+            "Recipe name (e.g. 'mint-token', 'timelock', 'multi-sig', 'simple-send')"
+          ),
+      },
+      async ({ name }) => {
+        const content = getCookbook(name);
+        if (!content) {
+          const available = listAvailableCookbooks();
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Recipe '${name}' not found. Available recipes: ${available.join(", ")}`,
+              },
+            ],
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: content }],
+        };
+      }
+    );
+
+    // Tool 6: Get an EIP by number
+    server.tool(
+      "get_eip",
+      "Retrieve an Ergo Improvement Proposal (EIP) by number. " +
+        "Covers EIP-1 through EIP-44 including asset standards (EIP-4), " +
+        "contract templates (EIP-6), dApp connector (EIP-12/EIP-20), " +
+        "and more.",
+      {
+        number: z
+          .string()
+          .describe(
+            "EIP number (e.g. '4', '0004', 'eip-4', or 'eip-0004')"
+          ),
+      },
+      async ({ number }) => {
+        const content = getEip(number);
+        if (!content) {
+          const available = listAvailableEips();
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `EIP '${number}' not found. Available EIPs: ${available.join(", ")}`,
+              },
+            ],
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: content }],
+        };
+      }
+    );
+
+    // Tool 7: Get ErgoScript language reference
+    server.tool(
+      "get_ergoscript_ref",
+      "Retrieve ErgoScript language reference documentation. " +
+        "Covers built-in functions (sigmaProp, blake2b256, atLeast, etc.), " +
+        "the type system (Int, Long, BigInt, Coll, Box, SigmaProp), " +
+        "and context variables (SELF, INPUTS, OUTPUTS, HEIGHT).",
+      {
+        topic: z
+          .string()
+          .describe(
+            "Reference topic: 'built-in-functions', 'types', 'context-variables', or 'language-spec'"
+          ),
+      },
+      async ({ topic }) => {
+        const content = getErgoscriptRef(topic);
+        if (!content) {
+          const available = listAvailableErgoscriptRefs();
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `ErgoScript reference '${topic}' not found. Available topics: ${available.join(", ")}`,
+              },
+            ],
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: content }],
+        };
+      }
+    );
+
+    // Tool 8: List all ecosystem projects
     server.tool(
       "list_projects",
       "List all Ergo ecosystem projects in the knowledge base with their categories.",
