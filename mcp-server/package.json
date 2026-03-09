@@ -2,6 +2,7 @@
   "name": "ergo-ekb-mcp",
   "version": "1.0.0",
   "description": "MCP server for the Ergo Developer Knowledge Base",
+  "license": "AGPL-3.0-or-later",
   "private": true,
   "scripts": {
     "dev": "next dev",

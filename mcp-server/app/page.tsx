@@ -128,7 +128,9 @@ npm install && npm run dev`}
         Source:{" "}
         <a href="https://github.com/cannonQ/ergo-knowledge-base">
           cannonQ/ergo-knowledge-base
-        </a>
+        </a>{" "}
+        · Licensed under{" "}
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a>
       </p>
     </main>
   );
