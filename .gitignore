@@ -15,8 +15,10 @@ blog/
 # LanceDB vector store — committed for local MCP usage
 # vectordb/ is tracked (pre-built vectors for devs who clone the repo)
 
-# Build toolchain (embedding pipeline, scrapers) — not needed for MCP server
+# Build toolchain (embedding pipeline, scrapers, glossary) — not needed for MCP server
 scripts/
+glossary/
+ergo-knowledge-base-plan.md
 
 # Python
 __pycache__/
