@@ -4,6 +4,7 @@ category: reference
 difficulty: advanced
 tags: [registers, decoding, hex, zigzag, sigma-types, data-model]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---

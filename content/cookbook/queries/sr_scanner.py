@@ -45,6 +45,7 @@ Supabase Table SQL:
       created_at TIMESTAMPTZ DEFAULT NOW()
   );
 Author: CannonQ
+License: AGPL-3.0
 """
 
 import requests

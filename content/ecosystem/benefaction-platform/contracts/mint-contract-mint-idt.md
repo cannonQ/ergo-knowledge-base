@@ -15,100 +15,83 @@ project: stabilitynexus-benefactionplatform-ergo
 
 ## Purpose
 
-This contract enforces token spend restrictions by ensuring that minted tokens (IDTs—Identity/Issuance Designation Tokens) can only be transferred to a specific downstream contract identified by a Blake2b-256 hash digest. It acts as a gating mechanism in a multi-stage contract pipeline, preventing unauthorized token routing while delegating comprehensive token validation (amount, metadata) to the receiving contract.
+This contract enforces that minted Identity Tokens (IDT) can only be spent by transferring them to a specific authorized contract identified by its Blake2b-256 hash. It acts as a gatekeeper for IDT distribution, ensuring all minted tokens flow exclusively to the designated contract without loss or diversion.
 
 ## Inputs / Outputs
 
-| Component | Details |
-|-----------|---------|
-| **Input Box (SELF)** | Contains the IDT token in its first position (`SELF.tokens(0)`). This box must satisfy the contract to be spent. |
-| **Output Box (OUTPUTS(0))** | The destination box that must receive the IDT. Its `propositionBytes` (ErgoTree) must hash to the constant `contract_bytes_hash`. |
-| **Token Movement** | The entire token amount (`SELF.tokens(0)._2`) must be transferred to `OUTPUTS(0)` in full; partial transfers are rejected. |
+| Aspect | Details |
+|--------|---------|
+| **Input Box (SELF)** | Contains the IDT native token with quantity to be spent. Must satisfy this contract's conditions to be consumed. |
+| **Output Box (OUTPUTS(0))** | The first output box in the transaction, which must receive the IDT tokens. Must be locked by the authorized contract identified in `contract_bytes_hash`. |
+| **Additional Outputs** | Not validated by this contract; secondary outputs are permitted but not constrained. |
 
 ## Key Logic
 
-The contract enforces two critical invariants via a conjunction (`allOf`) of conditions:
+The contract enforces two mandatory conditions via `sigmaProp(allOf(...))`:
 
-1. **Token Identity & Quantity Check (`correctSpend`)**
-   - Verifies the token ID (first element of token tuple) in SELF matches the token ID in OUTPUTS(0)
-   - Ensures the full token amount from SELF is spent into OUTPUTS(0) (no partial burns or diversions)
-   - Rejects transactions that attempt to split, burn, or redirect the token
+1. **`correctSpend`**: Validates token integrity and completeness
+   - Checks that the token ID (first element of the token tuple) in the input box matches the token ID in the first output box
+   - Verifies that the full token amount from the input is transferred to the output (no partial spends allowed)
+   - Both conditions must be true to proceed
 
-2. **Contract Destination Verification (`correctContract`)**
-   - Computes the Blake2b-256 hash of the receiving box's `propositionBytes` (the ErgoTree bytecode)
-   - Compares this hash against a hardcoded constant (`contract_bytes_hash`) embedded at contract deployment
-   - Only allows the output box if it executes the exact contract specified; prevents redirect to unauthorized contracts
+2. **`correctContract`**: Validates destination authorization
+   - Computes the Blake2b-256 hash of the output box's `propositionBytes` (its ErgoTree bytecode)
+   - Compares it against a hardcoded constant `contract_bytes_hash` (injected at compile time via string interpolation)
+   - Only permits spending if the output box is guarded by the exact authorized contract
 
-Both conditions must evaluate to `true`; failure of either blocks the transaction.
+**Both conditions must hold for the transaction to be valid.**
 
 ## Registers Used
 
-| Register | Type | Purpose |
-|----------|------|---------|
-| **R4–R9** | Not used | This contract uses only native box properties: `tokens` (state) and `propositionBytes` (code reference). No custom data registers are read or written. |
-
-**Note:** The contract is stateless regarding user-defined registers; all state is implicit in token carriage.
+| Register | Type | Purpose | Usage |
+|----------|------|---------|-------|
+| None (R4–R9) | — | This contract does not read or write auxiliary registers. | State and metadata are embedded in the token ID and output contract identity only. |
 
 ## Tokens
 
-| Aspect | Details |
-|--------|---------|
-| **IDT (Issuance Designation Token)** | A native Ergo token (NFT or fungible) used as the primary state object. Its Token ID must remain invariant across the transaction. |
-| **Token Amount** | Must be fully preserved; the contract enforces the **Token ID rule**: the same token cannot be minted or burned mid-transfer, only moved. |
-| **Use Case** | Acts as a credential or proof-of-authorization: possession of the IDT is necessary to execute spend logic; the token itself is the gating mechanism. |
-| **Assumption** | The contract assumes the IDT was legitimately minted upstream (likely in a main contract). This contract does **not** validate issuance amounts, names, decimals, or metadata. |
+| Token Type | Role | Details |
+|------------|------|---------|
+| **IDT (Native Token)** | State & Value | The minted Identity Token itself serves as both the unit of value and proof of issuance. Its token ID is validated to match between input and output. Quantity must be fully preserved. |
+| **No Authentication Token** | — | This contract relies on cryptographic hash verification rather than a separate NFT for authorization. |
 
 ## Integration Pattern
 
-### Off-Chain Construction Requirements
+**Off-chain Bot / Headless dApp Responsibility:**
 
-1. **Identify the Downstream Contract**
-   - Deploy or reference the target contract (e.g., the main benefaction contract).
-   - Compute its ErgoTree bytecode hash using Blake2b-256.
-   - Embed this hash in the constant `contract_bytes_hash` during compilation.
+1. **Token Preparation**: Obtain or mint the IDT token with the desired quantity.
 
-2. **Build the Transaction**
-   - **Input:** Select a box holding the IDT (output from a prior mint/issuance transaction).
-   - **Output:** Create OUTPUTS(0) with:
-     - `propositionBytes` = the exact ErgoTree of the downstream contract
-     - `tokens(0)` = the same IDT and full amount from the input
-     - Other fields (value, registers, additional tokens) as required by downstream contract
+2. **Contract Compilation**: Compile the target contract and compute its Blake2b-256 hash using Ergo's hashing functions.
 
-3. **Verification (Off-Chain Bot / Wallet)**
-   - Before signing, verify:
-     - `blake2b256(OUTPUTS(0).propositionBytes) == fromBase16(contract_bytes_hash)`
-     - `OUTPUTS(0).tokens(0) == SELF.tokens(0)` (same token ID and amount)
-   - If both checks pass, the transaction will satisfy the contract guard.
+3. **Template Substitution**: Inject the computed hash into the `contract_bytes_hash` constant during ErgoScript compilation (via string interpolation: `` `+contract_bytes_hash+` ``).
 
-### Headless dApp Integration
+4. **Transaction Construction**:
+   - Create an input box containing the IDT tokens, locked by this `mint_idt.es` contract.
+   - Create output box at index 0 with the same IDT tokens and the destination contract's ErgoTree.
+   - Ensure no token loss or partial transfers.
 
-- **State Machine Role:** This contract is a **transit node** in a multi-stage state machine. The IDT is the singleton/state NFT that flows through successive contract stages.
-- **Composability:** The contract does not itself issue or validate the IDT; it assumes a prior issuance contract (likely in the same project) created and initialized it.
-- **Bot Responsibility:** An off-chain bot must watch for UTXOs locked under this contract, verify the downstream contract hash is correct, and construct forward transactions.
+5. **Validation**: Before submission, verify off-chain that:
+   - `blake2b256(targetContract.propositionBytes) == contractBytes Hash`
+   - Token IDs match
+   - Token quantities are preserved
+   - Output box value meets minimum box value requirement
+
+**Sigma Protocol**: The contract uses `sigmaProp()` to create a provable predicate; spending requires a valid Sigma proof that both conditions hold.
 
 ## Related Contracts
 
-| Contract | Relationship |
-|----------|--------------|
-| **Main Issuance/Mint Contract** | Upstream: Issues the IDT. This contract enforces that the issued token flows only to designated downstream contract(s). |
-| **Downstream Benefaction/Stability Contract** | Downstream: Receives the IDT and executes the core business logic (token distribution, stability guarantees, etc.). The hash `contract_bytes_hash` points to this contract's ErgoTree. |
-| **Multi-Stage Pipeline** | This contract is one checkpoint in a larger chain; typical patterns include: `Issuance → Transit (this contract) → Distribution → Settlement`. |
+- **Benefaction Main Contract** (referenced as `contract_bytes_hash`): The authorized recipient contract that must receive all IDT tokens. Its identity is cryptographically bound via Blake2b-256 hashing.
+
+- **Other Mint Contracts** (inferred): StabilityNexus/BenefactionPlatform likely includes multiple mint contracts for different token types (PFT, IDT, etc.). This contract specializes in IDT distribution control.
+
+## Notable Limitations & Design Decisions
+
+| Aspect | Detail |
+|--------|--------|
+| **No Emission Validation** | The contract does not verify that the IDT quantity matches the authorized issuance amount; off-chain logic must enforce emission schedules. |
+| **No Metadata Verification** | Token name, description, and decimal places are not validated; trust is placed in the minting process. |
+| **Atomic Single-Output Spend** | All tokens must exit in a single atomic spend to `OUTPUTS(0)`; no batch or multi-step distribution is supported by this contract. |
+| **Hash Immutability** | The target contract hash is constant and cannot be updated without redeploying this contract; upgradeability requires a new contract version. |
 
 ---
 
-## Contract Limitations & Disclaimers
-
-⚠️ **Explicit Out-of-Scope:**
-- Token amount must match PFT (Platform Facilitation Token) issuance in the main contract—**this contract does not verify it**.
-- Token name, description, and decimals are **not validated**; metadata governance is delegated upstream.
-- No rate-limiting, time-locks, or epoch-based controls.
-
-⚠️ **Security Implications:**
-- The contract hash is immutable post-deployment; if the downstream contract requires an upgrade, a new IDT and new transit contract are required.
-- The contract does not prevent the downstream contract from mis-using the IDT; trust is placed entirely on the downstream contract's validation logic.
-
----
-
-## Summary Table
-
-| Aspect
+**Ergo Pattern**: This is a **constraint contract** implementing **output-driven validation**, common in token distribution and multi-stage contracts on Ergo. It pairs naturally with a State machine where the receiving contract manages downstream logic (e.g., beneficiary distribution, governance, or fund management).

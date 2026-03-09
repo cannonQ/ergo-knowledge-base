@@ -5,7 +5,7 @@ tags: [plasma-avl-tree, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [paideiadao/paideia-contracts, ergoplatform/sigmastate-interpreter]
 ---
@@ -13,170 +13,170 @@ source_repos: [paideiadao/paideia-contracts, ergoplatform/sigmastate-interpreter
 
 ## Overview
 
-### What This Pattern Is
+### What Is This Pattern?
 
-The **Plasma / AVL tree pattern** (also called the **PlasmaMap pattern**) is an architectural technique for Ergo smart contracts that enables a single on-chain Box to commit to an arbitrarily large authenticated dataset — potentially millions of key-value entries — while keeping the raw data off-chain. On-chain, only the **AVL tree digest** (a 33-byte Merkle-like root hash) is stored in a Register. Any off-chain actor wishing to prove membership, insertion, deletion, or update in that dataset constructs a **cryptographic proof** and submits it as part of a Transaction. The ErgoScript contract verifies the proof against the stored digest without ever seeing the full dataset.
+The **Plasma / AVL Tree** pattern (also called the **PlasmaMap pattern**) enables Ergo smart contracts to authenticate and verify large off-chain datasets using compact cryptographic proofs verified entirely on-chain. It is one of Ergo's most powerful scaling primitives, allowing a single on-chain **Box** to represent state that would be prohibitively expensive or impossible to store directly in the eUTXO model.
 
-This pattern is a direct analog to "Plasma" side-chain constructions in other ecosystems, but implemented natively within Ergo's eUTXO model using **authenticated dynamic dictionaries** (the AVL+ tree structure from the Scorex framework).
+The core primitive is the **AVL tree** (Adelson-Velsky and Landis tree) — an authenticated, self-balancing binary search tree. In Ergo's context, the AVL tree's **digest** (a 33-byte Merkle-style root hash) is stored in a **Register** of an on-chain Box. The actual tree data lives off-chain. When a contract needs to read or mutate this data, the caller submits a **proof** alongside the transaction; the ErgoScript verifier checks the proof against the stored digest without needing the full dataset.
 
-### Why It Exists
+### Why Does It Exist?
 
-Ergo Boxes carry a fixed on-chain footprint governed by **minimum box value** and **storage rent** rules. Storing a mapping of 100,000 staker addresses and balances directly in Registers is economically and technically impossible: Registers R4–R9 are finite, and every byte stored on-chain permanently increases the storage rent burden. The AVL tree pattern solves this by:
+Ergo's eUTXO model stores state in Boxes. Each Box has a minimum box value enforced by **Storage Rent** and is constrained by maximum serialized size. Storing thousands of user balances, staking positions, or membership records directly in Box **Registers** or as **Native Tokens** is impractical. The AVL tree pattern solves this by:
 
-- **Compressing state**: An entire database is represented by a single 33-byte digest stored in a Register (typically `R4` or `R5`).
-- **Enabling trustless proofs**: The AVL tree is an authenticated data structure — any lookup, insert, or delete operation produces a proof that ErgoScript can verify in O(log n) time without the full tree.
-- **Scaling indefinitely**: The on-chain cost of a contract is independent of the number of entries in the dataset.
-- **Preserving the eUTXO security model**: Proofs are submitted within Transactions as **Context extensions** or output Register values, keeping verification atomic and deterministic.
+- Keeping the on-chain footprint **constant** (33-byte digest) regardless of dataset size
+- Providing **cryptographic integrity** — any mutation to off-chain data invalidates the digest
+- Enabling **trustless verification** — proofs are checked in ErgoScript with no trusted intermediary
+- Supporting **batch operations** — multiple insertions, lookups, and deletions can be proven in a single proof
 
 ### When to Use It
 
-Use the PlasmaMap pattern when your contract needs to:
-
-| Scenario | Example |
+| Use Case | Fits PlasmaMap? |
 |---|---|
-| Track unbounded membership sets | Staking registries (Paideia DAO) |
-| Store per-user balances or state | Token distribution, airdrops |
-| Implement off-chain order books with on-chain settlement | DEX matching engines |
-| Maintain governance voter records | DAO voting weights |
-| Build layer-2 payment channels with on-chain exit proofs | Micro-payment networks |
-
-**Do not** use this pattern when the dataset is small enough to fit in Registers directly, or when your contract logic requires iterating over all entries on-chain (the AVL tree only supports point operations and range operations with proofs; it cannot enumerate).
+| Staking registries (thousands of stakers) | ✅ Ideal |
+| DAO membership / voting weight | ✅ Ideal |
+| Whitelist / allowlist verification | ✅ Ideal |
+| Order books with many entries | ✅ Ideal |
+| Token distribution (airdrops) | ✅ Ideal |
+| Small state (< 10 entries) | ❌ Use Registers directly |
+| Frequently contested single value | ❌ Use Singleton/State NFT alone |
 
 ---
 
 ## How It Works
 
-### The Authenticated AVL+ Tree
-
-The underlying data structure is an **AVL+ tree** (a height-balanced binary search tree with authenticated nodes). Each node stores:
-- A **key** (arbitrary byte array)
-- A **value** (arbitrary byte array)
-- A **hash** derived from its children and own data
-
-The **digest** is the hash of the root node plus the tree height, packed into 33 bytes. Crucially:
-
-- **Any modification** to any node changes the digest.
-- **Any proof** of a lookup/insert/delete is a path from the root to the relevant leaf, plus sibling hashes sufficient to recompute the root.
-- **ErgoScript's built-in `AvlTree` type** can verify these proofs natively using `avlTree.contains`, `avlTree.get`, `avlTree.insert`, `avlTree.delete`, and `avlTree.update` methods.
-
-### Step-by-Step Flow
+### Conceptual Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        OFF-CHAIN                                 │
-│                                                                  │
-│  1. Operator maintains full AVL tree in memory / database        │
-│     PlasmaMap<K, V> (getblok_plasma library)                     │
-│                                                                  │
-│  2. For each operation (insert/update/delete/lookup):            │
-│     a. Apply operation to local tree                             │
-│     b. Extract proof bytes from tree                             │
-│     c. Record new digest (33 bytes)                              │
-│                                                                  │
-│  3. Build Transaction:                                           │
-│     - INPUTS: current state Box (holds old digest in Register)   │
-│     - OUTPUTS: new state Box (holds new digest in Register)      │
-│     - Context extension: proof bytes attached to input           │
-│                                                                  │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │  Transaction submitted to Ergo node
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        ON-CHAIN (ErgoScript)                     │
-│                                                                  │
-│  4. Contract reads old digest from SELF Register                 │
-│  5. Contract reads proof from Context extension                  │
-│  6. Contract calls avlTree.insert(proof) or similar              │
-│  7. Returned Option[AvlTree] contains new digest if valid        │
-│  8. Contract asserts new digest == digest in OUTPUT Register     │
-│  9. Additional business logic checks (amounts, NFTs, etc.)       │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+Off-chain (Prover)                    On-chain (Verifier / ErgoScript)
+─────────────────────────────────     ─────────────────────────────────
+Full AVL tree data                    Digest stored in R4[AvlTree]
+         │                                        │
+         ▼                                        │
+  Perform operation                               │
+  (insert/update/delete/lookup)                   │
+         │                                        │
+         ▼                                        │
+  Generate proof bytes                            │
+         │                                        │
+         ▼                                        ▼
+  Attach proof to Transaction ──────► ErgoScript verifies proof
+  via Context Extension                against stored digest
+         │                                        │
+         │                            If valid: accept new digest
+         ▼                                        ▼
+  Compute new digest                   New digest written to
+  (post-operation)                     output Box R4[AvlTree]
 ```
 
-### Singleton / State NFT Anchoring
+### Step-by-Step Breakdown
 
-The state Box holding the digest **must** be uniquely identified. This is achieved with the **Singleton / State NFT** pattern: a native token with a Token ID derived from the Box ID of the genesis transaction is placed in the state Box. ErgoScript checks `SELF.tokens(0)._1 == expectedNFTId` to guarantee that only one canonical state Box exists and cannot be forged.
+#### Step 1: Initial State — Storing the Digest
 
-### AvlTree Flags
+A **Singleton Box** (identified by a **State NFT** / Token ID rule) holds the AVL tree digest in a Register, typically `R4[AvlTree]`. The `AvlTree` type in ErgoScript encodes:
 
-The `AvlTreeFlags` byte embedded in the digest controls which operations the tree permits:
+- The 33-byte **digest** (root hash + tree height)
+- **Flags** indicating which operations are enabled (`insertAllowed`, `updateAllowed`, `removeAllowed`)
+- The **key length** (fixed-length keys only; variable-length keys require a workaround)
+- An optional `maxKeySize` for value-size proofs
 
-| Flag | Meaning |
-|---|---|
-| `insertAllowed` | New keys can be inserted |
-| `updateAllowed` | Existing values can be updated |
-| `removeAllowed` | Keys can be deleted |
+#### Step 2: Off-Chain — Build and Maintain the Tree
 
-ErgoScript enforces these flags at proof verification time. Your contract should set only the flags it needs.
+The contract operator maintains the full AVL tree off-chain using libraries such as `ergo-lib` (Rust/WASM), `sigma-rust`, or the JVM-based `sigmastate-interpreter`. The tree is a **persistent data structure** — each version is derived from the previous one.
+
+#### Step 3: Off-Chain — Generate Proof
+
+Before constructing the transaction, the off-chain actor:
+
+1. Selects the operations to perform (e.g., `update(key, newValue)`)
+2. Calls the prover to generate a **proof** — a serialized byte array encoding the Merkle path(s) needed to verify the operation
+3. Computes the **new digest** that results after applying the operations
+
+#### Step 4: On-Chain — Attach Proof via Context Extension
+
+The proof bytes are attached to the spending transaction's input using a **Context Extension** (also called `ContextVar`). Context Extensions allow arbitrary bytes to be passed to an ErgoScript at evaluation time without being committed to the Box itself.
+
+```
+Input Box
+  ├── contextVars[0] = proof bytes (for the operation)
+  └── contextVars[1] = operation keys/values (optional, can be in data input)
+```
+
+#### Step 5: On-Chain — ErgoScript Verifies the Proof
+
+ErgoScript calls AVL tree methods:
+
+- `tree.contains(key, proof)` — lookup
+- `tree.insert(kvPairs, proof)` — returns `Option[AvlTree]` with new digest
+- `tree.update(kvPairs, proof)` — returns `Option[AvlTree]` with new digest
+- `tree.remove(keys, proof)` — returns `Option[AvlTree]` with new digest
+
+The script checks:
+1. The proof is valid for the current digest
+2. The resulting new digest matches the digest in the **output Box**
+3. All other contract invariants hold (NFT preserved, correct output structure, etc.)
+
+#### Step 6: New Digest Propagated
+
+The output Box receives the new `AvlTree` digest. The State NFT is forwarded to this output Box, maintaining the singleton invariant.
 
 ---
 
 ## Implementation
 
-### Project Structure Overview
+### ErgoScript Contract: Plasma Staking (Adapted from Paideia)
 
-The reference implementation is [paideiadao/paideia-contracts](https://github.com/paideiadao/paideia-contracts), which uses:
-- **getblok_plasma** — Scala/JVM library for off-chain AVL tree manipulation
-- **ergo_python_appkit** — Python bindings wrapping AppKit and getblok_plasma
-- **ErgoScript** — On-chain proof verification
-
-### Part 1: ErgoScript Contract (On-Chain)
-
-The following is drawn from `plasmaStaking.es` in paideia-contracts, annotated for clarity:
+This is the core staking contract. The AVL tree maps `staker_address_bytes → stake_amount_long`.
 
 ```scala
+// plasmaStaking.es — Simplified Plasma Staking Contract
+// The SELF box is the staking state box, identified by a Singleton/State NFT
 {
-  // -------------------------------------------------------------------------
-  // STATE BOX REGISTERS
-  // R4: AvlTree  — the authenticated digest of the staker registry
-  //               Key: staker PK bytes, Value: (stakeAmount, lockHeight) encoded
-  // R5: Coll[Long] — operational parameters
-  //   index 0: emissionAmount  — tokens emitted per cycle
-  //   index 1: emissionDelay   — blocks between snapshot and emission
-  //   index 2: cycleLength     — blocks per staking cycle
-  //   index 3: nextSnapshot    — block height of next snapshot
-  //   index 4: stakers         — current count of registered stakers
-  //   index 5: totalStaked     — sum of all staked token amounts
-  // R6: Coll[(Long,(Long,AvlTree))] — historical snapshots for delayed emission
-  // -------------------------------------------------------------------------
+  // ─── Read current state from Registers ───────────────────────────────────
+  // R4: AVL tree digest representing the map of staker_key → stake_record
+  val stakeState      = SELF.R4[AvlTree].get
 
-  val stakeState   = SELF.R4[AvlTree].get
-  val emissionAmount = SELF.R5[Coll[Long]].get(0)
-  val emissionDelay  = SELF.R5[Coll[Long]].get(1).toInt
-  val cycleLength    = SELF.R5[Coll[Long]].get(2)
-  val nextSnapshot   = SELF.R5[Coll[Long]].get(3)
-  val stakers        = SELF.R5[Coll[Long]].get(4)
-  val totalStaked    = SELF.R5[Coll[Long]].get(5)
-  val snapshots      = SELF.R6[Coll[(Long,(Long,AvlTree))]].get
+  // R5: Operational parameters packed as a Coll[Long]
+  val emissionAmount  = SELF.R5[Coll[Long]].get(0)  // tokens emitted per cycle
+  val emissionDelay   = SELF.R5[Coll[Long]].get(1).toInt
+  val cycleLength     = SELF.R5[Coll[Long]].get(2)  // blocks per emission cycle
+  val nextSnapshot    = SELF.R5[Coll[Long]].get(3)  // HEIGHT for next snapshot
+  val stakers         = SELF.R5[Coll[Long]].get(4)  // total number of stakers
+  val totalStaked     = SELF.R5[Coll[Long]].get(5)  // total tokens staked
 
-  // The Singleton / State NFT identifying this exact state Box lineage
+  // R6: Historical snapshots — Coll[(epoch_id, (emission_per_token, AvlTree))]
+  // Each snapshot records the reward rate and the state tree at that epoch
+  val snapshots = SELF.R6[Coll[(Long, (Long, AvlTree))]].get
+
+  // ─── Identify the State NFT (Singleton) ─────────────────────────────────
+  // The first token on SELF is the governance/state NFT — Token ID rule ensures
+  // only one such box can exist in the protocol
   val stakeStateNFT = SELF.tokens(0)._1
 
-  // -------------------------------------------------------------------------
-  // CONTEXT EXTENSIONS (supplied by the transaction builder off-chain)
-  // Index 0: proof bytes for the AVL tree operation being performed
-  // Index 1: operation-specific auxiliary data (e.g., stake amount)
-  // -------------------------------------------------------------------------
-  val proof      = getVar[Coll[Byte]](0).get
-  val stakeInput = getVar[Long](1).get
-
-  // -------------------------------------------------------------------------
-  // OUTPUT STATE BOX — must carry the same Singleton NFT forward
-  // -------------------------------------------------------------------------
+  // ─── Output box must preserve the Singleton NFT ──────────────────────────
   val successor = OUTPUTS(0)
-  
-  // Guard: the successor must carry the Singleton NFT to prevent state forking
-  val validSuccessor = successor.tokens(0)._1 == stakeStateNFT
+  val nftPreserved = successor.tokens(0)._1 == stakeStateNFT
 
-  // -------------------------------------------------------------------------
-  // STAKE OPERATION: insert a new staker entry into the AVL tree
-  //
-  // The transaction builder off-chain:
-  //   1. Looks up staker PK in local PlasmaMap
-  //   2. Generates insert proof
-  //   3. Places new digest in successor R4
-  //   4. Attaches proof bytes to Context extension index 0
-  // -------------------------------------------------------------------------
-  val stakerPK    = INPUTS(1).propositionBytes   // user's P2PK box
-  val stakeEntry  
+  // ─── Context Extension: proof supplied by transaction builder ─────────────
+  // ContextVar index 0: the AVL tree proof for the stake operation
+  val proof = getVar[Coll[Byte]](0).get
+
+  // ContextVar index 1: the keys being inserted/updated (staker public keys)
+  val stakeKeys = getVar[Coll[Coll[Byte]]](1).get
+
+  // ContextVar index 2: the new stake values (encoded as Coll[Byte])
+  val stakeValues = getVar[Coll[Coll[Byte]]](2).get
+
+  // ─── Build key-value pairs for AVL tree update ───────────────────────────
+  val kvPairs: Coll[(Coll[Byte], Coll[Byte])] = stakeKeys.zip(stakeValues)
+
+  // ─── Perform the authenticated update ────────────────────────────────────
+  // stakeState.insert returns Some(newTree) if proof is valid, None otherwise
+  val newStakeStateOpt: Option[AvlTree] = stakeState.insert(kvPairs, proof)
+
+  // Proof validity — if proof is invalid, newStakeStateOpt is None and
+  // isDefined returns false, causing the script to evaluate to false
+  val proofValid = newStakeStateOpt.isDefined
+
+  // ─── New digest must match what the output box declares ──────────────────
+  val newStakeState = newStakeStateOpt.get
+  val successorState = successor.R4[AvlTree

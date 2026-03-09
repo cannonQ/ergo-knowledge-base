@@ -11,107 +11,116 @@ source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/bene_contract/contract_v2.es
 project: stabilitynexus-benefactionplatform-ergo
 ---
-# ErgoScript Contract Analysis: Bene Fundraising Platform Contract (v1.2.1)
+# BenefactionPlatform Fundraising Contract Analysis
 
 ## Purpose
 
-The **Bene Fundraising Platform Contract** is a multi-token fundraising mechanism that enables projects to receive contributions in any base token (ERG or custom token) in exchange for **Proof of Funding Tokens (PFT)**. It manages the entire lifecycle of a fundraising campaign—from contribution acceptance, to token distribution, to refund handling—while maintaining atomic state invariants and fee distribution to developers.
+This ErgoScript contract implements a **multi-token fundraising platform** that enables projects to raise funds (in ERG or any native token) by issuing Proof-of-Funding Tokens (PFTs) to contributors. The contract manages the exchange of base tokens for PFTs at a fixed rate while tracking sold/refunded amounts and enforcing temporal constraints on refunds.
+
+---
 
 ## Inputs / Outputs
 
-### Input Boxes
-- **Self Box (SELF)**: The singleton fundraising contract box containing:
-  - **APT (Authority/Project Token)**: NFT identifying the project (1 unit + emission amount)
-  - **PFT (Proof of Funding Token)**: Available tokens for distribution (amount = max target base tokens)
-  - **Base Token** (optional): If fundraising in non-ERG token, holds accumulated contributions
-  - **ERG**: Minimum box value (2 ERG) + accumulated ERG if ERG-denominated fundraising
-  - **Registers R4–R9**: Temporal constraints, thresholds, counters, rates, constants, metadata
+### Expected Inputs
+- **SELF (Contract Box)**
+  - **Tokens:**
+    - **APT (Auxiliary Proof Token)**: ID-based NFT; amount = `PFT_emission + 1` (singleton identifier for the project)
+    - **PFT (Proof-of-Funding Token)**: Native token; amount = maximum base tokens the project aims to raise
+  - **Value**: ERG (minimum box value + any accumulated funds if using ERG as base)
+  - **Base Token** (optional): If non-ERG base token, holds contributed tokens
+  
+- **User Input Box** (for contribution or refund transactions)
+  - Contains base tokens (ERG or configured native token ID)
 
-### Output Boxes
-1. **Replication Box** (OUTPUTS(0)): Updated singleton matching Self with modified state (counters, token amounts, or base token balance)
-2. **Contribution/Withdrawal Boxes** (OUTPUTS(1+)): 
-   - User receives PFT tokens on contribution
-   - User receives refunded base tokens on withdrawal
-   - Owner receives withdrawn base tokens or fees
-3. **Dev Fee Box** (when applicable): Receives fee share sent to developer fee contract
+### Produced Outputs
+- **Replicated Contract Box** (at `OUTPUTS(0)`)
+  - Same structure as SELF with updated registers
+  - Updated `R6` counters: `[sold, refunded, exchanged]`
+  - Updated PFT/base token amounts reflecting the transaction
+  
+- **User Output Box**
+  - Receives PFTs in exchange for base tokens, OR
+  - Receives refunded base tokens (if refund conditions met)
 
-### State Machine Flow
-- **Funding Phase**: Accepts contributions, increments `selfSoldCounter`, distributes PFT
-- **Refund Phase** (if minimum not met after deadline): Returns base tokens, decrements counters
-- **Withdrawal Phase** (if minimum met): Owner/project withdraws accumulated base tokens and unsold PFT
+- **Dev Fee Box** (optional)
+  - Sent to contract specified in `R8` with developer's fee share
 
 ---
 
 ## Key Logic
 
-### 1. **Box Replication & State Continuity** (`isSelfReplication`)
-Validates that OUTPUTS(0) is a valid state evolution of SELF by verifying:
-- Same APT NFT ID (preserves project identity)
-- Same R4 block/timestamp limit (temporal constraint unchanged)
-- Same R5 minimum tokens sold threshold
-- Same R7 exchange rate (base tokens per PFT)
-- Same R8 constants (owner, dev fee, token IDs)
-- Same R9 metadata (immutable project description)
-- Same ErgoTree proposition bytes (contract logic unchanged)
-- Valid token count (1–2 for ERG base, 1–3 for custom token base)
+### Core Validation Rules
 
-**Invariant**: Only counters, token balances, and base token amounts can change; structure is immutable.
+1. **Box Replication (State Machine Pattern)**
+   - Output box at index 0 must be a valid replica of SELF with:
+     - Same APT ID and amount (`APTokenRemainsConstant`)
+     - Same PFT total amount (`ProofFundingTokenRemainsConstant`)
+     - Same ERG/base token value (`mantainValue`)
+     - Same R4, R5, R7, R8, R9 registers (immutable project parameters)
+     - Same ErgoTree/script bytes (`sameScript`)
+   - Prevents adding unexpected tokens or modifying core parameters
 
-### 2. **Contribution Flow**
-```
-User sends base tokens → Contract receives base tokens
-Contract decrements temporary_funding_token_amount (PFT reserve)
-Contract increments selfSoldCounter by PFT amount
-User receives PFT in output box
-```
+2. **Temporal Refund Logic**
+   - `R4: (Boolean, Long)` specifies refund deadline:
+     - `Boolean = false`: Block height limit
+     - `Boolean = true`: Timestamp limit
+   - Refunds only permitted AFTER this limit if minimum tokens `R5` were NOT sold
+   - If minimum threshold met, funds are locked (no refund possible)
 
-**Calculation**: 
-```
-temporary_funding_token = PFT_amount - sold + refunded + exchanged
-```
-This accounts for:
-- **sold**: Cumulative PFT distributed
-- **refunded**: PFT bought back during refund phase
-- **exchanged**: APT → PFT swaps via auxiliary exchange
+3. **Exchange Rate Enforcement**
+   - `R7: Long` stores base tokens required per 1 PFT
+   - All exchanges must respect this fixed ratio
+   - Works for both ERG and custom base tokens
 
-### 3. **Refund Mechanism**
-- **Precondition**: Block height or timestamp ≥ R4 limit AND sold < minimum threshold (R5)
-- **Action**: Return base tokens to user, decrement `selfRefundCounter`, increment `refundCounterRemainsConstant`
-- **Validation**: User cannot receive more base tokens than initially contributed (tracked via counters)
+4. **Multi-Token Support**
+   - `baseTokenId` in `R8(4)`:
+     - Empty (length 0) → contributions in ERG only
+     - Specified → contributions in that native token only
+   - `isERGBase` flag gates between ERG (value-based) and token-based amount calculations
 
-### 4. **Minimum Threshold Enforcement**
-- **R5 (selfMinimumTokensSold)**: Minimum PFT threshold required to "unlock" withdrawals
-- **If sold ≥ R5**: Owner can withdraw accumulated base tokens; PFT remains locked or can be withdrawn per `isWithdrawUnsoldTokens`
-- **If sold < R5 + deadline passed**: Users can refund base tokens
+5. **Funding Token Availability Calculation**
+   ```
+   available_APT = PFT_balance - sold + refunded + exchanged
+   ```
+   - Prevents overselling by accounting for:
+     - **sold**: Total PFTs exchanged
+     - **refunded**: Total PFTs returned to contributors
+     - **exchanged**: APT tokens converted back to PFT (for rebalancing)
 
-### 5. **Base Token Flexibility**
-```ergoscript
-val isERGBase = baseTokenId.size == 0
+6. **Counter Management (R6)**
+   - `R6[0]`: Total tokens sold (cumulative)
+   - `R6[1]`: Total tokens refunded (cumulative)
+   - `R6[2]`: Auxiliary exchange counter (APT→PFT conversions)
+   - All counters must remain constant unless transaction explicitly updates them
+   - Enables atomic accounting across multi-box transactions
 
-if (isERGBase) {
-  // Contributions in ERG: use box.value
-  baseTokenAmount = box.value
-} else {
-  // Contributions in custom token: extract from tokens(i) where id == baseTokenId
-  baseTokenAmount = box.tokens.filter(t => t._1 == baseTokenId)(0)._2
-}
-```
-- **ERG mode**: Contract receives/sends ERG value directly
-- **Custom token mode**: Contract holds custom token native asset; box must contain 3 tokens (APT, PFT, base token)
+7. **Token Validation**
+   - Maximum token count in replication box:
+     - ERG base: 1–2 tokens (APT ± PFT)
+     - Non-ERG base: 1–3 tokens (APT ± PFT ± base_token)
+   - Prevents dust or spam token injection
 
-### 6. **State Counter Validation**
-All three counters in R6 must be preserved during replication unless explicitly modified:
-- **selfSoldCounter**: Total PFT sold (only increases on contributions)
-- **selfRefundCounter**: Total PFT refunded (only increases on refunds)
-- **selfAuxiliarExchangeCounter**: APT ↔ PFT exchange adjustments (fine-tuning mechanism)
+### Authorization Pattern
+- `R8(0)`: Owner ErgoTree (may be P2PK or P2S) for project control
+- `R8(1)`: Dev fee contract bytes hash (Blake2b-256) for routing fees
+- `R8(2)`: Dev fee percentage (e.g., 5 for 5%)
 
 ---
 
 ## Registers Used
 
-| Register | Type | Purpose |
-|----------|------|---------|
-| **R4** | `(Boolean, Long)` | **Temporal Limit Tuple**: Boolean (false = block height, true = timestamp) + limit value. Refunds allowed only after this point if minimum not met. |
-| **R5** | `Long` | **Minimum Tokens Threshold**: Minimum PFT quantity that must be sold to unlock fund withdrawals. If not met by deadline, refunds enabled. |
-| **R6** | `Coll[Long]` | **State Counters** (3 elements): [0] = total sold, [1] = total refunded, [2] = APT↔PFT exchange adjustments. Enables accurate reserve calculation. |
-| **R7** | `Long` | **Exchange Rate**: Base token amount per 1 PFT (e.g., 1000 means 1000 base
+| Register | Type | Purpose | Mutability |
+|----------|------|---------|-----------|
+| **R4** | `(Boolean, Long)` | Refund deadline (block height or timestamp) | Immutable |
+| **R5** | `Long` | Minimum tokens that must be sold to lock funds | Immutable |
+| **R6** | `Coll[Long]` | State counters: `[sold, refunded, exchanged]` | Mutable (incremented only) |
+| **R7** | `Long` | Exchange rate: base tokens per PFT | Immutable |
+| **R8** | `Coll[Coll[Byte]]` | Constants array: `[owner_ergotree, dev_fee_contract_hash, dev_fee%, pft_token_id, base_token_id]` (Base58-encoded JSON) | Immutable |
+| **R9** | `Coll[Byte]` | Project metadata (Base58-encoded JSON with "title" & "description") | Immutable |
+
+**Register Access Pattern:**
+```ergoscript
+val r8 = SELF.R8[Coll[Coll[Byte]]].get
+val ownerErgoTree = r8(0)          // P2PK/P2S authorization
+val devFeeHash = r8(1)             // Dev fee recipient validation
+val devFee = byteArrayToBigInt(r8(2))  // Fee percentage

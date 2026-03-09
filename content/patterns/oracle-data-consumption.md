@@ -5,7 +5,7 @@ tags: [oracle-data-consumption, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [ergoplatform/oracle-core, kushti/dexy-stable, DjedAlliance/Djed-Ergo]
 ---
@@ -15,164 +15,178 @@ source_repos: [ergoplatform/oracle-core, kushti/dexy-stable, DjedAlliance/Djed-E
 
 ### What This Pattern Is
 
-Oracle data consumption via **Data inputs** is an Ergo eUTXO design pattern that allows smart contracts to **read the current state of an oracle box — including price feeds and external data — without spending (consuming) that box**. This is a foundational primitive in Ergo's DeFi ecosystem, enabling trustless price discovery without requiring oracle operators to re-post data on every consumer transaction.
+The **Oracle data consumption pattern** enables smart contracts on Ergo to read external real-world data — price feeds, exchange rates, asset valuations, or any externally verified state — without spending the box that holds that data. This is accomplished through **Data inputs**, a first-class feature of the Ergo eUTXO model that allows a transaction to reference existing boxes in the UTXO set as read-only witnesses.
 
-In traditional UTXO models, reading a box's contents requires spending it, which destroys it and forces recreation. Ergo's Data input mechanism, introduced formally in **EIP-0022**, solves this by allowing a transaction to reference boxes as **read-only witnesses**. The referenced box remains unspent in the UTXO set; it is simply inspected by the ErgoScript context of the spending transaction.
+A **Data input** is a box included in a transaction solely for the purpose of making its contents — ERG value, tokens, and Registers R0–R9 — available to the ErgoScript context of spending contracts. Crucially, a Data input box is **not consumed**: it remains in the UTXO set after the transaction confirms, unchanged.
 
 ### Why It Exists
 
-The oracle data consumption pattern exists because of fundamental properties of the eUTXO model:
+In account-based blockchains, contracts can call external state directly. The eUTXO model has no such mechanism — every state change requires spending and recreating a box. Data inputs solve the **oracle trilemma** specific to UTXO-based systems:
 
-- **Boxes are immutable once created.** Their Registers, tokens, and ErgoTree cannot be modified in place.
-- **Spending a box destroys it.** Any contract that reads oracle data by spending the oracle box would either need to recreate it (adding complexity, coordination overhead, and transaction fees) or invalidate it for every concurrent consumer.
-- **Concurrency at scale.** A single ERG/USD pool box might be referenced by hundreds of simultaneous transactions (DEX swaps, loan liquidations, stablecoin minting). If each consumer had to spend and recreate the oracle box, only one such transaction could succeed per block.
+1. **Without Data inputs**, every contract needing a price feed would have to spend the oracle box, forcing sequential execution and making shared data feeds impossible at scale.
+2. **With Data inputs**, an oracle's **Pool Box** (holding the aggregated, validated price) can be referenced simultaneously by thousands of transactions in the same block, all reading the same price without contention.
+3. The oracle box is protected by its own **ErgoTree** guard script; it can only be updated by the oracle protocol itself, not by consumers.
 
-Data inputs solve the **concurrent read problem** elegantly: many transactions can reference the same oracle box as a Data input in the same block, and none of them consume it.
+This design is specified in [EIP-0022](https://github.com/ergoplatform/eips/blob/master/eip-0022.md) and is fundamental to how oracle-core, Dexy, and Djed operate.
 
 ### When to Use This Pattern
 
-Use oracle data consumption via Data inputs when:
-
-| Situation | Use Data Input |
-|-----------|---------------|
-| Your contract needs a price feed (ERG/USD, ADA/ERG, etc.) | ✅ Yes |
-| You need to verify external state held in a Singleton/State NFT box | ✅ Yes |
-| You want to prove a fact about an unspent box without destroying it | ✅ Yes |
-| You are updating the oracle box itself (pool refresh, epoch transition) | ❌ No — spend it |
-| You need to alter any Register in the referenced box | ❌ No — spend it |
-
-Concrete use cases in the Ergo ecosystem:
-
-- **SigmaUSD / Djed**: reading the ERG/USD oracle pool box to compute collateral ratios before minting/redeeming SigmaRSV or SigmaUSD.
-- **Dexy Stablecoin**: reading LP and oracle price to enforce the peg intervention logic.
-- **DEX contracts**: reading external prices to prevent sandwich attacks or enforce slippage bounds.
-- **Lending protocols**: reading collateral price to determine liquidation eligibility.
+| Use Case | Use Data Input? |
+|---|---|
+| Reading a price feed (ERG/USD, etc.) | ✅ Yes |
+| Checking whether a Singleton NFT exists | ✅ Yes |
+| Enforcing a collateral ratio in a stablecoin | ✅ Yes |
+| Reading on-chain governance state | ✅ Yes |
+| Updating the oracle's aggregated price | ❌ No — spend the Pool Box |
+| Minting tokens gated on current price | ✅ Yes (Data input for price, spending your own box) |
 
 ---
 
 ## How It Works
 
-### Conceptual Flow
+### The Oracle Architecture: Key Box Types
+
+The Ergo Oracle Core protocol defines three principal box types that interact. Understanding them is prerequisite to consuming oracle data correctly.
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         ERGO TRANSACTION                            │
-│                                                                     │
-│  INPUTS (spent, destroyed)          OUTPUTS (created)               │
-│  ┌────────────────────┐             ┌────────────────────┐          │
-│  │  User's ERG Box    │────────────▶│  New User Box      │          │
-│  │  (collateral, etc.)│             │  (change, receipt) │          │
-│  └────────────────────┘             └────────────────────┘          │
-│                                                                     │
-│  DATA INPUTS (read-only, NOT spent)                                 │
-│  ┌────────────────────────────────────────────────────┐             │
-│  │  Oracle Pool Box (Singleton NFT)                   │             │
-│  │  R4: Long  = 165000000  (ERG/USD rate × 10^9)      │  ──────────▶│ ErgoScript can read
-│  │  R5: Int   = 42         (epoch counter)            │             │ CONTEXT.dataInputs(0)
-│  │  TOKENS(0) = pool_nft_id                           │             │
-│  └────────────────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    Oracle Pool Lifecycle                        │
+│                                                                 │
+│  Individual Oracle Boxes          Pool Box (Aggregated)         │
+│  ┌──────────────────────┐         ┌──────────────────────────┐  │
+│  │ Oracle Box #1        │ ──────▶ │ Pool Box                 │  │
+│  │ R4: oracle pubkey    │         │ R4: aggregated rate      │  │
+│  │ R5: epoch counter    │ collect │ R5: epoch counter        │  │
+│  │ R6: data point       │ tx      │ Tokens: Pool NFT +       │  │
+│  │ Tokens: Oracle Token │         │         Reward tokens    │  │
+│  └──────────────────────┘         └──────────────────────────┘  │
+│  ┌──────────────────────┐                    │                  │
+│  │ Oracle Box #2        │ ──────▶            │ Data input       │
+│  │ ...                  │                    ▼                  │
+│  └──────────────────────┘         ┌──────────────────────────┐  │
+│                                   │ Consumer Transaction      │  │
+│                                   │ (e.g., Dexy mint/redeem) │  │
+│                                   └──────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Step-by-Step Flow
 
-#### Step 1: Oracle Posts Data to the Pool Box
+#### Step 1: Oracle Operators Post Data Points
 
-The oracle-core software (running on each oracle operator's node) aggregates individual oracle boxes and publishes a canonical **pool box** — a box protected by the pool ErgoTree, holding a **Singleton NFT** (also called a State NFT or pool NFT) that uniquely identifies it. The current aggregate rate is stored in **R4** as a `Long`.
+Each oracle operator monitors an off-chain data source and posts a signed data point into their individual **Oracle Box**. The Oracle Box holds:
 
-```
-Pool Box:
-  value:    minBoxValue (e.g., 10 ERG or minimum)
-  tokens:   [ (pool_nft_id, 1), (reward_token_id, N) ]
-  R4:       Long  — the current data point (e.g., nanoERG per USD cent)
-  R5:       Int   — epoch counter
-  ErgoTree: pool_contract (enforces update rules)
-```
+- `TOKENS(0)`: the Oracle Token (unique per oracle, minted at pool bootstrap)
+- `TOKENS(1)`: accumulated reward tokens
+- `R4`: the oracle operator's public key (a `GroupElement` / EC point)
+- `R5`: the epoch counter (`Int`)
+- `R6`: the raw data point — e.g., nanoERG per USD cent (`Long`)
 
-#### Step 2: Consumer Contract Declares Dependency on the Oracle
+#### Step 2: The Collect Transaction Aggregates Data
 
-The consumer's ErgoScript specifies that a valid transaction **must** include the oracle pool box as `CONTEXT.dataInputs(0)`, and validates the box by checking its **Token ID** against a hardcoded pool NFT ID. This is the **Token ID rule**: the Singleton NFT guarantees there is exactly one authentic pool box in existence.
+A designated **Refresh** or **Collect** transaction spends the current Pool Box and up to N Oracle Boxes, computing a new aggregated rate (typically median), and produces a new Pool Box. This is the only transaction that *spends* the Pool Box.
 
-#### Step 3: Transaction Builder Adds the Data Input
+#### Step 3: The Pool Box Holds Finalized Data
 
-The off-chain code (TypeScript/Rust/Python) building the consumer transaction fetches the current pool box from the node and adds it to the transaction's `dataInputs` array. The transaction structure is:
+After collection, the Pool Box contains:
 
-```
-Transaction {
-  inputs:      [userBox, collateralBox, ...],
-  dataInputs:  [oraclePoolBox],          // read-only
-  outputs:     [newUserBox, changeBox],
-  fee:         minimumTransactionFee
-}
-```
+- `TOKENS(0)`: the **Pool NFT** — a Singleton NFT whose Token ID uniquely identifies this oracle pool. The **Token ID rule** makes it impossible to forge: the Pool NFT's ID equals the outbox index of the transaction that minted it, making it globally unique.
+- `R4`: the aggregated, validated rate (`Long`)
+- `R5`: the current epoch counter (`Int`)
 
-#### Step 4: ErgoScript Evaluates the Context
+#### Step 4: Consumer Contracts Reference the Pool Box as a Data Input
 
-During transaction validation, the Ergo node evaluates the ErgoScript of each spending input. The script accesses `CONTEXT.dataInputs` — a collection of `Box` objects — and reads their Registers. No signature from the oracle operator is required; the data is authenticated by the Token ID rule (only the box holding the genuine NFT is accepted).
+Any transaction may include the Pool Box as a **Data input**. In ErgoScript, Data inputs are accessed via the `CONTEXT.dataInputs` array (zero-indexed). The consumer contract:
 
-#### Step 5: Rate Extraction and Business Logic
+1. Verifies that `CONTEXT.dataInputs(0).tokens(0)._1 == POOL_NFT_ID` — this authenticates the data source.
+2. Reads `CONTEXT.dataInputs(0).R4[Long].get` — the aggregated price.
+3. Uses the price to enforce contract logic (collateral ratio, swap price, etc.).
 
-The script extracts the rate from R4, applies any necessary scaling (oracle data is typically stored as integers scaled by a power of 10 to preserve precision), and uses it in the contract's predicate logic (e.g., "only allow minting if collateral ratio > 400%").
+The Pool Box is **not consumed** — it remains in the UTXO set and is available to all other transactions in the block and in future blocks until the next Collect transaction updates it.
+
+#### Step 5: Storage Rent Protects Long-Lived Boxes
+
+Because the Pool Box is long-lived and referenced indefinitely, **Storage rent** (4 years / ~1,051,200 blocks at current parameters) applies. The oracle pool protocol is designed to keep the Pool Box adequately funded. Consumer contracts should not assume a stale Pool Box will remain perpetually; in practice, oracle operators continuously refresh it.
 
 ---
 
 ## Implementation
 
-### ErgoScript: Consumer Contract
+### 1. ErgoScript: Consumer Contract Authenticating a Data Input
 
-The following ErgoScript demonstrates a minimal contract that reads an ERG/USD price feed from the oracle pool box and enforces a collateral ratio. This pattern is directly derived from the SigmaUSD and Dexy contract designs.
+This is the canonical pattern for any contract that reads an oracle price feed. The Pool NFT Token ID is baked into the contract at compile time as a constant.
 
 ```scala
-// Consumer contract: reads oracle pool box as Data input
-// Assumes:
-//   CONTEXT.dataInputs(0) = oracle pool box
-//   oracle pool box R4 = Long: nanoERG per USD cent (rate)
-//   oracle pool box TOKENS(0) = pool NFT
+// ErgoScript: Price-gated contract
+// Allows spending only if the ERG/USD price from the oracle
+// is above a specified threshold.
 //
-// Script guards a collateral box: allows withdrawal only if
-// the collateral value is above a required USD threshold.
+// Compile-time constant:
+//   poolNFT: Coll[Byte]  — the Pool NFT Token ID
+//   priceThreshold: Long — minimum acceptable rate (nanoERG per USD cent)
 
 {
-  // ── 1. Authenticate the oracle pool box by its Singleton NFT ──────────
-  val poolNFT = fromBase16("your_pool_nft_token_id_here") // hardcoded at compile time
-
+  // --- Data Input Authentication ---
+  // We require exactly one data input: the oracle Pool Box.
   val poolBox = CONTEXT.dataInputs(0)
 
-  // Verify the box holds the authentic pool NFT in TOKENS(0)
+  // Authenticate by Token ID rule: the Pool NFT is a Singleton NFT
+  // whose ID was set at pool bootstrap. Forgery is impossible because
+  // Token IDs are derived from the spending transaction's input box ID.
   val validPoolBox = poolBox.tokens(0)._1 == poolNFT
 
-  // ── 2. Extract the rate from R4 ───────────────────────────────────────
-  // Rate is stored as: nanoERG per USD cent
-  // i.e., rate = (nanoERG/ERG) / (USD price of 1 ERG in cents)
-  // Example: if 1 ERG = $1.65, rate = 1_000_000_000 / 165 ≈ 6,060,606
-  val rate = poolBox.R4[Long].get  // nanoERG per USD cent
+  // --- Read the Aggregated Rate ---
+  // R4 holds the rate as a Long: nanoERG per USD cent (oracle-core convention)
+  val rate = poolBox.R4[Long].get
 
-  // ── 3. Business logic: require collateral ratio > 400% ────────────────
-  // SELF.value is in nanoERG
-  // required: collateral in nanoERG >= 4 * (debtInUSDCents * rate)
-  val debtInUSDCents = SELF.R4[Long].get   // debt encoded in R4 of collateral box
-  val minCollateral  = debtInUSDCents * rate * 4L
+  // --- Enforce Business Logic ---
+  val priceConditionMet = rate >= priceThreshold
 
-  val sufficientCollateral = SELF.value >= minCollateral
-
-  // ── 4. Standard owner authorization ──────────────────────────────────
-  val ownerPK = SELF.R5[GroupElement].get
-  val ownerSig = proveDlog(ownerPK)
-
-  // ── 5. Final predicate ────────────────────────────────────────────────
-  sigmaProp(validPoolBox && sufficientCollateral) && ownerSig
+  // --- Spending Condition ---
+  sigmaProp(validPoolBox && priceConditionMet && SELF.R4[SigmaProp].get)
 }
 ```
 
-**Key ErgoScript terms used:**
-- `CONTEXT.dataInputs` — the read-only box collection in the ErgoScript context
-- `poolBox.tokens(0)._1` — Token ID of the first token in the pool box
-- `poolBox.R4[Long].get` — typed register extraction (will throw if absent or wrong type)
-- `proveDlog(ownerPK)` — Sigma protocol: discrete log proof (standard P2PK ownership)
-- `sigmaProp(...)` — lifts a Boolean predicate into a Sigma proposition
+**Key points:**
+- `CONTEXT.dataInputs(0)` — accesses the first Data input box.
+- `.tokens(0)._1` — the `_1` field of the token tuple is the Token ID (`Coll[Byte]`), `_2` is the amount.
+- `.R4[Long].get` — typed register extraction; throws if R4 is absent or wrong type. Use `.getOrElse(0L)` defensively if needed.
+- `poolNFT` must be a compile-time constant (`Coll[Byte]`). Never make it a runtime parameter — that opens a substitution attack.
 
 ---
 
-### TypeScript: Building a Transaction with a Data Input
+### 2. TypeScript: Building a Transaction with a Data Input (fleet-sdk)
 
-Using the `@fleet-sdk/core` library (the standard Fleet SDK for
+```typescript
+import {
+  OutputBuilder,
+  TransactionBuilder,
+  ErgoAddress,
+  Box,
+  RECOMMENDED_MIN_FEE_VALUE,
+  SAFE_MIN_BOX_VALUE,
+} from "@fleet-sdk/core";
+import { NodeService } from "./node-service"; // your node API wrapper
+
+// ──────────────────────────────────────────────
+// Types matching oracle-core Pool Box structure
+// ──────────────────────────────────────────────
+
+interface OraclePoolBox {
+  boxId: string;
+  ergoTree: string;
+  assets: Array<{ tokenId: string; amount: string }>;
+  additionalRegisters: {
+    R4: string; // encoded Long: aggregated rate (nanoERG per USD cent)
+    R5: string; // encoded Int: epoch counter
+  };
+  creationHeight: number;
+  value: string;
+  transactionId: string;
+  index: number;
+}
+
+// ──────────────────────────────────────────────
+// Step 1: Fetch the oracle Pool Box from the node
+// The Pool Box is identified by the Pool NFT Token ID.
+// ──────────────────

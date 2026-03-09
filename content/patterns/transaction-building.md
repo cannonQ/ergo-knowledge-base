@@ -9,95 +9,70 @@ updated: 2026-03-09
 source: auto-generated
 source_repos: [fleet-sdk/fleet, fleet-sdk/fleet-by-example, arkadianet/citadel, ergoplatform/ergo-appkit]
 ---
-# Developer Guide: Transaction Building with Fleet SDK and AppKit
+# Developer Guide: Transaction Building with Fleet SDK & AppKit
 
 ## Overview
 
-Ergo's **eUTXO** (extended Unspent Transaction Output) model means every on-chain interaction is expressed as a *transaction* that consumes one or more **Boxes** as inputs and produces one or more Boxes as outputs. Unlike account-based chains, there is no mutable state: every output is a self-contained value container carrying ERG, **Native tokens**, and up to ten **Registers** (R0–R9), protected by an **ErgoTree** (the compiled form of **ErgoScript**).
+Ergo's extended UTXO (eUTXO) model treats every on-chain value store as a **Box** — a first-class object containing ERG value, **Native tokens**, typed **Registers** (R0–R9), a guarding **ErgoTree** (compiled **ErgoScript**), and a creation height. Unlike account-based chains, there is no mutable state: every transaction consumes input Boxes and creates new output Boxes, with the chain's validity rules enforced entirely by ErgoScript predicates evaluated inside a **Sigma protocols** framework.
 
-This pattern covers the full lifecycle of constructing, balancing, and signing Ergo transactions using two complementary SDKs:
+This guide covers the two dominant transaction-building ecosystems:
 
-| SDK | Language | Primary Use |
+| SDK | Language | Primary use-case |
 |---|---|---|
-| **Fleet SDK** (`fleet-sdk/fleet`) | TypeScript / JavaScript | Browser, Node.js, dApp frontends |
-| **AppKit** (`ergoplatform/ergo-appkit`) | Scala / Java (JVM) | Backend services, bots, full-node integrations |
+| **Fleet SDK** | TypeScript / JavaScript | Browser, Node.js, dApp front-ends |
+| **AppKit** | Scala / Java / Kotlin | JVM back-ends, bots, tooling |
 
-### Why This Pattern Exists
+You need this pattern whenever you must:
 
-Ergo transactions have strict ledger rules that go beyond "send value":
-
-- Every output Box must hold at least the **Minimum box value** (storage rent parameterised as `BOX_VALUE_PER_BYTE × estimated_size`)
-- A fixed **Minimum transaction fee** (conventionally `1,000,000 nanoERG = 0.001 ERG`) must be paid to miners
-- **Storage rent** (4 ERG per four years per box) is enforced at the consensus layer — outputs that do not carry enough ERG will eventually be claimed
-- **Native tokens** follow the **Token ID rule**: a token can only be created in a transaction where at least one input box ID matches the token's ID (first-mint rule); subsequent transfers simply move the token
-- **Box selection** (coin selection) must cover both the ERG value of all outputs *and* the fee, without accidentally burning tokens
-
-### When to Use It
-
-- Building simple transfers (ERG, tokens)
-- Minting new **Native tokens** or **Singleton / State NFTs**
-- Interacting with **Multi-stage contracts** (chaining transactions)
-- Implementing **Atomic swaps**
-- Constructing transactions that consume **Data inputs** (read-only boxes used by **ErgoScript** for oracle prices, parameters, etc.)
-- Any scenario requiring custom **Registers**, **Context extension** variables, or **Sigma protocols**
+- Select input Boxes from a wallet or contract address (box selection)
+- Assemble output Box candidates with correct ERG values, tokens, and Register contents
+- Apply the **Minimum box value** and **Minimum transaction fee** rules
+- Mint, transfer, or burn **Native tokens** following the **Token ID rule**
+- Handle change outputs and **Storage rent** implications
+- Integrate contract-level interactions such as **Multi-stage contracts** or **Singleton / State NFT** patterns
 
 ---
 
 ## How It Works
 
-### High-Level Flow
+### 1. Gather context
 
-```
-┌─────────────────────────────────────────────────────┐
-│  1. Gather UTXOs (box selection)                    │
-│     - fetch unspent boxes for the sender address    │
-│     - select enough boxes to cover outputs + fee    │
-├─────────────────────────────────────────────────────┤
-│  2. Build outputs (OutputBuilder / UnsignedTx)      │
-│     - set ERG value (≥ minimum box value)           │
-│     - attach tokens                                  │
-│     - populate Registers R4–R9                      │
-│     - set ErgoTree / recipient address               │
-├─────────────────────────────────────────────────────┤
-│  3. Add fee output                                  │
-│     - standard fee box to miner fee address         │
-├─────────────────────────────────────────────────────┤
-│  4. Compute change output                           │
-│     - ERG change back to sender                     │
-│     - unspent tokens back to sender                 │
-├─────────────────────────────────────────────────────┤
-│  5. Sign (wallet / prover)                          │
-│     - Sigma protocol proofs attached                │
-├─────────────────────────────────────────────────────┤
-│  6. Submit to node / explorer API                   │
-└─────────────────────────────────────────────────────┘
-```
+Before building anything you need:
 
-### Step-by-Step
+- Current blockchain **height** (used as `creationHeight` on every output Box)
+- The full UTXO set of the spending address (raw Box objects with all fields populated)
+- The ErgoTree or address of each recipient
 
-**Step 1 — Box Selection**  
-The SDK queries the node or explorer for unspent boxes owned by the sender. Fleet's `BoxSelector` applies a strategy (e.g. accumulate boxes until the total ERG and all required token quantities are covered). AppKit wraps this in `BoxOperations`.
+### 2. Select input Boxes
 
-**Step 2 — Output Construction**  
-Each `OutputBuilder` (Fleet) or `OutBox` (AppKit) receives:
-- `value` in nanoERG (must satisfy `estimateMinBoxValue`)
-- optional token list (id + amount pairs)
-- optional register values encoded as `SType` constants
-- the protecting `ErgoTree` (or a P2PK address that Fleet/AppKit compiles to an ErgoTree automatically)
+Box selection must satisfy two constraints simultaneously:
 
-**Step 3 — Fee**  
-A special output box is directed to the canonical miner fee address (`ErgoTree` = `1005040004000e36100204a00b08cd0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ea02d192a39a8cc7a701730073011001020402d19683030193a38cc7b2a57300000193c2b2a57301007473027303830108cdeeac93b1a57304`, a well-known script encoding the fee treasury).
+1. **Value coverage** — total ERG in selected inputs ≥ sum of all output values + fee
+2. **Token coverage** — every token that appears in outputs (and is not being minted) must exist in inputs
 
-Fleet exposes `RECOMMENDED_MIN_FEE_VALUE` from `@fleet-sdk/common`. AppKit exposes `Parameters.MinFee`.
+Fleet SDK ships a `BoxSelector` with configurable strategies (simple, target-value, etc.). AppKit's `BoxOperations` provides similar utilities.
 
-**Step 4 — Change**  
-`TransactionBuilder.build()` (Fleet) or `UnsignedTransactionBuilder` (AppKit) automatically computes the ERG remainder and any unspent token quantities, routing them to the change address. If change would fall below `SAFE_MIN_BOX_VALUE`, the builder throws or adjusts selection.
+### 3. Build output Box candidates
 
-**Step 5 — Signing**  
-Fleet produces an `EIP-12`-compliant unsigned transaction object that a wallet connector (Nautilus, SAFEW) signs. AppKit uses a `Prover` that holds a secret key or delegates to an external wallet.
+For each output you specify:
 
-**Step 6 — Submission**  
-The signed transaction is posted to `/api/v1/mempool/transactions/submit` (Ergo node REST API) or the Explorer submission endpoint.
+- ERG value (must be ≥ **Minimum box value** which is derived from box byte size at 360 nanoERG/byte)
+- Optional token list
+- Optional Register values (R4–R9; R0–R3 are protocol-reserved)
+- An ErgoTree (recipient address compiles to one)
+- Creation height
+
+### 4. Attach the fee output
+
+The miner fee output is a special Box whose ErgoTree matches the canonical fee ErgoTree (`1005040004000e36100204a00b08cd…`). The **Minimum transaction fee** (`RECOMMENDED_MIN_FEE_VALUE`) is 1 000 000 nanoERG (0.001 ERG), but complex transactions or those with many inputs/outputs warrant higher fees.
+
+### 5. Add a change output
+
+Any ERG and tokens left after outputs + fee are returned to the sender in a change Box. Fleet's `TransactionBuilder.sendChangeTo()` automates this. Forgetting this step causes `MalformedTransaction` errors or, worse, silently donates value to miners.
+
+### 6. Sign and submit
+
+The unsigned transaction is handed to the wallet (Nautilus, Eternl-Ergo, etc. via EIP-0012) or to an AppKit `Prover`. The signed transaction is broadcast via a node's `/transactions` endpoint.
 
 ---
 
@@ -109,11 +84,33 @@ The signed transaction is posted to `/api/v1/mempool/transactions/submit` (Ergo 
 
 ```bash
 npm install @fleet-sdk/core @fleet-sdk/common
-# optional: peer packages for wallet connectivity
-npm install @fleet-sdk/wallet
+# Optional plugins
+npm install @fleet-sdk/babel-fees-plugin
 ```
 
-#### 1. Simple ERG Transfer
+#### Core types and constants
+
+```typescript
+// @fleet-sdk/core re-exports these; understanding them is essential
+import {
+  RECOMMENDED_MIN_FEE_VALUE, // 1_000_000n nanoERG
+  type Box,
+  type Amount,
+  type TokenAmount,
+} from "@fleet-sdk/common";
+
+import {
+  TransactionBuilder,
+  OutputBuilder,
+  SAFE_MIN_BOX_VALUE,   // 1_000_000n nanoERG — practical minimum for simple boxes
+  BOX_VALUE_PER_BYTE,   // 360n nanoERG/byte — used for dynamic estimation
+  estimateMinBoxValue,  // factory: returns a callback that measures the built box
+  ErgoAddress,
+  ErgoTree,
+} from "@fleet-sdk/core";
+```
+
+#### Basic ERG transfer
 
 ```typescript
 import {
@@ -121,43 +118,64 @@ import {
   OutputBuilder,
   SAFE_MIN_BOX_VALUE,
   RECOMMENDED_MIN_FEE_VALUE,
-  ErgoAddress,
 } from "@fleet-sdk/core";
 import type { Box, Amount } from "@fleet-sdk/common";
 
-// Boxes fetched from node/explorer for the sender address
-const inputBoxes: Box<Amount>[] = await fetchUnspentBoxes(senderAddress);
-
-// Current blockchain height — required for box creation height
-const height: number = await fetchCurrentHeight();
-
-const unsignedTx = new TransactionBuilder(height)
-  // Register UTXOs that can be consumed
-  .from(inputBoxes)
-  // Describe the recipient output
-  .to(
-    new OutputBuilder(
-      SAFE_MIN_BOX_VALUE,          // 1_000_000n nanoERG minimum
-      recipientAddress,            // P2PK address string or ErgoTree hex
+/**
+ * Build an unsigned ERG transfer transaction.
+ *
+ * @param inputs     - UTXOs owned by the sender (fetched from node/explorer)
+ * @param recipient  - Base58-encoded Ergo address
+ * @param amount     - Amount in nanoERG (bigint)
+ * @param senderAddr - Base58-encoded sender address (receives change)
+ * @param height     - Current blockchain height
+ */
+function buildTransfer(
+  inputs: Box<Amount>[],
+  recipient: string,
+  amount: bigint,
+  senderAddr: string,
+  height: number
+) {
+  const unsignedTx = new TransactionBuilder(height)
+    .from(inputs)                          // register input boxes
+    .to(
+      new OutputBuilder(amount, recipient) // output box candidate
     )
-  )
-  // Change ERG and unspent tokens go here
-  .sendChangeTo(senderAddress)
-  // Standard miner fee
-  .payMinFee()
-  // Produce the unsigned transaction object
-  .build()
-  // Serialise to EIP-12 format for wallet connector
-  .toEIP12Object();
+    .sendChangeTo(senderAddr)              // change output (ERG + unspent tokens)
+    .payMinFee()                           // attaches fee box at RECOMMENDED_MIN_FEE_VALUE
+    .build();                              // returns EIP-0012 UnsignedTransaction
 
-console.log(JSON.stringify(unsignedTx, null, 2));
+  return unsignedTx;
+}
 ```
 
-> **Note:** `payMinFee()` is shorthand for `.payFeeBy(RECOMMENDED_MIN_FEE_VALUE)`. For congested mempool conditions you may pass a larger value.
+#### Dynamic minimum box value estimation
 
----
+The **Minimum box value** rule (360 nanoERG × serialized-byte-size) means boxes carrying tokens or large Register values cost more than bare ERG boxes.
 
-#### 2. Token Transfer
+```typescript
+import { OutputBuilder, estimateMinBoxValue } from "@fleet-sdk/core";
+
+// estimateMinBoxValue() returns a callback; OutputBuilder evaluates it lazily
+// after all tokens and registers have been added.
+const output = new OutputBuilder(
+  estimateMinBoxValue(), // ← dynamic: measured after build
+  recipientAddress,
+  height
+)
+  .addTokens({ tokenId: "abc123...", amount: 1n })
+  .setAdditionalRegisters({
+    R4: "0e0568656c6c6f", // SBytes "hello" (serialised constant)
+  });
+
+// To inspect the estimated value before building:
+// output.estimateSize() * BOX_VALUE_PER_BYTE
+```
+
+#### Native token transfer
+
+Tokens in Ergo are identified solely by the **Token ID** — the Box ID of the transaction that minted them (**Token ID rule**). There is no separate contract; tokens live inside Boxes.
 
 ```typescript
 import {
@@ -166,47 +184,96 @@ import {
   SAFE_MIN_BOX_VALUE,
 } from "@fleet-sdk/core";
 
-const TOKEN_ID =
-  "03faf2cb329f2e90d6d23b58d91bbb6c046aa143261cc21f52fbe2824bfcbf04";
-const TOKEN_AMOUNT = 500n; // base units (check token decimals separately)
-
-const unsignedTx = new TransactionBuilder(height)
-  .from(inputBoxes)
-  .to(
-    new OutputBuilder(SAFE_MIN_BOX_VALUE, recipientAddress)
-      // Attach tokens; Fleet validates that inputs cover these amounts
-      .addTokens({ tokenId: TOKEN_ID, amount: TOKEN_AMOUNT })
-  )
-  .sendChangeTo(senderAddress)
-  .payMinFee()
-  .build()
-  .toEIP12Object();
+function buildTokenTransfer(
+  inputs: Box<Amount>[],
+  recipient: string,
+  tokenId: string,
+  tokenAmount: bigint,
+  senderAddr: string,
+  height: number
+) {
+  return new TransactionBuilder(height)
+    .from(inputs)
+    .to(
+      new OutputBuilder(SAFE_MIN_BOX_VALUE, recipient)
+        .addTokens({ tokenId, amount: tokenAmount })
+    )
+    .sendChangeTo(senderAddr) // returns leftover tokens automatically
+    .payMinFee()
+    .build();
+}
 ```
 
-Fleet's `TokensCollection` (used internally by `OutputBuilder`) automatically deduplicates and merges token entries. If the total token amount across outputs exceeds what the inputs supply, `TransactionBuilder.build()` throws `NotAllowedTokenBurning` unless you explicitly opt-in to burning.
+#### Token minting (EIP-0004 standard)
 
----
-
-#### 3. Token Minting (First-Mint / Token ID Rule)
-
-The **Token ID rule** states that the ID of a newly minted token *must* equal the `boxId` of the first input box. Fleet enforces this through the minting API:
+Token minting in Ergo requires the new token's ID to equal the Box ID of the **first input** (**Token ID rule**). Fleet's `OutputBuilder.mintToken()` enforces this context requirement.
 
 ```typescript
 import {
   TransactionBuilder,
   OutputBuilder,
   SAFE_MIN_BOX_VALUE,
-  TokensCollection,
 } from "@fleet-sdk/core";
 
-// The first input box's ID becomes the new token's ID
-const mintingBox = inputBoxes[0];
+function buildMint(
+  inputs: Box<Amount>[],
+  senderAddr: string,
+  height: number
+) {
+  return new TransactionBuilder(height)
+    .from(inputs)
+    .to(
+      new OutputBuilder(SAFE_MIN_BOX_VALUE, senderAddr)
+        .mintToken(
+          {
+            amount: 1_000_000n,        // total supply
+          },
+          {
+            // EIP-0004 metadata stored in R4–R6
+            name: "MyToken",
+            description: "A test token",
+            decimals: 2,
+          }
+        )
+    )
+    .sendChangeTo(senderAddr)
+    .payMinFee()
+    .build();
+  // Note: calling mintToken() without a TransactionBuilder that can resolve
+  // the first-input box ID throws UndefinedMintingContext
+}
+```
 
-const unsignedTx = new TransactionBuilder(height)
-  .from(inputBoxes)
-  .to(
-    new OutputBuilder(SAFE_MIN_BOX_VALUE, senderAddress)
-      // mintTokens() signals Fleet to use first-input box ID as token ID
-      .mintToken({
-        amount: 1_000_000n,   // total supply in base units
-        name: "MyToken
+#### Token burning
+
+By default Fleet **forbids** token burning to prevent accidental loss. Explicit opt-in is required:
+
+```typescript
+import {
+  TransactionBuilder,
+  OutputBuilder,
+  SAFE_MIN_BOX_VALUE,
+} from "@fleet-sdk/core";
+
+function buildBurn(
+  inputs: Box<Amount>[],   // must contain the tokens to burn
+  tokenId: string,
+  burnAmount: bigint,
+  senderAddr: string,
+  height: number
+) {
+  return new TransactionBuilder(height)
+    .from(inputs)
+    .burnTokens({ tokenId, amount: burnAmount }) // explicit burn declaration
+    .sendChangeTo(senderAddr)
+    .payMinFee()
+    .build();
+}
+```
+
+#### Using registers for contract interaction
+
+Registers R4–R9 store typed **ErgoScript** constants. Pass serialized hex-encoded `SType` values:
+
+```typescript
+import { OutputBuilder, SAFE_MIN_BOX_VALUE, SConstant, SColl, SByte }

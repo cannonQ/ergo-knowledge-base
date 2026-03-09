@@ -4,6 +4,7 @@ category: reference
 difficulty: intermediate
 tags: [api, ergowatch, analytics, supply, rich-list]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---
@@ -22,7 +23,7 @@ updated: 2026-03-09
 
 ErgoWatch is a community-built Ergo blockchain indexer and analytics platform maintained by a single developer (abchrisxyz). It provides pre-computed time series data for network health metrics, tokenomics, and the SigmaUSD dashboard. The indexer (`ew`) is written in Rust, syncs from an Ergo node, and writes to PostgreSQL. A FastAPI layer serves the REST API (labeled "legacy" in the README). The frontend (SvelteKit) connects directly to Postgres.
 
-**Status: At risk.** The API is called "legacy." Single-maintainer project with no announced shutdown date but also no guarantees. This motivated our strategy to backfill all available data into Supabase before it potentially goes dark.
+**Status: At risk.** The API is called "legacy." Single-maintainer project with no announced shutdown date but also no guarantees. Consider backfilling data to your own database before it potentially goes dark.
 
 ---
 
@@ -108,7 +109,7 @@ Alternatively, run the `ew` Rust indexer against your own node to reproduce the 
 - ~2,400 rows per metric (daily data × 6.5 years)
 - ~20-30 metrics = ~50,000-75,000 rows total
 - Well under Supabase free tier limits
-- Your SR scanner (437K rows) is already larger than the entire ErgoWatch backfill would be
+- A moderately active custom scanner can easily exceed this data volume
 
 ---
 
@@ -120,7 +121,7 @@ Alternatively, run the `ew` Rust indexer against your own node to reproduce the 
 - Rosen Bridge transfers
 - Gluon/neutron/proton activity
 - DuckPools lending activity
-- Storage rent claims (your scanner fills this gap)
+- Storage rent claims
 
 ---
 

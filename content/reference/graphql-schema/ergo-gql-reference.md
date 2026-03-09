@@ -4,6 +4,7 @@ category: reference
 difficulty: intermediate
 tags: [api, graphql, gql, boxes, queries]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---
@@ -139,7 +140,7 @@ Paginate by incrementing `skip` by 200 until results are empty.
 ```graphql
 {
   boxes(
-    address: "9gUkYn3rr8kjAyrz6kNNekVf91LmLHZTDhi1d3pEuic6nng8ps5"
+    address: "9f4QF8jQSBpGULoi2hHCErnpMgqHJuqsXqGGF3UFHGUZQY8RMCH"
     minHeight: 1690000
   ) {
     boxId

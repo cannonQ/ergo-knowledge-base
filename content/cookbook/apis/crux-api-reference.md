@@ -4,6 +4,7 @@ category: reference
 difficulty: intermediate
 tags: [api, crux-finance, spectrum, token-prices, defi]
 author: CannonQ
+license: AGPL-3.0
 source: original
 updated: 2026-03-09
 ---
@@ -19,9 +20,9 @@ updated: 2026-03-09
 
 ## Overview
 
-Crux Finance provides the only reliable historical token price API on Ergo. It indexes Spectrum DEX trades and calculates token prices in ERG, USD, and USE. This was our primary data source for building the historical price database (189 tokens × 48 months = 5,570 price points). Crux also provides current pool data and token information.
+Crux Finance provides the only reliable historical token price API on Ergo. It indexes Spectrum DEX trades and calculates token prices in ERG, USD, and USE. Useful for building historical price databases across the Ergo token ecosystem. Crux also provides current pool data and token information.
 
-**Status note:** Crux changed hands in late 2025. The API remains operational but with no guarantees on long-term availability — a key motivation for building the self-hosted Supabase data layer.
+**Status note:** Crux changed hands in late 2025. The API remains operational but with no guarantees on long-term availability — consider backing up any critical data to your own infrastructure.
 
 ---
 
@@ -122,7 +123,7 @@ price = get_token_price(token_id, time_point)
 - **Three price units** — ERG, USD, and USE in every response
 - **Token metadata included** in `/price_stats` — name, description, decimals, minted supply
 - **No auth required**
-- **Reliable** — handled 5,570+ price queries without errors in our historical backfill
+- **Reliable** — handles thousands of price queries without errors in bulk backfills
 - **Price derivation from DEX trades** — prices reflect actual market activity on Spectrum
 
 ## Stumbling Blocks
@@ -130,7 +131,7 @@ price = get_token_price(token_id, time_point)
 - **Wrong endpoint initially** — the correct path is `/spectrum/price_stats` NOT `/spectrum/get_price_stats`. No error was thrown — just 404. Cost debugging time.
 - **Timestamps must be milliseconds** — not seconds. Easy to mess up.
 - **Returns null/zero for tokens with no trades** — if a token had no Spectrum liquidity at that date, you get back zeros. This is correct behavior but needs handling.
-- **No bulk endpoint** — must query one token at a time. For 189 tokens × 48 months, that's ~9,000 individual API calls. Rate limiting to 0.15s = ~22 minutes.
-- **Ownership change risk** — Crux changed hands. API could change or disappear. This motivated building our own data infrastructure.
+- **No bulk endpoint** — must query one token at a time. For large bacfills (hundreds of tokens × dozens of months), expect thousands of individual API calls. Rate limiting to 0.15s keeps it manageable.
+- **Ownership change risk** — Crux changed hands. API could change or disappear. Back up any critical data.
 - **ERG price is relative** — the `erg` field is the token's price denominated in ERG. To get USD, use the `usd` field directly (Crux handles ERG/USD conversion internally).
 - **No pool-level data** — Crux gives token prices, not pool reserves. For LP valuation, you still need pool box queries.

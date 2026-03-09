@@ -15,125 +15,106 @@ languages: [ergoscript, typescript]
 contract_count: 5
 pattern_match_count: 12
 ---
-# StabilityNexus/BenefactionPlatform-Ergo — Developer Overview
+# Developer Overview: StabilityNexus/BenefactionPlatform-Ergo
 
 ---
 
 ## Overview
 
-**Bene** is a decentralized, trust-minimized fundraising platform built on the Ergo blockchain, implementing a **Proof-of-Funding** model entirely through ErgoScript smart contracts. Its core value proposition is eliminating counterparty risk in crowdfunding: project funds remain locked in a multi-stage contract Box until a predefined minimum goal (`R5`) is met, after which only the project owner can withdraw. If the campaign fails to reach its threshold by the configured deadline (`R4`), contributors are guaranteed an on-chain refund path without any intermediary. The platform is fully client-side, requiring no backend servers — the browser connects directly to a user-selected Ergo node or explorer, making the interface censorship-resistant by design.
+**Bene** is a fully decentralized, client-side fundraising platform built on the Ergo blockchain, implementing a **Proof-of-Funding** model using the eUTXO paradigm. Its core value proposition is trustless campaign resolution: project funds remain locked inside a guarded **Box** until either a predefined minimum goal is met (enabling withdrawal) or a deadline passes without success (enabling contributor refunds). Because all business logic resides exclusively in immutable ErgoScript contracts, there is no backend server, no administrator key, and no privileged actor who can redirect funds — the contract **is** the rule.
 
-The platform introduces a dual-token accounting system — the **APT (Auxiliary Project Token)** and the **PFT (Proof-of-Funding Token)** — to enforce a strict security invariant across all state transitions. APTs serve as on-chain deposit receipts distributed at contribution time, while PFTs represent the real participation or governance token released only upon campaign success. The contract enforces the invariant `PFT_in_box ≥ APT_in_circulation` at all times, preventing the project owner from draining locked PFTs while outstanding contributor claims remain. Campaign metadata, project discussions, and contribution records are all persisted directly on the Ergo blockchain, including a fully on-chain comment forum based on an open reputation protocol.
+The platform employs a dual-token architecture (APT and PFT) to separate contribution receipts from final project participation rights. Contributors receive **Auxiliary Project Tokens (APT)** upon funding, which serve as redeemable escrow receipts. If the campaign succeeds, APTs are exchanged for **Proof-of-Funding Tokens (PFT)**; if it fails after the deadline, APTs are returned for a 100% refund of the base currency (ERG or any native token). This design cleanly separates the *accounting* layer (APTs) from the *value* layer (PFTs), enabling atomic, verifiable state transitions across the campaign lifecycle.
 
-Within the Ergo ecosystem, Bene occupies the **DAO/fundraising** vertical and demonstrates several advanced eUTXO design patterns: singleton state NFTs for campaign identity, multi-stage contract replication for state evolution, multi-token payment flexibility (ERG or any native token as the base currency), and a headless dApp architecture where all transaction construction happens off-chain in TypeScript. The platform is deployed as a static GitHub Pages application and serves as a reference implementation for DAO tooling on Ergo.
+Within the broader Ergo ecosystem, Bene occupies the intersection of DAO tooling and decentralized finance infrastructure. It supports any Ergo-native token as the fundraising base currency (including stablecoins), integrates an on-chain comment/reputation protocol, and exposes a composable ownership model that allows other smart contracts — such as DAO treasuries or multi-sig schemes — to act as campaign owners. The entire frontend is a static site that communicates directly with a user-selected Ergo node or explorer, making it deployable on IPFS or any static host with no trusted intermediary.
 
 ---
 
 ## Architecture
 
-### High-Level Component Map
+### Component Map
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  Browser (Client-Side)                  │
-│                                                         │
-│  ┌────────────────┐    ┌──────────────────────────────┐ │
-│  │  SvelteKit UI  │───▶│  src/lib/ergo/actions/       │ │
-│  │  (static site) │    │  buy_refund.ts               │ │
-│  │                │    │  submit.ts                   │ │
-│  │                │    │  withdraw.ts                 │ │
-│  │                │    │  temp_exchange.ts             │ │
-│  │                │    │  rebalance.ts                │ │
-│  └────────────────┘    └──────────────┬───────────────┘ │
-│                                       │                 │
-│  ┌────────────────────────────────────▼───────────────┐ │
-│  │  src/lib/common/                                   │ │
-│  │  platform.ts   — campaign registry & lookup        │ │
-│  │  project.ts    — project Box parsing & modeling    │ │
-│  └────────────────────────────────────┬───────────────┘ │
-│                                       │                 │
-│  ┌────────────────────────────────────▼───────────────┐ │
-│  │  src/lib/ergo/dev/                                 │ │
-│  │  dev_contract.ts  — dev fee Box construction       │ │
-│  │  distribute_funds.ts — fee split tx building       │ │
-│  └────────────────────────────────────────────────────┘ │
-└───────────────────────────────┬─────────────────────────┘
-                                │  JSON-RPC / REST
-                         ┌──────▼──────┐
-                         │  Ergo Node  │
-                         │  / Explorer │
-                         └──────┬──────┘
-                                │  eUTXO
-               ┌────────────────▼────────────────┐
-               │        Ergo Blockchain           │
-               │                                  │
-               │  ┌──────────────────────────┐    │
-               │  │  Bene Campaign Box       │    │
-               │  │  (contract_v2.es)        │    │
-               │  │  tokens: [APT, PFT, base]│    │
-               │  │  R4–R9: campaign state   │    │
-               │  └──────────────────────────┘    │
-               │                                  │
-               │  ┌──────────────────────────┐    │
-               │  │  Dev Fee Box             │    │
-               │  │  (dev_fee.es)            │    │
-               │  └──────────────────────────┘    │
-               │                                  │
-               │  ┌──────────────────────────┐    │
-               │  │  Mint/IDT Transit Box    │    │
-               │  │  (mint_idt.es)           │    │
-               │  └──────────────────────────┘    │
-               └──────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Browser (Client-Side)                   │
+│                                                             │
+│  ┌─────────────────────┐    ┌──────────────────────────┐   │
+│  │   SvelteKit Frontend │    │  TypeScript Action Layer  │   │
+│  │  (static site / SSG) │◄──►│  src/lib/ergo/actions/   │   │
+│  └─────────────────────┘    └────────────┬─────────────┘   │
+│                                           │                 │
+│  ┌────────────────────────────────────────▼──────────────┐ │
+│  │              Off-chain SDK / Headless dApp             │ │
+│  │  platform.ts · project.ts · dev_contract.ts           │ │
+│  │  submit.ts · buy_refund.ts · withdraw.ts              │ │
+│  │  temp_exchange.ts · rebalance.ts · distribute_funds.ts│ │
+│  └────────────────────────────────────────┬──────────────┘ │
+└───────────────────────────────────────────┼─────────────────┘
+                                            │  JSON/REST
+                        ┌───────────────────▼──────────────┐
+                        │   User-selected Ergo Node         │
+                        │   or Public Explorer API          │
+                        └───────────────────┬──────────────┘
+                                            │  eUTXO
+                ┌───────────────────────────▼────────────────┐
+                │              Ergo Blockchain                │
+                │                                            │
+                │  ┌─────────────────────────────────────┐  │
+                │  │       Bene Campaign Box (SELF)       │  │
+                │  │  tokens: [APT (singleton+supply),    │  │
+                │  │           PFT (project tokens),      │  │
+                │  │           base_token? (non-ERG)]     │  │
+                │  │  R4: deadline  R5: min goal          │  │
+                │  │  R6: counters  R7: price             │  │
+                │  │  R8: config    R9: metadata          │  │
+                │  └────────────────┬────────────────────┘  │
+                │                   │ fee output             │
+                │  ┌────────────────▼────────────────────┐  │
+                │  │       Dev Fee Contract Box           │  │
+                │  │  Distributes to 4 recipients         │  │
+                │  │  (Bruno 32%, Lgd 32%, Jm 32%,       │  │
+                │  │   The Stable Order 4%)               │  │
+                │  └─────────────────────────────────────┘  │
+                └────────────────────────────────────────────┘
 ```
 
-### Data Flow: Contribution Lifecycle
+### Data Flow
+
+1. **Campaign Creation (`submit.ts`):** The creator supplies PFT tokens and configuration parameters. An off-chain transaction builder constructs the initial campaign Box, encoding all immutable parameters into Registers R4–R9 and minting APTs at `PFT_supply + 1` (one unit reserved as Singleton/State NFT identifier).
+
+2. **Contribution (`buy_refund.ts`):** A contributor's Box and the campaign Box are consumed as inputs. The action layer computes the APT amount from `R7` (price), constructs two outputs — the replicated campaign Box with updated `R6` counters and the contributor's Box holding new APTs — and submits the transaction.
+
+3. **Chained Submission (`__submit_with_chain.ts`):** Handles mempool chaining, allowing sequential transactions referencing unconfirmed outputs. This is critical in a eUTXO model where the campaign Box is a single-input singleton.
+
+4. **Withdrawal (`withdraw.ts`):** On success (R6[0] ≥ R5), the action layer constructs a transaction splitting ERG (or base tokens) to the owner address (95%) and the dev fee contract Box (5%).
+
+5. **Fee Distribution (`distribute_funds.ts`, `dev_contract.ts`):** A separate transaction spends the dev fee Box, distributing accumulated fees to four hardcoded recipients in fixed proportions, validated entirely on-chain.
+
+---
+
+## Smart Contracts
+
+### `contract_v2.es` — Main Campaign Contract (current)
+
+This is the primary **multi-stage, state-machine** contract governing the full campaign lifecycle. It enforces a strict **Box replication invariant**: every spending transaction must produce `OUTPUTS(0)` as a valid successor Box with the same ErgoTree, same APT Singleton ID, and identical immutable Registers (R4, R5, R7, R8, R9). Only R6 (counters) and token amounts change across transitions.
+
+**State Machine Transitions:**
+
+| Action | Guard Condition | R6 Mutation | Token/Value Change |
+|---|---|---|---|
+| **Buy** | APT available; deadline not enforced on buy | R6[0] (sold) ↑ | ERG/base token in, APT out to user |
+| **Refund** | Deadline passed (`R4`) AND sold < R5 | R6[1] (refunded) ↑ | APT in from user, ERG/base token out |
+| **Exchange APT→PFT** | sold ≥ R5 (success) | R6[2] (exchanged) ↑ | APT in, PFT out |
+| **Withdraw Funds** | sold ≥ R5 | — | ERG/base token split 95%/5% to owner + dev fee Box |
+| **Withdraw Unsold PFT** | PFT_in_box ≥ APT_in_circulation | — | Surplus PFT out to owner |
+| **Add Stock** | Owner authenticated | — | PFT added to Box |
+
+**Security Invariant (enforced on every transition):**
 
 ```
-Creator deploys campaign
-    → mint_idt.es gates PFT routing to contract_v2.es
-    → Bene Campaign Box created with:
-         tokens(0) = APT (singleton NFT unit + emission supply)
-         tokens(1) = PFT (full project token reserve)
-         R4 = (useTimestamp: Boolean, deadline: Long)
-         R5 = minimum PFT threshold
-         R6 = [0L, 0L, 0L]  ← sold / refunded / exchanged counters
-         R7 = price (base token per PFT)
-         R8 = [ownerErgoTree, devFeeHash, feePercent, PFT_ID, baseToken_ID]
-         R9 = project metadata JSON bytes
-
-Contributor sends base token (ERG or native token)
-    → buy_refund.ts constructs Buy Transaction
-    → Input: Campaign Box (SELF) + User Box
-    → Output[0]: Replicated Campaign Box (R6[0] incremented)
-    → Output[1]: User Box receives APT
-
-Campaign succeeds (sold ≥ R5)
-    → withdraw.ts constructs Withdraw Transaction
-    → Output[0]: Owner Box receives 95% of raised funds
-    → Output[1]: Dev Fee Box receives 5%
-    → (Campaign Box consumed or partially replicated)
-
-Campaign fails (deadline passed, sold < R5)
-    → buy_refund.ts constructs Refund Transaction
-    → Input: Campaign Box + User Box (holds APT)
-    → Output[0]: Replicated Campaign Box (R6[1] incremented)
-    → Output[1]: User Box receives base tokens back
-
-APT → PFT exchange (post-success)
-    → temp_exchange.ts constructs Exchange Transaction
-    → R6[2] incremented to adjust available PFT calculation
-
-Dev fee distribution
-    → distribute_funds.ts splits accumulated dev fee Box
-    → 4 output Boxes: Bruno (32%), Lgd (32%), Josemi (32%), Order (4%)
+PFT_in_box ≥ APT_in_circulation
 ```
 
-### Key Relationships
+where:
 
-| Module | Role | Depends On |
-|---|---|---|
-| `contract_v2.es` | Primary campaign state machine | APT/PFT native tokens, Registers |
-| `dev_fee.es` | Fee custody and proportional distribution | `contract_v2.es` (receives fee on withdrawal) |
-| `mint_idt.es` | IDT transit gate, routes PFTs to campaign contract | `contract_v2.es` (destination hash) |
-| `actions/submit.ts` | Campaign deployment transaction builder | `common/project.ts`, node API |
-| `actions/buy_refund.ts` | Buy and refund transaction builders | `common/project.ts`, node API |
+```ergoscript
+available

@@ -66,9 +66,6 @@ ergo-knowledge-base/
 │   │   │   ├── 01-boxes-registers-context.md   # Syntax, types, SigmaProp, SELF/INPUTS/OUTPUTS
 │   │   │   ├── 02-guard-script-framework.md    # Box-focused contract design methodology
 │   │   │   └── 03-offchain-appkit.md           # Transaction building with Ergo AppKit
-│   │   ├── first-dapp/
-│   │   ├── building-a-dex/
-│   │   └── writing-an-offchain-bot/
 │   ├── reference/                    # API docs, built-ins, EIPs
 │   │   ├── node-api/
 │   │   │   └── endpoints/            # One file per endpoint

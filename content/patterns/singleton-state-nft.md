@@ -5,185 +5,171 @@ tags: [singleton-state-nft, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [kushti/dexy-stable, DjedAlliance/Djed-Ergo, ergoplatform/oracle-core, paideiadao/paideia-contracts]
 ---
-# Singleton / State NFT: Developer Guide for Ergo Integration
-
----
+# Singleton / State NFT Pattern: Comprehensive Developer Guide
 
 ## Overview
 
-### What Is This Pattern?
+### What Is It?
 
-A **Singleton / State NFT** is a Native token with a supply of exactly **1** that is permanently locked inside a specific Box to serve as that box's unforgeable on-chain identity. Because Ergo's **Token ID rule** guarantees that every token ID is globally unique (derived from the box ID of the minting transaction's first input, which can never be re-spent), a token with a fixed supply of 1 cannot be duplicated, making it a cryptographically sound identity primitive.
+The **Singleton / State NFT** pattern is a foundational eUTXO design primitive in which a unique, non-fungible token (NFT) with a total supply of exactly 1 serves as a **persistent identity anchor** for a stateful contract box. Because an NFT minted on Ergo carries a globally unique Token ID derived from the ID of the UTXO consumed during minting (the **Token ID rule**: `tokenId = boxId(inputBox[0])`), no two tokens can share the same identifier. This guarantee is enforced at the consensus layer without any registry or trusted issuer.
 
-The pattern creates a strict **one-token-per-box invariant**: ErgoScript guards verify that the singleton token must be present in exactly one output box at all times. This transforms an otherwise anonymous UTXO into a **named, persistent, and stateful box** — the canonical representation of a contract's state on-chain.
+In a multi-stage contract system, many transactions over the system's lifetime must all refer to *the same logical component* — a bank, an oracle accumulator, a governance vault, a liquidity pool. The State NFT solves the **identity problem**: any ErgoScript clause can assert `SELF.tokens(0)._1 == expectedNftId` to prove, cryptographically and without oracle trust, that it is executing inside the correct box.
 
-### Why Does It Exist?
+### Why It Exists
 
-Ergo's **eUTXO** (extended Unspent Transaction Output) model is stateless by design: boxes are consumed and recreated in every transaction. This means there is no built-in concept of "the same box across time." The Singleton NFT pattern solves this by providing:
+Ergo's eUTXO model destroys and recreates boxes in every transaction. Unlike account-based chains (Ethereum), there is no persistent "contract address" that retains state across calls. A box consumed in block *N* is gone; a successor box is created in the same transaction. Without an identity mechanism, successor boxes are indistinguishable from impostors.
 
-1. **Persistent Identity**: Any observer can locate the current state box by filtering UTXOs for a known token ID, regardless of how many times it has been spent and recreated.
-2. **Tamper-Evident State**: The ErgoScript guards enforcing the one-token-per-box invariant make it impossible to fork, duplicate, or abandon the state box mid-protocol without explicit contract permission.
-3. **Multi-Stage Contract Coordination**: In **multi-stage contracts** — protocols where several interacting boxes must progress through defined state transitions — each stage box carries its own singleton to prevent substitution attacks.
-4. **Data Input Eligibility**: A singleton-bearing box can be used as a **Data input** (read-only reference) in transactions it does not participate in as a spendable input, enabling other contracts to trustlessly reference its state.
+The State NFT pattern compensates for the absence of persistent addresses by:
 
-### When To Use It
+1. Binding logical identity to a token rather than a box ID or address.
+2. Forcing every transaction in the protocol to **carry the NFT forward** into the successor box.
+3. Allowing any participant — including Data inputs — to locate the authoritative state box by filtering on the known NFT ID.
 
-| Scenario | Use Singleton NFT? |
+### When to Use It
+
+| Scenario | Use State NFT? |
 |---|---|
-| Oracle pool tracking the latest ERG/USD rate | ✅ Yes — oracle core's pool box |
-| DEX LP pool holding reserves | ✅ Yes — LP NFT identifies the pool |
-| Stablecoin bank holding collateral | ✅ Yes — bank box in Dexy/Djed |
-| Action-gating (rate-limiting mint operations) | ✅ Yes — arbmint/freemint boxes |
-| Simple one-shot payment | ❌ No — no persistent state needed |
-| Fungible reward token | ❌ No — supply > 1 |
+| A contract box must survive across many transactions (bank, pool, treasury) | ✅ Yes |
+| A contract box holds mutable state in Registers across epochs | ✅ Yes |
+| A contract box is a one-shot spend (simple payment) | ❌ No |
+| You need multiple parallel instances (fungible pool shares) | ❌ Use fungible tokens |
+| A box must be referenced as a Data input without being consumed | ✅ Yes — NFT makes it findable |
+| A box participates in a multi-stage contract pipeline | ✅ Yes |
 
-The pattern is the foundation of **oracle-core**, **Dexy**, **Djed-Ergo**, and **Paideia**, among many other Ergo protocols.
+Real-world users of this pattern include:
+
+- **Dexy Stable** — `bankNFT`, `arbMintNFT`, `freeMintNFT`, `interventionNFT`, `buybackNFT`, `lpNFT`
+- **Oracle Core** — oracle pool accumulator NFT
+- **Djed/COTI** — reserve box NFT
+- **Paideia DAO** — DAO config box NFT, governance action NFTs
 
 ---
 
 ## How It Works
 
-### Step 1 — Minting the Singleton
+### Step 1 — Minting the NFT
 
-The singleton is minted in a bootstrap transaction. Ergo's Token ID rule states: the ID of a newly minted token equals the **box ID of the first input** of the minting transaction. Since box IDs are derived from transaction content and are globally unique, the resulting token ID is also globally unique.
+The NFT is minted in the **genesis transaction** of the protocol. Ergo's Token ID rule guarantees uniqueness:
 
 ```
-Bootstrap Transaction
-  Input[0]: Funding box (box ID → becomes Token ID)
-  Output[0]: State Box
-    tokens(0): (tokenId=INPUT[0].id, amount=1)  ← the singleton
-    R4..R9: initial contract state
-    ErgoTree: <contract script>
+tokenId == blake2b256(inputBox[0].id ++ index_bytes)
 ```
 
-No other box in the history of Ergo can ever hold a token with this ID at amount 1 unless it receives it from this output. This is the **foundation of the invariant**.
+For the standard case (index 0), `tokenId = boxId(INPUTS(0))`. Because a box ID is unique (derived from the transaction ID and output index, themselves unique by consensus), no other token can ever share this ID.
+
+The minting transaction:
+- Consumes a plain ERG box as `INPUTS(0)`
+- Creates the State Box as an output containing `(nftId, 1L)` in `tokens(0)`
+- Sets the box's **ErgoTree** to the contract script
+- Optionally initialises **Registers** R4–R9 with bootstrap state
+
+```
+INPUTS(0) [plain ERG box, id = X]
+  └─► OUTPUTS(0) [State Box, tokens(0) = (blake2b256(X ++ 0), 1)]
+```
 
 ### Step 2 — The One-Token-Per-Box Invariant
 
-Every state transition (transaction that spends the state box) must:
+The contract script enforces that:
 
-1. **Consume** the current state box (spending the singleton).
-2. **Recreate** exactly one successor box at a defined output index.
-3. **Transfer** the singleton token with amount 1 to that successor.
-4. **Enforce** the ErgoTree of the successor matches the same contract (or a permitted next-stage contract).
+1. The NFT enters `OUTPUTS(successorIndex)` with quantity exactly 1.
+2. The successor box carries the same ErgoTree (or a whitelisted upgraded tree).
+3. No other output in the transaction holds a token with the same ID.
 
-The ErgoScript enforcing this typically looks like:
+This creates a **linear chain of state boxes**:
+
+```
+[State Box v1] ──tx1──► [State Box v2] ──tx2──► [State Box v3] ──···
+   (nftId, 1)              (nftId, 1)              (nftId, 1)
+```
+
+Each box is destroyed (spent) and a successor is created atomically. There is never a moment when two live UTXOs both hold the NFT.
+
+### Step 3 — State Mutation via Registers
+
+Mutable protocol state lives in **Registers** R4–R9 of the State Box. Common patterns:
+
+| Register | Type | Example Usage |
+|---|---|---|
+| R4 | `Int` | Epoch counter, reset height |
+| R5 | `Long` | Remaining quota, reserve ratio |
+| R6 | `Long` | Accumulated fees, timestamp |
+| R7 | `Coll[Byte]` | Merkle root, AVL tree digest |
+| R8 | `SigmaProp` | Guardian public key |
+| R9 | `Coll[Byte]` | Arbitrary metadata |
+
+The script reads predecessor state via `SELF.R4[Int].get` and asserts successor state via `OUTPUTS(i).R4[Int].get == newValue`.
+
+### Step 4 — Referencing the State Box as a Data Input
+
+Other boxes in the system often need to **read** state from the NFT box without spending it. Ergo supports **Data inputs**: boxes referenced in a transaction that contribute to script evaluation but are not consumed and do not appear as outputs.
+
+```
+Transaction:
+  Inputs:    [User Box]
+  DataInputs:[State NFT Box]   ← read-only, not consumed
+  Outputs:   [User Output]
+```
+
+Any script can validate the Data input's authenticity:
 
 ```scala
-// Pseudocode invariant core
-val successor = OUTPUTS(0)
-val selfNFT  = SELF.tokens(0)._1          // the singleton token ID
-
-val nftPreserved     = successor.tokens(0)._1 == selfNFT
-val nftAmountIsOne   = successor.tokens(0)._2 == 1L
-val scriptPreserved  = successor.propositionBytes == SELF.propositionBytes
-
-sigmaProp(nftPreserved && nftAmountIsOne && scriptPreserved)
+val stateBox = CONTEXT.dataInputs(0)
+val isGenuine = stateBox.tokens(0)._1 == stateNftId
 ```
 
-### Step 3 — State Evolution via Registers
+### Step 5 — Multi-Stage Interaction
 
-The box's **Registers** (R4–R9) carry the mutable state. On each valid transaction:
-- The singleton moves to the output box unchanged.
-- Registers are updated to reflect the new state.
-- The ErgoScript validates that register transitions are within permitted bounds.
+In protocols like Dexy, multiple NFT boxes interact in a single transaction. Each box's script validates the presence and integrity of *other* NFT boxes:
 
 ```
-Transaction N                          Transaction N+1
-┌──────────────────────┐              ┌──────────────────────┐
-│ State Box (input)    │   spent by   │ State Box (output)   │
-│ tokens(0): NFT #id,1 │ ──────────▶  │ tokens(0): NFT #id,1 │
-│ R4: height=1000      │              │ R4: height=1360      │
-│ R5: remaining=1000   │              │ R5: remaining=800    │
-└──────────────────────┘              └──────────────────────┘
+Transaction Inputs:  [LP Box (lpNFT)]  [Bank Box (bankNFT)]
+Transaction DataInputs: [Oracle Box (oracleNFT)]
+Transaction Outputs: [LP Box']         [Bank Box']
 ```
 
-### Step 4 — Multi-Stage Coordination
-
-When multiple singleton-bearing boxes participate in one transaction, each contract independently verifies its own NFT invariant **and** the correct presence of peer singletons. This eliminates substitution attacks:
-
-```
-Transaction: Arbitrage Mint
-  Inputs:  [0] ArbMint box (arbmintNFT), [1] Bank box (bankNFT)
-  Outputs: [0] ArbMint box',             [1] Bank box'
-  Data:    [0] Oracle box (oracleNFT) ← read-only
-
-  ArbMint script checks: INPUTS(1).tokens(0)._1 == bankNFT
-  Bank script checks:    INPUTS(0).tokens(0)._1 == arbmintNFT
-  Both check: oracle data input carries oracleNFT
-```
-
-### Step 5 — Locating the Live State Box
-
-Off-chain code resolves the current state box by querying the UTXO set for the known singleton token ID:
-
-```
-GET /api/v1/boxes/unspent/byTokenId/{tokenId}
-→ exactly one result (or zero if protocol is paused/bootstrapping)
-```
+Every script cross-validates siblings using their NFT IDs, creating a **trustless multi-party state machine** with no privileged coordinator.
 
 ### Step 6 — Storage Rent Considerations
 
-Boxes on Ergo are subject to **Storage rent**: after approximately 4 years (1,051,200 blocks), miners may collect rent from boxes that fall below the **minimum box value**. Long-lived singleton boxes must maintain sufficient ERG value. Protocol designers must budget for rent or include mechanisms for the contract to receive top-up transactions.
+Ergo's **Storage rent** mechanism charges boxes approximately 0.13 ERG per 4 years if they are not spent. State NFT boxes must maintain sufficient ERG value (above **Minimum box value**, currently ~0.001 ERG for small boxes, higher for boxes with tokens) to avoid being claimed by miners. Protocol designers should:
+
+- Fund the State Box with enough ERG at genesis.
+- Include ERG top-up logic in transaction scripts.
+- Account for rent in off-chain transaction builders.
 
 ---
 
 ## Implementation
 
-### ErgoScript: Core Singleton Invariant (Annotated)
+### ErgoScript — Core NFT Continuity Guard
+
+The minimal pattern every State NFT box script must include:
 
 ```scala
-{
-  // -------------------------------------------------------
-  // Minimal Singleton / State NFT guard
-  // Enforces:
-  //   1. Singleton NFT preserved in successor
-  //   2. Successor at OUTPUTS(0) carries same ErgoTree
-  //   3. No token duplication possible
-  // -------------------------------------------------------
+// Verify this box holds the singleton NFT
+val selfNft = SELF.tokens(0)._1
 
-  // The token ID that serves as this box's identity.
-  // Using SELF.tokens(0)._1 makes the script generic:
-  // the same ErgoScript compiles to different ErgoTrees
-  // for different NFT IDs (template + constant injection).
-  val singleton = SELF.tokens(0)._1
+// Find successor output — by convention, same output index
+val successor = OUTPUTS(0)
 
-  // Successor box must be the first output (index 0).
-  // Using a fixed index prevents a malicious transaction
-  // from placing the NFT in an unexpected output that
-  // bypasses other checks.
-  val successor = OUTPUTS(0)
+// Invariant 1: NFT must be preserved in successor
+val nftPreserved = successor.tokens(0)._1 == selfNft &&
+                   successor.tokens(0)._2 == 1L
 
-  // Core invariant: token ID matches, amount is exactly 1.
-  val nftPreserved   = successor.tokens(0)._1 == singleton
-  val amountIsOne    = successor.tokens(0)._2 == 1L
+// Invariant 2: Successor must use the same contract (ErgoTree)
+val scriptPreserved = successor.propositionBytes == SELF.propositionBytes
 
-  // Script continuity: successor must be governed by
-  // the same contract. Without this check, a valid
-  // transaction could "escape" to an unconstrained script.
-  val scriptContinues = successor.propositionBytes ==
-                        SELF.propositionBytes
-
-  // Minimum value continuity: prevent gradual ERG drain
-  // that could eventually trigger storage rent seizure.
-  val valuePreserved  = successor.value >= SELF.value
-
-  sigmaProp(
-    nftPreserved    &&
-    amountIsOne     &&
-    scriptContinues &&
-    valuePreserved
-  )
-}
+sigmaProp(nftPreserved && scriptPreserved)
 ```
 
-### ErgoScript: Dexy Bank Box (Derived From `bank.es`)
+### ErgoScript — Dexy Bank Box (`bank.es`)
 
-The Bank box demonstrates a production singleton pattern where the NFT coexists with large fungible token reserves and participates in multi-party transactions:
+The Bank box is the canonical real-world example. It holds the `bankNFT` in `tokens(0)` and a supply of `dexyUSD` tokens in `tokens(1)`. Multiple transaction types (Arbitrage Mint, Free Mint, Intervention, Liquidation) all interact with it; each validates the Bank box's NFT identity.
 
 ```scala
 {
@@ -192,17 +178,31 @@ The Bank box demonstrates a production singleton pattern where the NFT coexists 
   // This box: (Bank box)
   //
   // TOKENS
-  //   tokens(0): bankNFT  — singleton identifying this bank instance
-  //   tokens(1): dexyUSD  — fungible stablecoin supply held in reserve
+  //   tokens(0): bankNFT  — singleton identity token
+  //   tokens(1): dexyUSD  — fungible stablecoin supply
   //
   // TRANSACTIONS
   // [1] Arbitrage Mint
-  //   Input[0]: ArbMint box  | Output[0]: ArbMint box'  | Data[0]: Oracle box
-  //   Input[1]: Bank box     | Output[1]: Bank box'     |
+  //   Input         |  Output         |   Data-Input
+  // --------------------------------------------------
+  // 0 ArbMint       |  ArbMint        |   Oracle
+  // 1 Bank          |  Bank           |
+  // 2 Buyer         |  Buyer          |
   //
   // [2] Free Mint
-  //   Input[0]: FreeMint box | Output[0]: FreeMint box' | Data[0]: Oracle box
-  //   Input[1]: Bank box     | Output[1]: Bank box'     |
-  //
-  // [3] Intervention
-  //   Input[0]: LP box       | Output
+  //   Input         |  Output         |   Data-Input
+  // --------------------------------------------------
+  // 0 FreeMint      |  FreeMint       |   Oracle
+  // 1 Bank          |  Bank           |
+  // 2 Buyer         |  Buyer          |
+
+  val bankNFT       = fromBase64("$bankNFT")      // compile-time constant
+  val freeMintNFT   = fromBase64("$freeMintNFT")
+  val arbMintNFT    = fromBase64("$arbMintNFT")
+  val interventionNFT = fromBase64("$interventionNFT")
+
+  // ------------------------------------------------------------------
+  // Self-identification: confirm we are the genuine Bank box
+  // ------------------------------------------------------------------
+  val selfBankNft = SELF.tokens(0)._1
+  val isBankBox   = selfBankNft == bankNFT        // sanity; enforced by NFT uniqu

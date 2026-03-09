@@ -17,16 +17,17 @@ Register Layout (MewMart):
   R5: Seller proposition bytes (SigmaProp)
   R6: Royalty basis points (SLong)
   R7: Payment token ID (Coll[Byte]) — empty = ERG payment
-  R8: Label string (Coll[Byte]) — e.g. "MewMart,Cyberverse,Sell"
+  R8: Label string (Coll[Byte]) — e.g. "MewMart,CollectionName,Sell"
   R9: Fee basis points (SLong)
 
 Usage:
-  python process_mewmart_gql.py -i gql_merged.json -c cyberverse_ids.json
-  python process_mewmart_gql.py -i gql_merged.json -c cyberverse_ids.json --all
+  python process_mewmart_gql.py -i gql_merged.json --registry nft_registry.json
+  python process_mewmart_gql.py -i gql_merged.json --registry nft_registry.json --all
 
 Requirements:
   pip install requests  (only if enriching with Crux prices)
 Author: CannonQ
+License: AGPL-3.0
 """
 
 import json
@@ -145,8 +146,8 @@ def decode_price(hex_str):
 def load_nft_registry(json_path):
     """
     Load NFT registry mapping tokenId -> collection name.
-    Supports cyberverse_ids.json format:
-      {"gen3": ["tokenId1", ...], "pets": ["tokenId2", ...], "_metadata": {...}}
+    Supports registry format:
+      {"collection_a": ["tokenId1", ...], "collection_b": ["tokenId2", ...], "_metadata": {...}}
     """
     tokens = {}
     try:
@@ -251,8 +252,8 @@ def main():
     parser = argparse.ArgumentParser(description='Process marketplace GQL export')
     parser.add_argument('--input', '-i', required=True,
                         help='Input JSON file (merged GQL export)')
-    parser.add_argument('--cyberverse', '-c', required=True,
-                        help='NFT registry JSON (cyberverse_ids.json)')
+    parser.add_argument('--registry', '-c', required=True,
+                        help='NFT registry JSON (nft_registry.json)')
     parser.add_argument('--output', '-o', default='marketplace_sales',
                         help='Output filename prefix (default: marketplace_sales)')
     parser.add_argument('--all', '-a', action='store_true',
@@ -265,8 +266,8 @@ def main():
     print("=" * 70)
 
     # Load registry
-    print(f"\n[1] Loading NFT registry: {args.cyberverse}")
-    registry = load_nft_registry(args.cyberverse)
+    print(f"\n[1] Loading NFT registry: {args.registry}")
+    registry = load_nft_registry(args.registry)
 
     # Load GQL export
     print(f"\n[2] Loading GQL export: {args.input}")

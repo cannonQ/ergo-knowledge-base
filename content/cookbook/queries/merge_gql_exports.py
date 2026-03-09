@@ -19,6 +19,7 @@ Usage:
 Requirements:
   None (stdlib only)
 Author: CannonQ
+License: AGPL-3.0
 """
 
 import json
