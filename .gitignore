@@ -15,6 +15,9 @@ blog/
 # LanceDB vector store — committed for local MCP usage
 # vectordb/ is tracked (pre-built vectors for devs who clone the repo)
 
+# Build toolchain (embedding pipeline, scrapers) — not needed for MCP server
+scripts/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -23,7 +26,6 @@ venv/
 
 # MCP interaction artifacts (query logs saved in repo root)
 *.yaml
-!scripts/ecosystem_repos.yaml
 how would I create a simple locking contract.md
 
 # OS
