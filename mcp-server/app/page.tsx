@@ -25,7 +25,7 @@ export default function Home() {
       <p>
         An MCP (Model Context Protocol) server providing semantic search and
         documentation lookup across the Ergo blockchain developer knowledge
-        base. 61 ecosystem projects, concept guides, contract analyses, and
+        base. 65 ecosystem projects, concept guides, contract analyses, and
         cross-cutting development patterns.
       </p>
       <p style={{ fontSize: "0.9rem", color: "#555" }}>
@@ -177,7 +177,7 @@ npm install && npm run dev`}
               "get_ergoscript_ref",
               "ErgoScript language reference (built-ins, types, context vars)",
             ],
-            ["list_projects", "List all 61 ecosystem projects"],
+            ["list_projects", "List all 65 ecosystem projects"],
           ].map(([name, desc]) => (
             <tr key={name} style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: "0.5rem" }}>

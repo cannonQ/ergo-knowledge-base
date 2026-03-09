@@ -5,7 +5,7 @@ tags: [ergopay-signing, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [arkadianet/citadel, nautls/nautilus-wallet]
 ---
@@ -15,133 +15,104 @@ source_repos: [arkadianet/citadel, nautls/nautilus-wallet]
 
 ## Overview
 
-**ErgoPay** is the standardized protocol defined in [EIP-20](https://github.com/ergoplatform/eips/blob/master/eip-0020.md) for requesting transaction signing from an Ergo wallet — most commonly a mobile wallet such as Ergo Wallet App — without that wallet being directly connected to the dApp or service initiating the request. It exists because Ergo's eUTXO model separates transaction *construction* from transaction *signing*: a server or desktop application builds an unsigned transaction referencing specific Boxes (inputs, outputs, Data inputs), and the user's wallet — which holds the private keys — signs it independently.
+**ErgoPay** is the standard protocol defined in [EIP-20](https://github.com/ergoplatform/eips/blob/master/eip-0020.md) for requesting transaction signing from an Ergo wallet — most commonly a mobile wallet such as Ergo Wallet App — without ever exposing private keys to the dApp or service initiating the request.
 
-### Why ErgoPay Exists
+### Why It Exists
 
-| Problem | ErgoPay Solution |
+Ergo's eUTXO model means a transaction spends specific Boxes and creates new ones, each Box potentially guarded by an ArgoTree (compiled ErgoScript). The signing process requires a wallet to prove it satisfies those guard conditions via **Sigma protocols** — zero-knowledge proofs that may involve standard P2PK proofs, threshold signatures, or even **Ring signatures**. Rather than building signing into every dApp directly, EIP-20 defines a clean separation:
+
+- The **dApp/service** constructs the unsigned transaction and exposes it via a URI or HTTP endpoint.
+- The **wallet** fetches, validates, presents to the user, and signs the transaction.
+- The **dApp/service** receives the signed transaction back (or the wallet broadcasts it directly).
+
+### When to Use It
+
+| Use Case | Appropriate? |
 |---|---|
-| Private keys should never leave the mobile wallet | Wallet only receives an unsigned tx, signs locally, broadcasts |
-| dApp servers don't know the user's UTXOs at build time | Dynamic requests let the server fetch UTXOs on demand using the wallet address supplied at scan time |
-| Desktop dApps need mobile signing (air-gapped or convenience) | URI scheme bridges desktop ↔ mobile via QR code or deep link |
-| Stateless one-shot transactions (faucets, NFT claims) | Static requests embed the full unsigned tx in the URI |
+| Mobile-first dApp where users sign on their phone | ✅ Primary use case |
+| Desktop dApp with QR-code handoff to mobile | ✅ Classic desktop↔mobile flow |
+| Signing arbitrary unsigned transactions in a Tauri/Electron app | ✅ As seen in Citadel |
+| Server-side signing with known keys | ❌ Use node wallet API directly |
+| Browser extension (Nautilus) dApp connector | ❌ Use EIP-12 dApp connector instead |
 
-### When to Use ErgoPay
-
-- **Mobile-first dApps** where the user's wallet is their phone
-- **Desktop dApps** that need to delegate signing to a paired mobile wallet (desktop ↔ mobile flow)
-- **Server-rendered transactions** where the backend constructs the full unsigned transaction and the user merely approves
-- **Batch or protocol operations** (AMM swaps, bridge locks, token burns, hodlcoin interactions) where complex ErgoScript contract logic must be verified before signing — exactly the pattern used in Citadel
-- Anywhere you want to avoid embedding signing logic in the frontend
-
-### When *Not* to Use ErgoPay
-
-- When you need synchronous in-page signing (use EIP-12 dApp connector / Nautilus instead)
-- When the user is already on desktop with a browser wallet injected
+ErgoPay is appropriate any time you need **user-custody signing** without a browser extension being present.
 
 ---
 
 ## How It Works
 
-ErgoPay defines two request modes and a single URI scheme. The full flow has five actors: **dApp/server**, **QR code / deep link**, **mobile wallet**, **Ergo node / Explorer**, and **user**.
-
-### URI Scheme
+### High-Level Flow
 
 ```
-ergopay://<host>/<path>[?<query>]
-ergopay://<host>/<path>#P2PK_ADDRESS
+┌─────────────┐        1. Build unsigned TX         ┌──────────────────┐
+│  dApp /     │ ─────────────────────────────────▶  │  Backend / Local  │
+│  Frontend   │                                      │  TX Builder       │
+└─────────────┘                                      └──────────────────┘
+       │                                                      │
+       │  2. Expose ergopay:// URI (static or dynamic)        │
+       │◀─────────────────────────────────────────────────────┘
+       │
+       │  3. User scans QR or taps deep link
+       ▼
+┌─────────────┐   4. Wallet GETs unsigned TX (dynamic)  ┌──────────────────┐
+│  Mobile     │ ──────────────────────────────────────▶ │  dApp Server /   │
+│  Wallet     │                                          │  Local Endpoint  │
+│  (Ergo      │ ◀────────────────────────────────────── │                  │
+│  Wallet     │   5. Returns ErgoPay response JSON       └──────────────────┘
+│  App)       │
+│             │   6. Wallet validates, displays summary
+│             │      (inputs, outputs, tokens, fees)
+│             │
+│             │   7. User approves → wallet signs
+│             │      via Sigma protocol proofs
+│             │
+│             │   8a. Wallet submits TX to node/explorer
+│             │   OR
+│             │   8b. Wallet POSTs signed TX back to dApp
+└─────────────┘
+       │
+       │  9. (Optional) dApp polls or receives webhook
+       ▼
+  TX confirmed on-chain
 ```
 
-- The scheme is always `ergopay://` (not `https://`). Wallets intercept this scheme.
-- The `#P2PK_ADDRESS` fragment is appended by the wallet *after* the user consents to share their address (only for dynamic requests that need it).
-- Static requests embed everything in the URI body (no server required).
+### Static vs Dynamic Requests
 
----
+EIP-20 defines two request modes:
 
-### Flow A — Static Request (no server)
-
-A static request is a self-contained URI where the unsigned transaction is Base64url-encoded directly in the path or as a query parameter. No callback is needed.
+**Static Request** — The entire unsigned transaction is embedded directly in the URI or a static payload. Used for simple, pre-built transactions where no per-user Box selection is needed at request time.
 
 ```
-ergopay:?request=<base64url-encoded-ReducedTransaction>
+ergopay:<base64url-encoded-unsigned-tx>
 ```
 
-```
-┌─────────┐   generates URI    ┌──────────────┐
-│  dApp   │ ─────────────────► │   QR Code /  │
-│ (server │                    │  Deep Link   │
-│  or     │                    └──────┬───────┘
-│ static) │                           │ user scans
-└─────────┘                    ┌──────▼───────┐
-                                │ Mobile Wallet│
-                                │  - decode tx │
-                                │  - show UI   │
-                                │  - sign      │
-                                │  - broadcast │
-                                └──────────────┘
-```
+**Dynamic Request** — The URI contains an HTTPS endpoint URL. The wallet performs a GET request to that URL (optionally substituting `#P2PK_ADDRESS#` with the user's address) to fetch the current transaction. This is the recommended approach for production because:
 
-**Key constraint:** The transaction must be fully formed. All input Boxes must be resolved (their `ergoTree`, `value`, `assets`, `additionalRegisters`). The wallet cannot fill in any unknowns.
-
----
-
-### Flow B — Dynamic Request (server-side, with address)
-
-The dynamic flow is the production pattern for dApps. The URI points to a server endpoint. The wallet GETs that endpoint, supplies its P2PK address in the fragment (which becomes a query param server-side), and the server builds a transaction tailored to *that specific address and its current UTXOs*.
+- Input Boxes can be selected at request time against the current UTXO set.
+- The transaction can be personalized per user (their address is injected).
+- The unsigned transaction doesn't bloat the QR code.
 
 ```
-ergopay://api.mydapp.io/ergopay/swap#P2PK_ADDRESS
-         └─────────────────────────┘└────────────┘
-              server endpoint         wallet appends
+ergopay:https://example.com/api/ergo-pay/swap?address=#P2PK_ADDRESS#
 ```
 
-**Step-by-step:**
+### The `#P2PK_ADDRESS#` Placeholder
 
-1. **dApp generates** an `ergopay://` URI pointing to its backend endpoint
-2. **URI is displayed** as a QR code on desktop, or as a tappable deep link on mobile
-3. **User opens** their Ergo wallet (e.g., Ergo Wallet App) and scans/taps
-4. **Wallet resolves** the URI; because it contains a `#`, the wallet knows it must substitute the user's P2PK address
-5. **Wallet sends GET** to `https://api.mydapp.io/ergopay/swap?address=<P2PK_ADDRESS>`
-6. **Server fetches** UTXOs for that address from an Ergo node or Explorer API
-7. **Server constructs** an `UnsignedTransaction` (inputs, data inputs, outputs) using those UTXOs
-8. **Server serializes** the transaction as a `ReducedTransaction` (all inputs reduced using the blockchain context) and wraps it in an `ErgopaySigningRequest` JSON response
-9. **Wallet receives** the JSON, deserializes the `ReducedTransaction`, displays a human-readable summary
-10. **User approves**; wallet signs each input using the appropriate Sigma protocol proof
-11. **Wallet broadcasts** the signed transaction to the Ergo node mempool
-12. **Wallet polls** (optionally) the server's status endpoint for confirmation
+When the wallet encounters `#P2PK_ADDRESS#` in a dynamic URL, it replaces it with the user's **P2PK address** (standard pay-to-public-key address) before making the GET request. This allows your server to:
 
----
+1. Query the user's unspent Boxes from an explorer/node.
+2. Select appropriate input Boxes for the transaction.
+3. Build a valid unsigned transaction tailored to that user.
 
-### Desktop ↔ Mobile Flow
+### ErgoPay Response Schema
 
-This is the pattern Citadel uses. The desktop app (Tauri/Rust) builds transactions but delegates signing to the user's mobile wallet:
-
-```
-┌─────────────────────────┐         ┌──────────────────────┐
-│   Desktop App (Citadel) │         │   Mobile Wallet      │
-│                         │         │   (Ergo Wallet App)  │
-│  1. Build unsigned tx   │         │                      │
-│  2. POST to local/      │         │                      │
-│     remote ergopay srv  │         │                      │
-│  3. Display QR code     │──scan──►│  4. GET request URL  │
-│                         │         │  5. Deserialize tx   │
-│  6. Poll status endpoint│◄────────│  6. Show tx summary  │
-│  7. Confirm broadcast   │         │  7. User signs       │
-│                         │         │  8. Broadcast        │
-└─────────────────────────┘         └──────────────────────┘
-```
-
----
-
-### ErgopaySigningRequest JSON Schema
-
-The server must respond with this exact structure:
+The server responds with JSON conforming to the EIP-20 schema:
 
 ```json
 {
-  "reducedTx": "<base64url-encoded ReducedTransaction bytes>",
-  "senderAddress": "<optional P2PK address of expected signer>",
-  "replyTo": "<optional URL for wallet to POST signed tx>",
+  "reducedTx": "<base64url-encoded reduced transaction>",
+  "sender": "9f...",
+  "replyTo": "https://example.com/api/ergo-pay/result/{requestId}",
   "message": "Swap 10 ERG for 500 SigUSD",
   "messageSeverity": "INFORMATION"
 }
@@ -149,68 +120,108 @@ The server must respond with this exact structure:
 
 | Field | Required | Description |
 |---|---|---|
-| `reducedTx` | Yes | Base64url-encoded `ReducedTransaction` (ergo-lib serialization) |
-| `senderAddress` | No | If set, wallet must sign with matching key |
-| `replyTo` | No | Wallet POSTs `SignedTransaction` here instead of broadcasting itself |
-| `message` | No | Human-readable description shown to user |
-| `messageSeverity` | No | `INFORMATION`, `WARNING`, or `ERROR` |
+| `reducedTx` | ✅ | Base64URL-encoded **reduced transaction** (unsigned TX with context applied) |
+| `sender` | ❌ | Expected sender P2PK address for wallet validation |
+| `replyTo` | ❌ | URL where wallet POSTs the signed TX after user approves |
+| `message` | ❌ | Human-readable description shown to user |
+| `messageSeverity` | ❌ | `INFORMATION`, `WARNING`, or `ALERT` |
+
+> **Critical:** The `reducedTx` field contains a **ReducedTransaction**, not a raw unsigned transaction. A ReducedTransaction has the spending context (block height, data inputs, etc.) already folded in, so the wallet only needs to provide the signature — it does not need access to the full node to validate inputs. This is what enables offline/mobile signing.
+
+### Desktop↔Mobile Flow via QR Code
+
+```
+Desktop Browser                    Mobile Wallet
+      │                                  │
+      │  1. User initiates action         │
+      │                                  │
+      │  2. Backend builds ergopay:// URI │
+      │                                  │
+      │  3. Display QR code on screen     │
+      │                                  │
+      │                    4. User scans QR with wallet app
+      │                                  │
+      │                    5. Wallet parses URI, detects dynamic
+      │                       → GET https://...?address=9f...
+      │                                  │
+      │  6. Server receives GET,          │
+      │     sees address=9f...            │
+      │     builds unsigned TX            │
+      │     returns ErgoPay JSON          │
+      │                                  │
+      │                    7. Wallet shows TX summary
+      │                       (Boxes consumed, created,
+      │                        Native tokens, ERG delta)
+      │                                  │
+      │                    8. User taps "Sign & Send"
+      │                       Sigma proof generated
+      │                                  │
+      │  9. (if replyTo set)              │
+      │     Wallet POSTs signed TX ──────▶│
+      │     Server broadcasts             │
+      │                                  │
+      │  10. Poll for TX confirmation     │
+      ▼                                  ▼
+```
 
 ---
 
 ## Implementation
 
-### 1. Server Endpoint (TypeScript / Node.js)
+### 1. TypeScript — Building and Serving a Dynamic ErgoPay Endpoint
 
-A production-grade dynamic ErgoPay endpoint using `@fleet-sdk/core` and `ergo-lib-wasm-nodejs`:
+This example shows a Next.js API route that handles the full dynamic ErgoPay flow, including Box selection, transaction building, and ReducedTransaction generation.
 
 ```typescript
-import express, { Request, Response } from "express";
+// pages/api/ergo-pay/swap.ts
+// Dynamic ErgoPay endpoint — receives wallet address, builds swap TX
+
+import type { NextApiRequest, NextApiResponse } from 'next';
 import {
-  ErgoAddress,
-  Network,
-  OutputBuilder,
-  SAFE_MIN_BOX_VALUE,
-  RECOMMENDED_MIN_FEE_VALUE,
-  TransactionBuilder,
-} from "@fleet-sdk/core";
-import * as ergo from "ergo-lib-wasm-nodejs";
+  Address,
+  ErgoBoxes,
+  ReducedTransaction,
+  UnsignedTransaction,
+  ErgoBox,
+  BoxValue,
+  NetworkPrefix,
+  Tokens,
+  Token,
+  TokenId,
+  TokenAmount,
+  I64,
+} from 'ergo-lib-wasm-nodejs';
 
-const app = express();
-app.use(express.json());
+// Explorer API client (e.g., Ergo Platform Explorer v1)
+import { ExplorerClient } from '../../../lib/explorer';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+const EXPLORER = new ExplorerClient('https://api.ergoplatform.com');
+const MINER_FEE = BigInt(1_100_000);        // Minimum transaction fee: 0.0011 ERG
+const MIN_BOX_VALUE = BigInt(1_000_000);     // Minimum box value: 0.001 ERG
+const NETWORK_PREFIX = NetworkPrefix.Mainnet;
 
-interface ErgopaySigningRequest {
-  reducedTx: string;          // base64url ReducedTransaction
-  senderAddress?: string;
+export interface ErgoPayResponse {
+  reducedTx: string;
+  sender?: string;
   replyTo?: string;
   message?: string;
-  messageSeverity?: "INFORMATION" | "WARNING" | "ERROR";
+  messageSeverity?: 'INFORMATION' | 'WARNING' | 'ALERT';
 }
 
-interface ErgoBox {
-  boxId: string;
-  value: string;              // nanoERG as string (Explorer API)
-  ergoTree: string;
-  assets: { tokenId: string; amount: string }[];
-  additionalRegisters: Record<string, string>;
-  creationHeight: number;
-  transactionId: string;
-  index: number;
-}
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ErgoPayResponse | { error: string }>
+) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-// ── Explorer helpers ─────────────────────────────────────────────────────────
+  // The wallet substitutes #P2PK_ADDRESS# before calling this endpoint
+  const address = req.query.address as string;
+  if (!address) {
+    return res.status(400).json({ error: 'address parameter required' });
+  }
 
-const EXPLORER_API = "https://api.ergoplatform.com/api/v1";
-
-async function fetchUTXOs(address: string): Promise<ErgoBox[]> {
-  const res = await fetch(
-    `${EXPLORER_API}/boxes/unspent/byAddress/${address}?limit=50`
-  );
-  if (!res.ok) throw new Error(`Explorer error: ${res.status}`);
-  const data = await res.json();
-  return data.items as ErgoBox[];
-}
-
-async function fetchCurrentHeight(): Promise<number> {
-  const res = await fetch(`${
+  try {
+    // 1. Validate the address
+    const senderAddress = Address.from_mainnet_

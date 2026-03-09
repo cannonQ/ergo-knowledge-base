@@ -5,7 +5,7 @@ tags: [eip12-dapp-connector, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-03-09
 source: auto-generated
 source_repos: [nautls/nautilus-wallet, ThierryM1212/SAFEW, fleet-sdk/fleet]
 ---
@@ -13,219 +13,238 @@ source_repos: [nautls/nautilus-wallet, ThierryM1212/SAFEW, fleet-sdk/fleet]
 
 ## Overview
 
-### What Is EIP-12?
+EIP-12 defines a standard browser-based communication protocol between Ergo decentralized applications (dApps) and wallet extensions. It is the Ergo ecosystem's answer to Ethereum's EIP-1193 provider API, adapted for the eUTXO model where Boxes, Registers, Data inputs, and multi-stage contracts require a richer context than account-based chains provide.
 
-EIP-12 (Ergo Improvement Proposal 12) defines a standardized browser-based **dApp Connector API** — a JavaScript/TypeScript interface that wallet extensions inject into web pages, enabling decentralized applications to request wallet access, query blockchain state, and submit transactions without ever holding private keys.
+**Why it exists:** Without a standard connector interface, every dApp would need bespoke integrations for each wallet. EIP-12 gives dApps a single surface to program against—`window.ergoConnector` for authentication and `window.ergo` (the context object) for chain interaction—while wallet implementations (Nautilus, SAFEW, Ergopay-compatible wallets) compete on UX and security without breaking dApp compatibility.
 
-EIP-12 is Ergo's equivalent of EIP-1193 in the Ethereum ecosystem, but designed from the ground up for the **eUTXO model**. Rather than account balances and nonces, EIP-12 exposes **Boxes**, **Registers**, **Data inputs**, **Native tokens**, and **ErgoScript**-aware signing flows.
+**When to use it:**
+- You are building a browser-based dApp that needs to read UTXOs, construct transactions, or sign them using a user's wallet
+- You need to support multiple wallets without writing wallet-specific code paths
+- You are building a wallet extension and need to expose a standards-compliant API surface
+- You need access to user addresses, change address derivation, or UTXOs filtered by Native token Token ID
 
-### Why It Exists
-
-The eUTXO model introduces complexities that account-based connector APIs cannot handle:
-
-- **Boxes** carry value, **Native tokens**, and typed **Registers** — not just ERG balances
-- Transactions may include **Data inputs** (read-only Boxes that provide context to **ErgoScript** without being consumed)
-- **Multi-stage contracts** involving **Singleton / State NFT** boxes require precise UTXO selection
-- **Context extension** variables must be injected at signing time for certain **Sigma protocols**
-- **Storage rent** mechanics mean Box selection strategies must account for age and size
-
-EIP-12 abstracts all of this behind a wallet-agnostic API so dApp developers write one integration and any conformant wallet — Nautilus, SAFEW, or future wallets — works without modification.
-
-### When to Use It
-
-| Scenario | Use EIP-12? |
-|---|---|
-| Browser dApp requiring user-held keys | ✅ Yes |
-| Server-side transaction building | ❌ No — use Fleet SDK or AppKit directly |
-| Read-only blockchain queries | ⚠️ Partial — use a node/explorer API instead |
-| Multi-party **Atomic swaps** | ✅ Yes — wallet handles partial signing |
-| dApp with **Ring signatures** | ✅ Yes — wallet prover handles Sigma logic |
+**What it is NOT for:**
+- Server-side signing (use `ergo-lib` / `sigma-rust` directly)
+- Cold wallet or hardware wallet signing flows outside the browser
+- Node-level access to the Ergo blockchain (use the Ergo Node REST API or Explorer API)
 
 ---
 
 ## How It Works
 
-### The Two-Phase Architecture
-
-EIP-12 separates concerns into two distinct API surfaces:
+### High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Browser Window                        │
-│                                                          │
-│  window.ergoConnector        window.ergo                │
-│  ┌─────────────────┐         ┌──────────────────────┐   │
-│  │   Auth API      │──────►  │    Context API        │   │
-│  │ (NautilusAuthApi│connect()│  (NautilusErgoApi)    │   │
-│  │  ErgoAPIini)    │         │  get_utxos()          │   │
-│  └─────────────────┘         │  get_balance()        │   │
-│                               │  sign_tx()            │   │
-│  Phase 1: Permission          │  submit_tx()          │   │
-│  Request                      └──────────────────────┘   │
-│                               Phase 2: Wallet Operations  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Browser Tab (dApp)                                              │
+│                                                                  │
+│  1. Detect wallets via window.ergoConnector                      │
+│  2. Request connection via ergoConnector.<wallet>.connect()      │
+│  3. User approves in wallet extension popup                      │
+│  4. Receive context object (window.ergo or getContext())         │
+│  5. Call context API: get_utxos, get_balance, sign_tx, etc.      │
+└───────────────────┬──────────────────────────────────────────────┘
+                    │  postMessage / chrome.runtime.sendMessage
+┌───────────────────▼──────────────────────────────────────────────┐
+│  Wallet Extension (background.js + content script)               │
+│                                                                  │
+│  6. Background script resolves API calls against wallet state    │
+│  7. For sign_tx: validates transaction, shows UI, user confirms  │
+│  8. Prover signs each input: wallet.sign_tx_input(index, ctx...) │
+│  9. Returns signed inputs with spendingProof back to dApp        │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Step-by-Step Flow
+### Step-by-Step Protocol
 
-#### Phase 1 — Connection and Permission
+**Step 1 — Script Injection**
 
-```
-dApp                    Wallet Extension           User
- │                           │                      │
- │  ergoConnector.nautilus   │                      │
- │  .connect()               │                      │
- │──────────────────────────►│                      │
- │                           │  Show permission     │
- │                           │  popup ──────────────►│
- │                           │                      │ Approve/Deny
- │                           │◄─────────────────────│
- │◄──────────────────────────│                      │
- │  Promise<boolean>         │                      │
- │  (true = granted)         │                      │
-```
+The wallet extension's content script injects two JavaScript objects into every page at `document_start`:
 
-1. The wallet extension injects `window.ergoConnector` at page load, populating it with one entry per installed wallet (e.g., `nautilus`, `safew`).
-2. The dApp calls `ergoConnector.<walletName>.connect()`, which triggers a user-facing permission dialog.
-3. On approval, the wallet populates `window.ergo` (or returns a context object) with the **Context API**.
+- `window.ergoConnector` — the authentication API, one key per wallet (e.g., `nautilus`, `safew`)
+- `window.ergo` — the context API, populated after connection is granted
 
-#### Phase 2 — Context API Usage
+**Step 2 — Wallet Detection**
 
-```
-dApp                         window.ergo (Context API)
- │                                    │
- │── get_balance("ERG") ─────────────►│
- │◄─ BigInt (nanoERG) ────────────────│
- │                                    │
- │── get_utxos(amount, tokenId) ─────►│  Wallet selects
- │◄─ ErgoBox[] ───────────────────────│  Boxes from eUTXO set
- │                                    │
- │── sign_tx(unsignedTx) ────────────►│  Wallet builds
- │                                    │  ErgoScript context,
- │                                    │  evaluates Sigma proofs
- │◄─ SignedTransaction ───────────────│
- │                                    │
- │── submit_tx(signedTx) ────────────►│  Broadcasts to
- │◄─ TxId (string) ───────────────────│  Ergo network
-```
+The dApp inspects `window.ergoConnector` to discover which wallets are installed. Each key is a frozen auth API object.
 
-#### Signing Internals (Nautilus Prover)
+**Step 3 — Connection Request**
 
-When `sign_tx()` is called, the wallet's internal prover:
+The dApp calls `ergoConnector.<wallet>.connect()`. This triggers a permission popup in the extension. The method returns a `Promise<boolean>`.
 
-1. Reconstructs the **ErgoScript context** (current height, **SELF** box, **INPUTS**, **OUTPUTS**, **DATA_INPUTS**)
-2. Evaluates each input's **ErgoTree** using the **ErgoScript** interpreter
-3. Generates cryptographic proofs via **Sigma protocols** (Schnorr, **Ring signatures**, threshold)
-4. Attaches `spendingProof` to each signed input
-5. Optionally injects **Context extension** variables required by the script
+**Step 4 — Context Acquisition**
+
+After a successful `connect()`, the dApp either reads `window.ergo` directly (Nautilus injects it) or calls `ergoConnector.<wallet>.getContext()` (SAFEW pattern) to receive the context object.
+
+**Step 5 — Context API Calls**
+
+The context object exposes the full EIP-12 API surface. Each call is proxied via `postMessage` or `chrome.runtime.sendMessage` to the extension's background script where it is resolved against the actual wallet.
+
+**Step 6 — Transaction Signing**
+
+The dApp builds an unsigned transaction (typically using the fleet-sdk), serializes it, and passes it to `ergo.sign_tx(unsignedTx)`. The wallet extension:
+1. Deserializes the transaction
+2. Validates Box values, Token IDs, and the Minimum box value constraint
+3. Presents a human-readable summary to the user
+4. Uses `sigma-rust`'s prover to sign each input via Autolykos-compatible Sigma protocols
+5. Returns the fully signed transaction
+
+**Step 7 — Submission**
+
+The dApp submits the signed transaction via `ergo.submit_tx(signedTx)` or directly to the Ergo Node / Explorer API.
 
 ---
 
 ## Implementation
 
-### TypeScript Type Definitions
+### 1. TypeScript Type Definitions (EIP-12 surface)
 
-Start with the core types that mirror EIP-12's specification:
+These types cover the full EIP-12 API contract. Add them to a `ergo.d.ts` file in your project.
 
 ```typescript
-// types/eip12.ts
+// ergo.d.ts — EIP-12 type declarations
 
-/**
- * EIP-12 canonical type definitions.
- * These types describe the shape of objects flowing across the
- * dApp Connector boundary — from wallet to dApp and back.
+/** 
+ * Ergo box value in nanoERG (1 ERG = 1_000_000_000 nanoERG).
+ * Minimum box value is context-dependent but typically 0.001 ERG.
  */
+type Amount = string; // nanoERG as decimal string to avoid JS BigInt issues
 
-/** A Token ID follows the Token ID rule: the ID equals the Box ID
- *  of the transaction output that first minted the token. */
-type TokenId = string; // 64-char hex
+/** Base16-encoded bytes */
+type HexString = string;
 
-/** ERG amounts are always represented in nanoERG (1 ERG = 1_000_000_000 nanoERG).
- *  This avoids floating-point errors and matches the Minimum box value unit. */
-type NanoErg = string; // bigint-safe string
+/** Base58Check-encoded Ergo P2PK or P2S address */
+type ErgoAddress = string;
 
-/** A Box ID is the Blake2b-256 hash of the serialized Box content. */
-type BoxId = string; // 64-char hex
+/** 32-byte Blake2b256 hash of Box serialization, base16-encoded */
+type BoxId = string;
 
-/** A Transaction ID is the Blake2b-256 hash of the serialized transaction. */
-type TxId = string; // 64-char hex
+/** 32-byte identifier for a Native token, base16-encoded */
+type TokenId = string;
 
-/** ErgoTree is the serialized P2S (pay-to-script) locking script, hex-encoded.
- *  It encodes the ErgoScript expression as a typed lambda calculus term. */
-type ErgoTreeHex = string;
+/** Ergo block height as a 32-bit unsigned integer */
+type BlockHeight = number;
 
-/** Registers R4–R9 hold typed ErgoScript values serialized as hex.
- *  R0–R3 are implicit (value, tokens, creationInfo, script). */
-interface Registers {
-  R4?: string;
-  R5?: string;
-  R6?: string;
-  R7?: string;
-  R8?: string;
-  R9?: string;
+/** EIP-12 pagination object */
+interface Paginate {
+  page: number;
+  limit: number;
 }
 
-/** A Native token attached to a Box. */
-interface Token {
+/** 
+ * EIP-12 API error codes.
+ * InvalidRequest (2): malformed input or unsupported operation (e.g., pagination).
+ * InternalError (3): wallet-side failure.
+ * Refused (4): user rejected the request.
+ */
+enum APIErrorCode {
+  InvalidRequest = 2,
+  InternalError = 3,
+  Refused = 4,
+}
+
+interface APIError {
+  code: APIErrorCode;
+  info: string;
+}
+
+/** A Native token amount attached to a Box */
+interface AssetAmount {
   tokenId: TokenId;
-  amount: NanoErg;
+  amount: Amount;
 }
 
-/**
- * An EIP-12 ErgoBox — the fundamental eUTXO primitive.
- * Boxes are immutable once created; spending creates new Boxes.
- * Storage rent applies after ~4 years (1,051,200 blocks).
+/** 
+ * An Ergo Box as represented in the EIP-12 context API.
+ * Registers R4–R9 are encoded as serialized SigmaType hex strings.
+ * The ErgoTree field contains the compiled ErgoScript as base16 bytes.
  */
-interface ErgoBox {
+interface EIP12ErgoBox {
   boxId: BoxId;
-  value: NanoErg;           // nanoERG, must meet Minimum box value
-  ergoTree: ErgoTreeHex;    // locking ErgoScript
-  assets: Token[];          // Native tokens
-  additionalRegisters: Registers;
-  creationHeight: number;   // block height when Box was created
-  transactionId: TxId;
-  index: number;            // output index within creating transaction
+  transactionId: HexString;
+  index: number;
+  ergoTree: HexString;         // compiled ErgoScript (ErgoTree serialization)
+  creationHeight: BlockHeight;
+  value: Amount;               // nanoERG
+  assets: AssetAmount[];
+  additionalRegisters: {
+    R4?: HexString;            // Serialized SigmaType (e.g., 0e20... for Coll[Byte])
+    R5?: HexString;
+    R6?: HexString;
+    R7?: HexString;
+    R8?: HexString;
+    R9?: HexString;
+  };
 }
 
-/** Context extension variables injected at signing time.
- *  Used by ErgoScript via getVar[T](id) to access prover-supplied data. */
-interface ContextExtension {
-  [key: string]: string; // key: variable index (string), value: hex-encoded SigmaType
-}
-
-/** An unsigned transaction input referencing a Box to be spent. */
+/** 
+ * Unsigned input: references a Box to be spent.
+ * extension carries Context extension values for ErgoScript context access.
+ */
 interface UnsignedInput {
   boxId: BoxId;
-  extension: ContextExtension;
+  extension: Record<string, HexString>; // Context extension key-value pairs
 }
 
-/** A Data input — a Box read by ErgoScript without being consumed.
- *  Enables stateful contracts to read oracle data, parameters, etc. */
+/** 
+ * A Data input references a Box for read-only ErgoScript context access.
+ * The Box is NOT spent; it provides data to the ErgoScript context.
+ * Critical for multi-stage contracts and Singleton / State NFT patterns.
+ */
 interface DataInput {
   boxId: BoxId;
 }
 
-/** An output Box to be created by the transaction. */
-interface ErgoBoxCandidate {
-  value: NanoErg;
-  ergoTree: ErgoTreeHex;
-  assets: Token[];
-  additionalRegisters: Registers;
-  creationHeight: number;
+/** Output Box specification for unsigned transactions */
+interface EIP12ErgoBoxCandidate {
+  ergoTree: HexString;
+  creationHeight: BlockHeight;
+  value: Amount;
+  assets: AssetAmount[];
+  additionalRegisters: {
+    R4?: HexString;
+    R5?: HexString;
+    R6?: HexString;
+    R7?: HexString;
+    R8?: HexString;
+    R9?: HexString;
+  };
 }
 
-/** A complete unsigned transaction ready for wallet signing. */
-interface UnsignedTransaction {
-  id?: TxId;
+/** 
+ * An unsigned Ergo transaction.
+ * inputs are the Boxes to be spent (must satisfy their ErgoTree / ErgoScript).
+ * dataInputs are read-only Box references used only in ErgoScript context.
+ * outputs are the new Boxes created.
+ */
+interface EIP12UnsignedTransaction {
+  id?: HexString;
   inputs: UnsignedInput[];
   dataInputs: DataInput[];
-  outputs: ErgoBoxCandidate[];
+  outputs: EIP12ErgoBoxCandidate[];
 }
 
-/** A spending proof produced by evaluating Sigma protocols. */
+/** A Sigma-protocol spending proof for a signed input */
 interface SpendingProof {
-  proofBytes: string;        // hex-encoded proof (can be empty for proveDlog)
-  extension: ContextExtension;
+  proofBytes: HexString;       // serialized Sigma protocol proof
+  extension: Record<string, HexString>;
 }
 
-/** A signed input after the wallet prover has run. */
+interface SignedInput {
+  boxId: BoxId;
+  spendingProof: SpendingProof;
+}
+
+interface SignedTransaction {
+  id: HexString;
+  inputs: SignedInput[];
+  dataInputs: DataInput[];
+  outputs: EIP12ErgoBox[];
+}
+
+/** 
+ * The EIP-12 Context API — exposed as window.ergo after connection.
+ * All methods return Promises and may reject with APIError.
+ */
+interface EIP12ErgoAPI {
+  /** Returns total balance in nanoERG, or token amount for a given Token ID */
