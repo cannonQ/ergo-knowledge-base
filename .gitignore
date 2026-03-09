@@ -21,6 +21,11 @@ __pycache__/
 .venv/
 venv/
 
+# MCP interaction artifacts (query logs saved in repo root)
+*.yaml
+!scripts/ecosystem_repos.yaml
+how would I create a simple locking contract.md
+
 # OS
 .DS_Store
 Thumbs.db
