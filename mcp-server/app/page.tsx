@@ -2,11 +2,13 @@ export default function Home() {
   const mcpUrl = "https://ergo-knowledge-base.vercel.app/api/mcp";
 
   const preStyle = {
-    background: "#f4f4f4",
+    background: "#0a0a0a",
     padding: "1rem",
     borderRadius: "4px",
     overflow: "auto" as const,
     fontSize: "0.85rem",
+    border: "1px solid #1a3a1a",
+    color: "#33ff33",
   };
 
   return (
@@ -15,36 +17,42 @@ export default function Home() {
         maxWidth: "720px",
         margin: "0 auto",
         padding: "2rem",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+        fontFamily: '"Courier New", Courier, monospace',
         lineHeight: 1.6,
-        color: "#1a1a1a",
+        color: "#33ff33",
+        background: "#000000",
+        minHeight: "100vh",
       }}
     >
-      <h1>Ergo Developer Knowledge Base — MCP Server</h1>
+      <h1 style={{ color: "#00ff00", borderBottom: "1px solid #1a3a1a", paddingBottom: "0.5rem" }}>
+        Ergo Developer Knowledge Base — MCP Server
+      </h1>
       <p>
         An MCP (Model Context Protocol) server providing semantic search and
         documentation lookup across the Ergo blockchain developer knowledge
         base. 65 ecosystem projects, concept guides, contract analyses, and
         cross-cutting development patterns.
       </p>
-      <p style={{ fontSize: "0.9rem", color: "#555" }}>
+      <p style={{ fontSize: "0.9rem", color: "#22aa22" }}>
         Works with any MCP-compatible client — Claude, Gemini, Codex, Cursor,
         VS Code, and more.
       </p>
 
-      <h2>Setup</h2>
+      <h2 style={{ color: "#00ff00" }}>Setup</h2>
 
-      <h3>Claude.ai (Web)</h3>
+      <h3 style={{ color: "#00dd00" }}>Claude.ai (Web)</h3>
       <ol>
         <li>
           Go to{" "}
-          <a href="https://claude.ai/customize/connectors">
+          <a href="https://claude.ai/customize/connectors" style={{ color: "#55ff55" }}>
             claude.ai/customize/connectors
           </a>
         </li>
         <li>
-          Click <strong>+</strong> and set the URL to: <code>{mcpUrl}</code>
+          Click <strong>+</strong> and set the URL to:{" "}
+          <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+            {mcpUrl}
+          </code>
         </li>
         <li>
           Click through the auth prompt (no-op OAuth — public data, no real
@@ -52,9 +60,13 @@ export default function Home() {
         </li>
       </ol>
 
-      <h3>Claude Code</h3>
+      <h3 style={{ color: "#00dd00" }}>Claude Code</h3>
       <p>
-        Edit <code>~/.claude/mcp.json</code>:
+        Edit{" "}
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          ~/.claude/mcp.json
+        </code>
+        :
       </p>
       <pre style={preStyle}>
         {JSON.stringify(
@@ -64,9 +76,13 @@ export default function Home() {
         )}
       </pre>
 
-      <h3>Gemini CLI (free)</h3>
+      <h3 style={{ color: "#00dd00" }}>Gemini CLI (free)</h3>
       <p>
-        Edit <code>~/.gemini/settings.json</code>:
+        Edit{" "}
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          ~/.gemini/settings.json
+        </code>
+        :
       </p>
       <pre style={preStyle}>
         {JSON.stringify(
@@ -75,13 +91,17 @@ export default function Home() {
           2
         )}
       </pre>
-      <p style={{ fontSize: "0.85rem", color: "#666" }}>
+      <p style={{ fontSize: "0.85rem", color: "#22aa22" }}>
         Free tier: 1,000 requests/day with a Google account.
       </p>
 
-      <h3>OpenAI Codex CLI</h3>
+      <h3 style={{ color: "#00dd00" }}>OpenAI Codex CLI</h3>
       <p>
-        Edit <code>~/.codex/mcp.json</code>:
+        Edit{" "}
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          ~/.codex/mcp.json
+        </code>
+        :
       </p>
       <pre style={preStyle}>
         {JSON.stringify(
@@ -91,9 +111,13 @@ export default function Home() {
         )}
       </pre>
 
-      <h3>VS Code / Copilot</h3>
+      <h3 style={{ color: "#00dd00" }}>VS Code / Copilot</h3>
       <p>
-        Add to <code>.vscode/mcp.json</code> in your workspace:
+        Add to{" "}
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          .vscode/mcp.json
+        </code>{" "}
+        in your workspace:
       </p>
       <pre style={preStyle}>
         {JSON.stringify(
@@ -103,15 +127,19 @@ export default function Home() {
         )}
       </pre>
 
-      <h3>Cursor</h3>
+      <h3 style={{ color: "#00dd00" }}>Cursor</h3>
       <p>
         Go to <strong>Settings &gt; MCP</strong> and add the server URL:
       </p>
       <pre style={preStyle}>{mcpUrl}</pre>
 
-      <h3>Windsurf</h3>
+      <h3 style={{ color: "#00dd00" }}>Windsurf</h3>
       <p>
-        Edit <code>~/.windsurf/mcp.json</code>:
+        Edit{" "}
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          ~/.windsurf/mcp.json
+        </code>
+        :
       </p>
       <pre style={preStyle}>
         {JSON.stringify(
@@ -121,13 +149,15 @@ export default function Home() {
         )}
       </pre>
 
-      <h3>Cline (free, open-source VS Code extension)</h3>
+      <h3 style={{ color: "#00dd00" }}>Cline (free, open-source VS Code extension)</h3>
       <p>
         Open Cline settings and add a remote MCP server with URL:{" "}
-        <code>{mcpUrl}</code>
+        <code style={{ color: "#00ff00", background: "#0a0a0a", padding: "2px 6px", borderRadius: "3px" }}>
+          {mcpUrl}
+        </code>
       </p>
 
-      <h2>Local Development</h2>
+      <h2 style={{ color: "#00ff00" }}>Local Development</h2>
       <pre style={preStyle}>
         {`git clone https://github.com/cannonQ/ergo-knowledge-base.git
 cd ergo-knowledge-base/mcp-server
@@ -136,7 +166,7 @@ cp .env.local.example .env.local
 npm install && npm run dev`}
       </pre>
 
-      <h2>Available Tools</h2>
+      <h2 style={{ color: "#00ff00" }}>Available Tools</h2>
       <table
         style={{
           width: "100%",
@@ -145,9 +175,9 @@ npm install && npm run dev`}
         }}
       >
         <thead>
-          <tr style={{ borderBottom: "2px solid #ddd", textAlign: "left" }}>
-            <th style={{ padding: "0.5rem" }}>Tool</th>
-            <th style={{ padding: "0.5rem" }}>Description</th>
+          <tr style={{ borderBottom: "2px solid #1a3a1a", textAlign: "left" }}>
+            <th style={{ padding: "0.5rem", color: "#00ff00" }}>Tool</th>
+            <th style={{ padding: "0.5rem", color: "#00ff00" }}>Description</th>
           </tr>
         </thead>
         <tbody>
@@ -179,9 +209,9 @@ npm install && npm run dev`}
             ],
             ["list_projects", "List all 65 ecosystem projects"],
           ].map(([name, desc]) => (
-            <tr key={name} style={{ borderBottom: "1px solid #eee" }}>
+            <tr key={name} style={{ borderBottom: "1px solid #1a3a1a" }}>
               <td style={{ padding: "0.5rem" }}>
-                <strong>{name}</strong>
+                <strong style={{ color: "#00ff00" }}>{name}</strong>
               </td>
               <td style={{ padding: "0.5rem" }}>{desc}</td>
             </tr>
@@ -189,14 +219,16 @@ npm install && npm run dev`}
         </tbody>
       </table>
 
-      <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
-      <p style={{ fontSize: "0.85rem", color: "#666" }}>
+      <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #1a3a1a" }} />
+      <p style={{ fontSize: "0.85rem", color: "#22aa22" }}>
         Source:{" "}
-        <a href="https://github.com/cannonQ/ergo-knowledge-base">
+        <a href="https://github.com/cannonQ/ergo-knowledge-base" style={{ color: "#55ff55" }}>
           cannonQ/ergo-knowledge-base
         </a>{" "}
         · Licensed under{" "}
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a>
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html" style={{ color: "#55ff55" }}>
+          AGPL-3.0
+        </a>
       </p>
     </main>
   );
