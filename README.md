@@ -79,6 +79,20 @@ content/
 
 3,420+ chunks embedded with OpenAI `text-embedding-3-small` (1024 dims). Pure-JS cosine similarity search — no native dependencies.
 
+## Sources & Attribution
+
+This knowledge base curates, extends, and enriches content from across the Ergo ecosystem:
+
+| Source | Content | Notes |
+|--------|---------|-------|
+| [ergoplatform/ergodocs](https://github.com/ergoplatform/ergodocs) | Node docs, data model, ErgoScript tutorials, wallet guides | Community documentation |
+| [ergoplatform/eips](https://github.com/ergoplatform/eips) | Ergo Improvement Proposals (EIP-1 through EIP-44) | Public standards |
+| 65 ecosystem project repos | Contract analyses auto-generated from source code | Links to each source repo in file frontmatter |
+| Original contributions | Concepts, patterns, cookbook recipes, query scripts, toolchain guides | AGPL-3.0 |
+
+Every file includes `source` and `source_url` frontmatter fields tracing back to its origin.
+
+
 ## Local Development
 
 ```bash
