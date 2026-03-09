@@ -17,7 +17,7 @@ export default function Home() {
       <p>
         An MCP (Model Context Protocol) server providing semantic search and
         documentation lookup across the Ergo blockchain developer knowledge
-        base. 55 ecosystem projects, concept guides, contract analyses, and
+        base. 61 ecosystem projects, concept guides, contract analyses, and
         cross-cutting development patterns.
       </p>
 
@@ -59,7 +59,7 @@ export default function Home() {
         }}
       >
         {JSON.stringify(
-          { mcpServers: { ergo: { url: mcpUrl } } },
+          { mcpServers: { "ergo-code": { url: mcpUrl } } },
           null,
           2
         )}
