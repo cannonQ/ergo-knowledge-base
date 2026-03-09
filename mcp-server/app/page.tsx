@@ -1,6 +1,14 @@
 export default function Home() {
   const mcpUrl = "https://ergo-knowledge-base.vercel.app/api/mcp";
 
+  const preStyle = {
+    background: "#f4f4f4",
+    padding: "1rem",
+    borderRadius: "4px",
+    overflow: "auto" as const,
+    fontSize: "0.85rem",
+  };
+
   return (
     <main
       style={{
@@ -20,8 +28,14 @@ export default function Home() {
         base. 61 ecosystem projects, concept guides, contract analyses, and
         cross-cutting development patterns.
       </p>
+      <p style={{ fontSize: "0.9rem", color: "#555" }}>
+        Works with any MCP-compatible client — Claude, Gemini, Codex, Cursor,
+        VS Code, and more.
+      </p>
 
-      <h2>Claude.ai (Web)</h2>
+      <h2>Setup</h2>
+
+      <h3>Claude.ai (Web)</h3>
       <ol>
         <li>
           Go to{" "}
@@ -30,51 +44,91 @@ export default function Home() {
           </a>
         </li>
         <li>
-          Click <strong>+</strong> to add a custom connector
+          Click <strong>+</strong> and set the URL to: <code>{mcpUrl}</code>
         </li>
         <li>
-          Set the URL to: <code>{mcpUrl}</code>
-        </li>
-        <li>
-          When prompted to authenticate, just click through — the server uses a{" "}
-          <strong>no-op OAuth flow</strong> (public data, no real credentials
-          needed)
-        </li>
-        <li>
-          Once connected, Claude will have access to the EKB tools in any
-          conversation
+          Click through the auth prompt (no-op OAuth — public data, no real
+          credentials needed)
         </li>
       </ol>
 
-      <h2>Claude Code (CLI)</h2>
+      <h3>Claude Code</h3>
       <p>
-        Create or edit <code>~/.claude/mcp.json</code>:
+        Edit <code>~/.claude/mcp.json</code>:
       </p>
-      <pre
-        style={{
-          background: "#f4f4f4",
-          padding: "1rem",
-          borderRadius: "4px",
-          overflow: "auto",
-        }}
-      >
+      <pre style={preStyle}>
         {JSON.stringify(
           { mcpServers: { "ergo-code": { url: mcpUrl } } },
           null,
           2
         )}
       </pre>
-      <p>Then restart Claude Code (close the chat window and open a new one).</p>
+
+      <h3>Gemini CLI (free)</h3>
+      <p>
+        Edit <code>~/.gemini/settings.json</code>:
+      </p>
+      <pre style={preStyle}>
+        {JSON.stringify(
+          { mcpServers: { "ergo-code": { url: mcpUrl } } },
+          null,
+          2
+        )}
+      </pre>
+      <p style={{ fontSize: "0.85rem", color: "#666" }}>
+        Free tier: 1,000 requests/day with a Google account.
+      </p>
+
+      <h3>OpenAI Codex CLI</h3>
+      <p>
+        Edit <code>~/.codex/mcp.json</code>:
+      </p>
+      <pre style={preStyle}>
+        {JSON.stringify(
+          { mcpServers: { "ergo-code": { url: mcpUrl } } },
+          null,
+          2
+        )}
+      </pre>
+
+      <h3>VS Code / Copilot</h3>
+      <p>
+        Add to <code>.vscode/mcp.json</code> in your workspace:
+      </p>
+      <pre style={preStyle}>
+        {JSON.stringify(
+          { servers: { "ergo-code": { url: mcpUrl } } },
+          null,
+          2
+        )}
+      </pre>
+
+      <h3>Cursor</h3>
+      <p>
+        Go to <strong>Settings &gt; MCP</strong> and add the server URL:
+      </p>
+      <pre style={preStyle}>{mcpUrl}</pre>
+
+      <h3>Windsurf</h3>
+      <p>
+        Edit <code>~/.windsurf/mcp.json</code>:
+      </p>
+      <pre style={preStyle}>
+        {JSON.stringify(
+          { mcpServers: { "ergo-code": { url: mcpUrl } } },
+          null,
+          2
+        )}
+      </pre>
+
+      <h3>Cline (free, open-source VS Code extension)</h3>
+      <p>
+        Open Cline settings and add a remote MCP server with URL:{" "}
+        <code>{mcpUrl}</code>
+      </p>
 
       <h2>Local Development</h2>
-      <pre
-        style={{
-          background: "#f4f4f4",
-          padding: "1rem",
-          borderRadius: "4px",
-          overflow: "auto",
-        }}
-      >
+      <pre style={preStyle}>
         {`git clone https://github.com/cannonQ/ergo-knowledge-base.git
 cd ergo-knowledge-base/mcp-server
 cp .env.local.example .env.local
