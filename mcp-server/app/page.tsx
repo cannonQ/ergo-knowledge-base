@@ -214,7 +214,11 @@ npm install && npm run dev`}
             ],
             [
               "audit_contract",
-              "Audit ErgoScript code with two-pass security analysis",
+              "Pass 1: Initial ErgoScript security audit with full EKB context",
+            ],
+            [
+              "audit_verify",
+              "Pass 2: Independent verification of audit findings",
             ],
           ].map(([name, desc]) => (
             <tr key={name} style={{ borderBottom: "1px solid #1a3a1a" }}>
