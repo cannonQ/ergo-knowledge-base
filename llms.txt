@@ -67,10 +67,14 @@
 - [EIP-0044: Arbitrary Data Signing Standard](content/reference/eips/eip-0044.md): Address types for sidechains (~1024 tokens)
 - [ergoplatform/eips — Overview](content/reference/eips/overview_eips.md): All Ergo Improvement Proposals as structured reference docs (~2078 tokens)
 - [ergoplatform/ergoscript-by-example — Overview](content/reference/ergoscript-by-example/overview_ergoscript-by-example.md): 13 annotated ErgoScript contract examples — pin lock, escrow, token sale, swaps, stealth addresses, timed funds (~2056 tokens)
+- [ErgoScript Audit Context — LLM Pitfalls & Calibration](content/reference/ergoscript/audit-context.md) (~1173 tokens)
 - [ErgoScript Built-in Functions](content/reference/ergoscript/built-in-functions.md): Quick reference for all global/predefined functions available in ErgoScript. (~1171 tokens)
 - [ErgoScript Context Variables](content/reference/ergoscript/context-variables.md): Quick reference for blockchain context objects available in every ErgoScript contract. (~1425 tokens)
+- [Known ErgoScript Security Issues](content/reference/ergoscript/known-issues.md) (~1142 tokens)
 - [ErgoScript Language Specification](content/reference/ergoscript/language-spec.md): Complete reference for the ErgoScript smart contract language: types, operations, context variables, predefined functions, Box/SigmaProp/AvlTree/Coll APIs, and known limitations. (~13392 tokens)
 - [ergoplatform/sigmastate-interpreter — Overview](content/reference/ergoscript/overview_ergoscript.md): ErgoScript compiler internals, ErgoTree spec, test cases as usage examples (~2041 tokens)
+- [Plasma-AVL Phase 2.4-2.6 Race Resolution Patterns](content/reference/ergoscript/plasma-avl-phase-2.4-2.6.md) (~1844 tokens)
+- [Plasma-AVL Phase 2.7-2.8 Staging and Fraud Proof Patterns](content/reference/ergoscript/plasma-avl-phase-2.7-2.8.md) (~3841 tokens)
 - [ErgoScript Types](content/reference/ergoscript/types.md): Quick reference for all ErgoScript data types, their properties, and methods. (~1858 tokens)
 - [Ergo Explorer REST API Reference](content/reference/explorer-api/ergo-explorer-api-reference.md) (~1338 tokens)
 - [Ergo GraphQL API Reference](content/reference/graphql-schema/ergo-gql-reference.md) (~1724 tokens)
@@ -192,6 +196,7 @@
 ## Integration Patterns
 - [AMM / LP mechanics](content/patterns/amm-lp-mechanics.md): AMM / LP mechanics — swap math, liquidity provision, LP token minting, fee extraction, pool state boxes (~2042 tokens)
 - [Constant segregation](content/patterns/constant-segregation.md): Constant segregation — substConstants pattern for contract templates without recompilation (~2375 tokens)
+- [Two-Pass Contract Audit Methodology](content/patterns/contract-audit-methodology.md) (~1507 tokens)
 - [EIP-12 dApp Connector](content/patterns/eip12-dapp-connector.md): EIP-12 dApp Connector — connection API, context API, multi-wallet detection, TypeScript types (~2367 tokens)
 - [ErgoAuth (EIP-28)](content/patterns/ergoauth-authentication.md): ErgoAuth (EIP-28) — user authentication via SigmaProp signature, challenge-response flow (~2217 tokens)
 - [ErgoPay (EIP-20)](content/patterns/ergopay-signing.md): ErgoPay (EIP-20) — mobile signing, URI scheme, dynamic vs static requests, desktop↔mobile flow (~2482 tokens)
@@ -570,8 +575,18 @@
 - [Ergo Wallet Setup and Security](content/node/wallet-setup.md) (~1232 tokens)
 - [## Initialize Wallet](content/node/wallet.md) (~994 tokens)
 
+## Skills
+- [Ergo AppKit Code Generator Guide](content/skills/appkit-code-generator.md) (~3535 tokens)
+- [Babel Fees Implementation Guide](content/skills/babel-fees-implementation.md) (~6930 tokens)
+- [EIP-004 NFT Operations Guide](content/skills/eip004-nft-operations.md) (~6144 tokens)
+- [ergo-lib-wasm Cryptographic Toolkit Guide](content/skills/ergo-wasm-toolkit.md) (~5271 tokens)
+- [Fleet SDK Transaction Builder Guide](content/skills/fleet-sdk-transactions.md) (~3862 tokens)
+- [Nautilus Wallet dApp Connector Guide](content/skills/nautilus-dapp-connector.md) (~5954 tokens)
+- [Ergo Node Deployment Guide](content/skills/node-deployment.md) (~4343 tokens)
+- [Plasma-Toolkit AVL Tree Operations on Ergo Mainnet](content/skills/plasma-avl-mainnet.md) (~5834 tokens)
+
 ## Topics
 - [Topic Index](content/topics/topic-index.md) (~12799 tokens)
 
 ---
-Total: 550 documents, ~1,069,990 tokens
+Total: 563 documents, ~1,121,370 tokens
