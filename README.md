@@ -31,7 +31,34 @@ Add to your MCP config (Claude Code, Gemini CLI, Codex CLI, Cursor, VS Code, Win
 | `get_ergoscript_ref` | ErgoScript language reference | `"built-in-functions"`, `"types"`, `"context-variables"` |
 | `list_projects` | Retrieves the master list of all 65 ecosystem projects | *(no input)* |
 | `get_skill` | Complete actionable skill docs (returned in full, not chunked) | `"nautilus"`, `"babel-fees"`, `"plasma-avl"`, `"list"` |
-| `audit_contract` | Audit ErgoScript code — returns security context + methodology for two-pass audit | ErgoScript code + optional description |
+| `audit_contract` | Pass 1: Initial ErgoScript security audit with full EKB context | ErgoScript code + optional description |
+| `audit_verify` | Pass 2: Independent verification of Pass 1 findings — catches false positives and missed issues | ErgoScript code + Pass 1 findings |
+
+## Skills
+
+Skills are complete, step-by-step instruction documents returned in full (not chunked). Unlike `search_docs` which returns the most relevant fragments, `get_skill` returns the entire document so instructions can be followed end-to-end.
+
+Available skills:
+- **nautilus** — Nautilus wallet dApp connector integration (EIP-12)
+- **babel-fees** — Babel fee implementation (pay tx fees in tokens instead of ERG)
+- **fleet-sdk** — Transaction building with Fleet SDK
+- **appkit** — AppKit code generation patterns
+- **ergo-wasm** — ergo-lib-wasm toolkit usage
+- **node-deployment** — Ergo node setup and configuration
+- **eip004** — EIP-4 NFT/token operations
+- **plasma-avl** — AVL tree operations with Plasma-Toolkit (mainnet patterns)
+
+Pass `"list"` to `get_skill` to see all available skills at any time.
+
+## Contract Auditing
+
+Two independent tools implement a two-pass audit framework:
+
+1. **`audit_contract`** (Pass 1) — Returns security context (9 known vulnerability categories, secure design patterns, LLM pitfall calibration) plus EKB documentation dynamically matched to your contract's patterns. The LLM performs the initial audit using this grounding data.
+
+2. **`audit_verify`** (Pass 2) — Takes the original code and your Pass 1 findings. Returns the same security context but with **independent reviewer framing**: *"Another auditor produced these findings. Assume they made mistakes."* This eliminates confirmation bias and catches false positives and missed issues.
+
+The two-tool split means Pass 2 approaches the contract fresh — or in Claude Code, you can spawn a subagent for Pass 2 (literally separate context window). Works with any LLM: Claude, Gemini, GPT, etc.
 
 ## What to Ask
 
@@ -53,6 +80,15 @@ Add to your MCP config (Claude Code, Gemini CLI, Codex CLI, Cursor, VS Code, Win
 **Pattern lookups:**
 - "How does EIP-12 dApp connector work?"
 - "What's the singleton NFT state machine pattern?"
+
+**Skills (full step-by-step docs):**
+- "Get the nautilus skill" → complete Nautilus wallet integration guide
+- "Get the babel-fees skill" → Babel fee implementation from scratch
+- "Get the plasma-avl skill" → AVL tree operations on mainnet
+
+**Contract auditing (two-pass):**
+- Call `audit_contract` with ErgoScript code + optional description → LLM performs Pass 1 audit
+- Call `audit_verify` with the code + Pass 1 findings → independent verification catches false positives and missed issues
 
 ## What's Inside
 
@@ -91,7 +127,9 @@ This knowledge base curates, extends, and enriches content from across the Ergo 
 | [ergoplatform/ergodocs](https://github.com/ergoplatform/ergodocs) | Node docs, data model, ErgoScript tutorials, wallet guides | Community documentation |
 | [ergoplatform/eips](https://github.com/ergoplatform/eips) | Ergo Improvement Proposals (EIP-1 through EIP-44) | Public standards |
 | 65 ecosystem project repos | Contract analyses auto-generated from source code | Links to each source repo in file frontmatter |
-| Original contributions | Concepts, patterns, cookbook recipes, query scripts, toolchain guides | AGPL-3.0 |
+| [Degens-World/Ergo-Skills](https://github.com/Degens-World/Ergo-Skills) | 7 actionable skill documents (Nautilus, Fleet SDK, Babel fees, AppKit, WASM, EIP-4, node deployment) | MIT |
+| [Degens-World/Ergo-Context](https://github.com/Degens-World/Ergo-Context) | ErgoScript audit calibration data (known issues, LLM pitfalls, secure patterns) | MIT |
+| Original contributions | Concepts, patterns, cookbook recipes, query scripts, toolchain guides, Plasma-AVL skill, two-pass audit methodology | AGPL-3.0 |
 
 Every file includes `source` and `source_url` frontmatter fields tracing back to its origin.
 

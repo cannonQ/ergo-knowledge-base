@@ -22,17 +22,36 @@ import {
 function extractSearchTerms(code: string): string {
   const terms: string[] = [];
 
-  if (/HEIGHT/i.test(code)) terms.push("timelock HEIGHT");
-  if (/OUTPUTS\.exists|tokens\(/.test(code)) terms.push("token preservation");
-  if (/sigmaProp|proveDlog|atLeast/.test(code)) terms.push("signature verification");
-  if (/dataInputs|CONTEXT\.dataInputs/.test(code)) terms.push("data input oracle");
-  if (/blake2b256|hash/.test(code)) terms.push("commit reveal hashing");
-  if (/propositionBytes/.test(code)) terms.push("script hash state continuation");
-  if (/SELF\.R[4-9]|\.get/.test(code)) terms.push("register state box");
-  if (/getVar/.test(code)) terms.push("context variable");
-  if (/AvlTree|avlTree/.test(code)) terms.push("AVL tree plasma");
+  // State & time
+  if (/HEIGHT/i.test(code)) terms.push("timelock HEIGHT block");
+  if (/SELF\.R[4-9]|\.get/.test(code)) terms.push("register state box continuation");
+  if (/propositionBytes/.test(code)) terms.push("script hash state continuation multi-stage");
 
-  if (terms.length === 0) terms.push("ErgoScript contract security");
+  // Tokens & value
+  if (/OUTPUTS\.exists|OUTPUTS\.forall|tokens\(/.test(code)) terms.push("token preservation output");
+  if (/tokens\(0\)\._1|tokenId/.test(code)) terms.push("singleton NFT identity token");
+  if (/minerFee|MINER_FEE|\.value/.test(code)) terms.push("ERG value fee conservation");
+
+  // Cryptographic
+  if (/sigmaProp|proveDlog|atLeast/.test(code)) terms.push("signature verification multisig");
+  if (/blake2b256|hash/.test(code)) terms.push("commit reveal hashing front-running");
+  if (/GroupElement|decodePoint|proveDHTuple/.test(code)) terms.push("sigma protocol point-at-infinity");
+
+  // Data access
+  if (/dataInputs|CONTEXT\.dataInputs/.test(code)) terms.push("data input oracle authentication");
+  if (/getVar/.test(code)) terms.push("context variable off-chain");
+  if (/AvlTree|avlTree/.test(code)) terms.push("AVL tree plasma authenticated dictionary");
+
+  // Control flow
+  if (/\|\|/.test(code)) terms.push("OR branch bypass spending path");
+  if (/fold|flatMap|map\(/.test(code)) terms.push("collection operation JIT cost limit");
+  if (/INPUTS\.size|OUTPUTS\.size/.test(code)) terms.push("input output count constraint");
+
+  // Box identity
+  if (/SELF\.id|\.id/.test(code)) terms.push("box identity minting token");
+  if (/creationInfo|SELF\.creationInfo/.test(code)) terms.push("box creation height");
+
+  if (terms.length === 0) terms.push("ErgoScript contract security audit");
 
   return terms.join(" ");
 }
@@ -384,14 +403,14 @@ const handler = createMcpHandler(
       }
     );
 
-    // Tool 10: Audit an ErgoScript contract
+    // Tool 10: Audit an ErgoScript contract (Pass 1 — Initial Audit)
     server.tool(
       "audit_contract",
-      "Audit an ErgoScript smart contract for security vulnerabilities. " +
-        "Returns the full audit context (known issues, secure patterns, LLM pitfalls) " +
-        "plus relevant EKB documentation matched to the contract's patterns. " +
-        "Includes two-pass audit methodology instructions. " +
-        "The calling LLM performs the actual audit using this grounding data.",
+      "PASS 1 of a two-pass ErgoScript contract audit. " +
+        "Returns security context (known issues, secure patterns, LLM pitfalls), " +
+        "relevant EKB documentation matched to the contract's patterns, " +
+        "and detailed Pass 1 audit instructions. " +
+        "After completing Pass 1, call audit_verify with your findings for independent verification.",
       {
         code: z
           .string()
@@ -408,28 +427,64 @@ const handler = createMcpHandler(
         const auditContext = getAuditContext();
 
         // 2. Semantic search for relevant EKB content based on the contract code
-        const searchTerms = extractSearchTerms(code);
-        const searchResults = await searchDocs(searchTerms, undefined, 5);
+        //    Search both code patterns AND description (if provided)
+        const codeTerms = extractSearchTerms(code);
+        const searchQueries = [codeTerms];
+        if (description) {
+          searchQueries.push(description);
+        }
 
-        const relevantDocs = searchResults.length > 0
-          ? searchResults
+        const allResults = [];
+        for (const query of searchQueries) {
+          const results = await searchDocs(query, undefined, 5);
+          allResults.push(...results);
+        }
+
+        // Deduplicate by file_path + title
+        const seen = new Set<string>();
+        const uniqueResults = allResults.filter((r) => {
+          const key = `${r.file_path}:${r.title}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        const relevantDocs = uniqueResults.length > 0
+          ? uniqueResults
               .map((r) => `### ${r.title}\n**Source:** ${r.file_path}\n\n${r.text}`)
               .join("\n\n---\n\n")
           : "No additional relevant documentation found.";
 
-        // 3. Assemble the full audit package
+        // 3. Assemble the Pass 1 audit package
         const auditPackage = [
-          "# ErgoScript Contract Audit Package",
+          "# ErgoScript Contract Audit — Pass 1 (Initial Analysis)",
           "",
           "## Contract Under Review",
-          description ? `**Description:** ${description}` : "",
+          description ? `**Intended behavior:** ${description}` : "",
           "```ergoscript",
           code,
           "```",
           "",
           "---",
           "",
-          "## Audit Context & Methodology",
+          "## eUTXO Model — Core Reference",
+          "",
+          "Ergo uses the extended UTXO model. Key principles for auditing:",
+          "- **Box** = value (ERG) + tokens (up to 255) + registers (R4-R9) + guarding script",
+          "- **ErgoScript** = predicate that must evaluate TRUE to spend a box",
+          "- **State transition** = old boxes spent (destroyed) → new boxes created",
+          "- **INPUTS** = boxes being spent (scripts evaluated). **DATA INPUTS** = read-only (scripts NOT evaluated)",
+          "- **OUTPUTS** = new boxes created. Total ERG in + fee must equal total ERG out",
+          "- **Tokens must be explicitly preserved** in OUTPUTS — any unaccounted tokens are lost",
+          "- **Singleton NFT** = a token with quantity 1 that uniquely identifies a box (cannot be faked)",
+          "- **Multi-stage protocols** = box consumed → recreated with updated registers. NFT travels with box for identity",
+          "- **Determinism** = transaction outcome is fully determined before submission (no gas surprises)",
+          "- Context variables: SELF, INPUTS, OUTPUTS, HEIGHT, CONTEXT.dataInputs, CONTEXT.preHeader",
+          "- Core references: [LangSpec](https://github.com/ergoplatform/sigmastate-interpreter/blob/develop/docs/LangSpec.md), [ErgoScript PDF](https://storage.googleapis.com/ergo-cms-media/docs/ErgoScript.pdf)",
+          "",
+          "---",
+          "",
+          "## Audit Context — Known Issues, Secure Patterns & LLM Pitfalls",
           "",
           auditContext,
           "",
@@ -441,24 +496,203 @@ const handler = createMcpHandler(
           "",
           "---",
           "",
-          "## Instructions",
+          "## Pass 1 Instructions",
           "",
-          "Perform a **two-pass audit** of the contract above:",
+          "Perform the initial comprehensive audit of the contract above:",
           "",
-          "**PASS 1:** Analyze the contract against the Known ErgoScript Security Issues, ",
-          "Secure Design Patterns, and the contract description (if provided). ",
-          "List all findings with severity (CRITICAL/HIGH/MEDIUM/LOW). ",
-          "Rate overall security 1-10.",
+          "1. **Explain** what the contract does in simple terms",
+          "2. **Enumerate all spend paths** — trace every branch in the script's boolean logic",
+          "3. **Check against all 9 Known ErgoScript Security Issues:**",
+          "   - Unvalidated data inputs (are data inputs authenticated by NFT/box ID/ErgoTree?)",
+          "   - Token loss (are ALL tokens in inputs accounted for in outputs?)",
+          "   - OR-branch bypasses (can any `||` branch be satisfied independently in an unintended way?)",
+          "   - Missing signature requirements (are all spend paths gated by `sigmaProp`/`proveDlog`/`atLeast`?)",
+          "   - Point-at-infinity edge cases (are GroupElement values from registers validated?)",
+          "   - Front-running (is sensitive data revealed in the spending transaction?)",
+          "   - Incorrect HEIGHT comparisons (off-by-one errors? tolerance window too tight for mempool?)",
+          "   - Cyclic script hash dependencies (does the contract reference another contract's hash that references this one?)",
+          "   - JIT cost limits (complex folds, deep nesting, large collection operations?)",
+          "4. **Verify against Secure Design Patterns** — does the contract use the right pattern for its purpose?",
+          "   (CommitReveal, PerpetualToken, MultiStage, Multisig, EmergencyRefund, StateContinuation, OracleAuth)",
+          "5. **Check ERG and token conservation** — all value must be accounted for across INPUTS → OUTPUTS",
+          "6. **Validate register usage** — are R4-R9 accessed with correct types? Are `.get` calls safe?",
+          description
+            ? "7. **Intent verification** — does the code actually implement the described behavior? Look for logic bugs where the code is secure but does the wrong thing"
+            : "",
+          "8. **List all findings** with severity: CRITICAL, HIGH, MEDIUM, LOW",
+          "9. **Rate overall security** on a 1-10 scale",
           "",
-          "**PASS 2:** Review your Pass 1 findings. Cross-reference against the ",
-          "LLM Audit Pitfalls listed above. Remove any false positives. ",
-          "Check for issues you missed. Produce a final consolidated report.",
+          "---",
+          "",
+          "## Next Step",
+          "",
+          "After completing this Pass 1 audit, call **`audit_verify`** with the original contract code, " +
+          "your complete Pass 1 findings, and the contract description (if provided). " +
+          "This sends your audit to an independent verification pass that will catch false positives " +
+          "and find issues you may have missed.",
         ]
           .filter(Boolean)
           .join("\n");
 
         return {
           content: [{ type: "text" as const, text: auditPackage }],
+        };
+      }
+    );
+
+    // Tool 11: Verify an ErgoScript audit (Pass 2 — Independent Review)
+    server.tool(
+      "audit_verify",
+      "PASS 2 of a two-pass ErgoScript contract audit. " +
+        "Takes the original contract code and Pass 1 audit findings, " +
+        "then returns security context with independent reviewer instructions. " +
+        "Designed to catch false positives and find issues the first pass missed. " +
+        "Call this after audit_contract with your Pass 1 output.",
+      {
+        code: z
+          .string()
+          .describe("The original ErgoScript contract code"),
+        pass1_findings: z
+          .string()
+          .describe("The complete Pass 1 audit output to verify"),
+        description: z
+          .string()
+          .optional()
+          .describe(
+            "Optional description of what the contract should do"
+          ),
+      },
+      async ({ code, pass1_findings, description }) => {
+        // 1. Load the same static audit context
+        const auditContext = getAuditContext();
+
+        // 2. Same semantic search as Pass 1
+        const codeTerms = extractSearchTerms(code);
+        const searchQueries = [codeTerms];
+        if (description) {
+          searchQueries.push(description);
+        }
+
+        const allResults = [];
+        for (const query of searchQueries) {
+          const results = await searchDocs(query, undefined, 5);
+          allResults.push(...results);
+        }
+
+        const seen = new Set<string>();
+        const uniqueResults = allResults.filter((r) => {
+          const key = `${r.file_path}:${r.title}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        const relevantDocs = uniqueResults.length > 0
+          ? uniqueResults
+              .map((r) => `### ${r.title}\n**Source:** ${r.file_path}\n\n${r.text}`)
+              .join("\n\n---\n\n")
+          : "No additional relevant documentation found.";
+
+        // 3. Assemble the Pass 2 verification package
+        const verifyPackage = [
+          "# ErgoScript Contract Audit — Pass 2 (Independent Verification)",
+          "",
+          "## Role",
+          "",
+          "You are an **independent security reviewer**. Another auditor produced the findings below. " +
+          "Your job is to verify their work. Assume the first auditor made mistakes — " +
+          "look for false positives they reported and real issues they missed.",
+          "",
+          "---",
+          "",
+          "## Contract Under Review",
+          description ? `**Intended behavior:** ${description}` : "",
+          "```ergoscript",
+          code,
+          "```",
+          "",
+          "---",
+          "",
+          "## First Auditor's Findings (Pass 1)",
+          "",
+          pass1_findings,
+          "",
+          "---",
+          "",
+          "## eUTXO Model — Core Reference",
+          "",
+          "Ergo uses the extended UTXO model. Key principles for verification:",
+          "- **Box** = value (ERG) + tokens (up to 255) + registers (R4-R9) + guarding script",
+          "- **ErgoScript** = predicate that must evaluate TRUE to spend a box",
+          "- **State transition** = old boxes spent (destroyed) → new boxes created",
+          "- **INPUTS** = boxes being spent (scripts evaluated). **DATA INPUTS** = read-only (scripts NOT evaluated)",
+          "- **OUTPUTS** = new boxes created. Total ERG in + fee must equal total ERG out",
+          "- **Tokens must be explicitly preserved** in OUTPUTS — any unaccounted tokens are lost",
+          "- **Singleton NFT** = a token with quantity 1 that uniquely identifies a box (cannot be faked)",
+          "- **Multi-stage protocols** = box consumed → recreated with updated registers. NFT travels with box for identity",
+          "- Context variables: SELF, INPUTS, OUTPUTS, HEIGHT, CONTEXT.dataInputs, CONTEXT.preHeader",
+          "",
+          "---",
+          "",
+          "## Audit Context — Known Issues, Secure Patterns & LLM Pitfalls",
+          "",
+          auditContext,
+          "",
+          "---",
+          "",
+          "## Relevant EKB Documentation",
+          "",
+          relevantDocs,
+          "",
+          "---",
+          "",
+          "## Pass 2 Verification Instructions",
+          "",
+          "Review the first auditor's findings against the contract code. You are looking for errors in their analysis.",
+          "",
+          "### Step 1: Verify each finding against LLM Audit Pitfalls",
+          "",
+          "For EVERY finding the first auditor reported, check:",
+          "- Is the token ID actually checked indirectly (via tuple, register lookup, helper value)?",
+          "- Is additional identity verification redundant because a singleton NFT already authenticates the box?",
+          "- Is the apparent issue cancelled out by a matching constraint on the other side of the transaction?",
+          "- Is the type conversion required by ErgoScript's type system (e.g., Long→Int for Coll indexing)?",
+          "- Are the values bounded by fixed constants that make overflow impossible?",
+          "- Is the pattern an intentional optimization/tradeoff rather than a mistake?",
+          "",
+          "### Step 2: Remove false positives",
+          "",
+          "For each finding you determine is a false positive, explain WHY it was removed. " +
+          "Be specific — cite the code that disproves the finding.",
+          "",
+          "### Step 3: Check for missed issues",
+          "",
+          "The first auditor may have missed vulnerabilities. Look specifically for:",
+          "- Hidden OR-branch bypasses (test each `||` branch in complete isolation)",
+          "- Subtle token preservation failures (tokens present in inputs but not enforced in outputs)",
+          "- Edge cases in HEIGHT comparisons (Ergo's CleanupWorker re-validates mempool txs against new HEIGHT)",
+          "- Data input manipulation vectors (can an attacker substitute a different data input box?)",
+          "- Front-running opportunities (is sensitive data revealed before commitment?)",
+          "- Off-chain assumptions (\"can a different backend construct a transaction that violates this assumption while still satisfying the script?\")",
+          description
+            ? "- Intent mismatches (does the code actually do what the description says it should?)"
+            : "",
+          "",
+          "### Step 4: Produce final consolidated report",
+          "",
+          "Your output must include:",
+          "- **Contract summary** (1-2 sentences)",
+          "- **Confirmed vulnerabilities** from Pass 1 (with severity + specific code references)",
+          "- **Removed false positives** (with explanation for each removal)",
+          "- **New findings** (clearly marked as \"VERIFICATION FINDING\" with severity)",
+          "- **Final recommendations** with code fixes where applicable",
+          "- **Final security rating** (1-10)",
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        return {
+          content: [{ type: "text" as const, text: verifyPackage }],
         };
       }
     );
