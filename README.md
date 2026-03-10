@@ -30,6 +30,8 @@ Add to your MCP config (Claude Code, Gemini CLI, Codex CLI, Cursor, VS Code, Win
 | `get_eip` | Ergo Improvement Proposals by number | `"4"`, `"20"`, `"eip-6"` |
 | `get_ergoscript_ref` | ErgoScript language reference | `"built-in-functions"`, `"types"`, `"context-variables"` |
 | `list_projects` | Retrieves the master list of all 65 ecosystem projects | *(no input)* |
+| `get_skill` | Complete actionable skill docs (returned in full, not chunked) | `"nautilus"`, `"babel-fees"`, `"plasma-avl"`, `"list"` |
+| `audit_contract` | Audit ErgoScript code — returns security context + methodology for two-pass audit | ErgoScript code + optional description |
 
 ## What to Ask
 
