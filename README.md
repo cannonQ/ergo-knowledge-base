@@ -47,6 +47,7 @@ Available skills:
 - **node-deployment** — Ergo node setup and configuration
 - **eip004** — EIP-4 NFT/token operations
 - **plasma-avl** — AVL tree operations with Plasma-Toolkit (mainnet patterns)
+- **scala-test-harness** — Scala/AppKit test harness patterns (GroupElement vs SigmaProp, HEIGHT off-by-one, error→fix reference)
 
 Pass `"list"` to `get_skill` to see all available skills at any time.
 

@@ -584,9 +584,10 @@
 - [Nautilus Wallet dApp Connector Guide](content/skills/nautilus-dapp-connector.md) (~5954 tokens)
 - [Ergo Node Deployment Guide](content/skills/node-deployment.md) (~4343 tokens)
 - [Plasma-Toolkit AVL Tree Operations on Ergo Mainnet](content/skills/plasma-avl-mainnet.md) (~5834 tokens)
+- [Scala Test Harness for ErgoScript Contracts](content/skills/scala-test-harness.md): Production patterns for building Scala/AppKit test harnesses that validate ErgoScript contracts on mainnet. Covers GroupElement vs SigmaProp, HEIGHT off-by-one, ErgoTree size bit, register copying, context variables, JitCost measurement, and a complete error→fix reference. (~4463 tokens)
 
 ## Topics
 - [Topic Index](content/topics/topic-index.md) (~12799 tokens)
 
 ---
-Total: 563 documents, ~1,121,370 tokens
+Total: 564 documents, ~1,125,833 tokens
