@@ -208,6 +208,14 @@ npm install && npm run dev`}
               "ErgoScript language reference (built-ins, types, context vars)",
             ],
             ["list_projects", "List all 65 ecosystem projects"],
+            [
+              "get_skill",
+              "Complete skill docs: Nautilus, Babel fees, Fleet SDK, AVL, WASM, AppKit",
+            ],
+            [
+              "audit_contract",
+              "Audit ErgoScript code with two-pass security analysis",
+            ],
           ].map(([name, desc]) => (
             <tr key={name} style={{ borderBottom: "1px solid #1a3a1a" }}>
               <td style={{ padding: "0.5rem" }}>

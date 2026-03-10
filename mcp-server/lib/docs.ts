@@ -191,3 +191,46 @@ export function listAvailableErgoscriptRefs(): string[] {
     return [];
   }
 }
+
+export function getSkill(name: string): string | null {
+  const skillDir = path.join(CONTENT_DIR, "skills");
+  const filePath = findFile(skillDir, name);
+  if (filePath) {
+    return fs.readFileSync(filePath, "utf-8");
+  }
+  return null;
+}
+
+export function listAvailableSkills(): string[] {
+  const skillDir = path.join(CONTENT_DIR, "skills");
+  try {
+    return fs
+      .readdirSync(skillDir)
+      .filter((f) => f.endsWith(".md") && !f.startsWith("_"))
+      .map((f) => f.replace(/\.md$/, ""));
+  } catch {
+    return [];
+  }
+}
+
+export function getAuditContext(): string {
+  const esDir = path.join(CONTENT_DIR, "reference", "ergoscript");
+  const parts: string[] = [];
+
+  const knownIssuesPath = path.join(esDir, "known-issues.md");
+  if (fs.existsSync(knownIssuesPath)) {
+    parts.push(fs.readFileSync(knownIssuesPath, "utf-8"));
+  }
+
+  const auditContextPath = path.join(esDir, "audit-context.md");
+  if (fs.existsSync(auditContextPath)) {
+    parts.push(fs.readFileSync(auditContextPath, "utf-8"));
+  }
+
+  const methodologyPath = path.join(CONTENT_DIR, "patterns", "contract-audit-methodology.md");
+  if (fs.existsSync(methodologyPath)) {
+    parts.push(fs.readFileSync(methodologyPath, "utf-8"));
+  }
+
+  return parts.join("\n\n---\n\n");
+}

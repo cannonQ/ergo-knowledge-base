@@ -8,12 +8,34 @@ import {
   getCookbook,
   getEip,
   getErgoscriptRef,
+  getSkill,
+  getAuditContext,
   listAvailableConcepts,
   listAvailablePatterns,
   listAvailableCookbooks,
   listAvailableEips,
   listAvailableErgoscriptRefs,
+  listAvailableSkills,
 } from "@/lib/docs";
+
+// Extract key terms from ErgoScript code for semantic search
+function extractSearchTerms(code: string): string {
+  const terms: string[] = [];
+
+  if (/HEIGHT/i.test(code)) terms.push("timelock HEIGHT");
+  if (/OUTPUTS\.exists|tokens\(/.test(code)) terms.push("token preservation");
+  if (/sigmaProp|proveDlog|atLeast/.test(code)) terms.push("signature verification");
+  if (/dataInputs|CONTEXT\.dataInputs/.test(code)) terms.push("data input oracle");
+  if (/blake2b256|hash/.test(code)) terms.push("commit reveal hashing");
+  if (/propositionBytes/.test(code)) terms.push("script hash state continuation");
+  if (/SELF\.R[4-9]|\.get/.test(code)) terms.push("register state box");
+  if (/getVar/.test(code)) terms.push("context variable");
+  if (/AvlTree|avlTree/.test(code)) terms.push("AVL tree plasma");
+
+  if (terms.length === 0) terms.push("ErgoScript contract security");
+
+  return terms.join(" ");
+}
 
 const handler = createMcpHandler(
   (server) => {
@@ -311,6 +333,132 @@ const handler = createMcpHandler(
               text: `# Ergo Ecosystem Projects\n\n${formatted}`,
             },
           ],
+        };
+      }
+    );
+
+    // Tool 9: Get a complete skill document
+    server.tool(
+      "get_skill",
+      "Retrieve a complete actionable skill document for Ergo development. " +
+        "Skills are step-by-step instruction sets for specific tasks: " +
+        "connecting Nautilus wallet, building transactions with Fleet SDK, " +
+        "implementing Babel fees, using ergo-lib-wasm, deploying nodes, " +
+        "AVL tree operations with Plasma-Toolkit, and more. " +
+        "Returns the FULL document (not chunks) so the instructions can be followed completely.",
+      {
+        name: z
+          .string()
+          .describe(
+            "Skill name (e.g. 'nautilus', 'babel-fees', 'fleet-sdk', 'plasma-avl', 'appkit', 'ergo-wasm', 'node-deployment', 'eip004'). Use 'list' to see all available skills."
+          ),
+      },
+      async ({ name }) => {
+        if (name.toLowerCase() === "list") {
+          const available = listAvailableSkills();
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `# Available Skills\n\n${available.map((s) => `- ${s}`).join("\n")}`,
+              },
+            ],
+          };
+        }
+
+        const content = getSkill(name);
+        if (!content) {
+          const available = listAvailableSkills();
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Skill '${name}' not found. Available skills: ${available.join(", ")}`,
+              },
+            ],
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: content }],
+        };
+      }
+    );
+
+    // Tool 10: Audit an ErgoScript contract
+    server.tool(
+      "audit_contract",
+      "Audit an ErgoScript smart contract for security vulnerabilities. " +
+        "Returns the full audit context (known issues, secure patterns, LLM pitfalls) " +
+        "plus relevant EKB documentation matched to the contract's patterns. " +
+        "Includes two-pass audit methodology instructions. " +
+        "The calling LLM performs the actual audit using this grounding data.",
+      {
+        code: z
+          .string()
+          .describe("The ErgoScript contract code to audit"),
+        description: z
+          .string()
+          .optional()
+          .describe(
+            "Optional description of what the contract should do (enables intent-based auditing)"
+          ),
+      },
+      async ({ code, description }) => {
+        // 1. Load static audit context (known issues + pitfalls + methodology)
+        const auditContext = getAuditContext();
+
+        // 2. Semantic search for relevant EKB content based on the contract code
+        const searchTerms = extractSearchTerms(code);
+        const searchResults = await searchDocs(searchTerms, undefined, 5);
+
+        const relevantDocs = searchResults.length > 0
+          ? searchResults
+              .map((r) => `### ${r.title}\n**Source:** ${r.file_path}\n\n${r.text}`)
+              .join("\n\n---\n\n")
+          : "No additional relevant documentation found.";
+
+        // 3. Assemble the full audit package
+        const auditPackage = [
+          "# ErgoScript Contract Audit Package",
+          "",
+          "## Contract Under Review",
+          description ? `**Description:** ${description}` : "",
+          "```ergoscript",
+          code,
+          "```",
+          "",
+          "---",
+          "",
+          "## Audit Context & Methodology",
+          "",
+          auditContext,
+          "",
+          "---",
+          "",
+          "## Relevant EKB Documentation",
+          "",
+          relevantDocs,
+          "",
+          "---",
+          "",
+          "## Instructions",
+          "",
+          "Perform a **two-pass audit** of the contract above:",
+          "",
+          "**PASS 1:** Analyze the contract against the Known ErgoScript Security Issues, ",
+          "Secure Design Patterns, and the contract description (if provided). ",
+          "List all findings with severity (CRITICAL/HIGH/MEDIUM/LOW). ",
+          "Rate overall security 1-10.",
+          "",
+          "**PASS 2:** Review your Pass 1 findings. Cross-reference against the ",
+          "LLM Audit Pitfalls listed above. Remove any false positives. ",
+          "Check for issues you missed. Produce a final consolidated report.",
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        return {
+          content: [{ type: "text" as const, text: auditPackage }],
         };
       }
     );
