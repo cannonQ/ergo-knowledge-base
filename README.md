@@ -147,3 +147,26 @@ npm install && npm run dev
 ## License
 
 [AGPL-3.0](LICENSE)
+
+## Updating a local clone
+
+If you run a local clone of this repository (rather than the hosted instance),
+pull new documents and index updates with the helper script:
+
+```bash
+./update.sh            # fast-forward from origin and report what changed
+./update.sh --check    # report whether updates are available, without pulling
+```
+
+It fast-forwards only and refuses to run on a dirty working tree, so it never
+clobbers local changes. When a pull contains only documents or index data, no
+rebuild is needed — reload your instance. When it contains code or dependency
+changes, the script prints the `npm ci && npm run build` step for you to review
+and run yourself; it never builds or runs new upstream code automatically.
+
+Optionally set `EKB_SERVICE` to a systemd --user unit to auto-restart it after a
+content-only update:
+
+```bash
+EKB_SERVICE=your-ekb.service ./update.sh
+```
