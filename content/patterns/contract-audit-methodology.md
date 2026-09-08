@@ -2,11 +2,11 @@
 title: "Two-Pass Contract Audit Methodology"
 category: pattern
 difficulty: advanced
-tags: [ergoscript, audit, security, llm, two-pass]
+tags: [ergoscript, audit, security, llm, two-pass, dual-pass, adjudication, severity]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-03-09
+updated: 2026-09-08
 ---
 # Two-Pass Contract Audit Methodology
 
@@ -74,17 +74,30 @@ The second pass addresses all three by reviewing the first pass output against t
 
 ---
 
+## Why Two *Independent* Pass 1 Runs on Fund-Holding Contracts
+
+Pass 2 verifies Pass 1. It cannot recover a false negative that Pass 1 never raised. For any contract that holds or moves funds, run Pass 1 **twice, in two separate contexts, with the same pre-named traps and no sight of each other's output**, and only then run Pass 2 on the merged findings.
+
+**What happened without it.** In the Dexy-stable engagement (September 2026), two auditors were given the same trap on the same LP cluster: can a non-LP box at input 0 with a genuine swap box satisfy `swap.es` and yield a gain? The auditor on `main.es`/`swap.es` composed the decoy layout and rated it HIGH. The auditor on `mint.es`/`redeem.es` **refuted the same trap**, arguing that singleton coupling forced the real pool to input 0. No such line exists in the source. The contradiction is what forced a manual read; the pool had already been drained on mainnet. A single Pass 1 assigned to mint and redeem would have declared the cluster clean, and Pass 2 would have verified that.
+
+**Adjudication rule.** Any disagreement between the two runs is a mandatory adjudication, and the burden of proof is on whichever side said *safe*: it must cite the specific line that closes the attack, and the adjudicator verifies that line does what was claimed. If the line does not exist or does not close it, the finding stands at the severity the other run derived. An adjudication resolved as safe without a verified line is not permitted. Adjudication is decided from source; a landed transaction is corroboration, not the deciding evidence.
+
+**In Claude Code** this is two subagents dispatched in parallel with the same prompt. **With any client**, it is two separate conversations. The tools cannot enforce independence; the caller's orchestration is what provides it. The full engagement structure around this (scope memo, value ledger, procedure checklist, workpapers, retest, sign-off) is the `contract-audit-engagement` skill.
+
+---
+
 ## Pass 1: Initial Comprehensive Audit
 
 The first pass performs a standard security audit with pre-calibration:
 
 1. **Explain** what the contract does in simple terms
-2. **List vulnerabilities** found (with severity: CRITICAL, HIGH, MEDIUM, LOW)
-3. **Identify logic errors** or potential bugs
-4. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
-5. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
-6. **Provide specific recommendations** with code fixes
-7. **Rate overall security** (1-10)
+2. **Enumerate every spend path** of every value-holding box and run the debit-side procedures D-1..D-13 on each (see the Audit Program reference); state the reconciliation (inputs minus pinned outputs = residual, and who receives it)
+3. **Return a verdict per pre-named trap** (T1..T19) with `file:line` either way; ABSENT without a cited line is not a verdict
+4. **List findings** with severity derived from the matrix: magnitude class × likelihood class → cell, plus modifiers; deployment status as a separate field
+5. **Identify logic errors** or potential bugs
+6. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
+7. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
+8. **Provide specific recommendations** with code fixes, and confirm the honest path still passes under each fix
 
 **Key:** The system prompt includes the LLM pitfall warnings BEFORE the first pass runs. This pre-calibration reduces (but does not eliminate) false positives in Pass 1 itself.
 
@@ -108,7 +121,8 @@ The second pass receives both the original contract AND the complete Pass 1 outp
    - Edge cases in HEIGHT comparisons
    - Data input manipulation vectors
    - Front-running opportunities
-6. **Produce final consolidated report** with adjusted security rating
+6. **Re-derive severity from the matrix** for every finding without reference to Pass 1's cell; log any difference as a ruling with the cell cited
+7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent
 
 ---
 
@@ -125,7 +139,7 @@ The optional description field ("what the contract should do") enables **intent-
 
 When implementing this pattern as an MCP tool, the audit context should be dynamically assembled:
 
-1. **Static context:** Known issues, secure patterns, LLM pitfalls (always included)
+1. **Static context:** Known issues, secure patterns, LLM pitfalls, and the Audit Program (debit-side procedures, trap register, severity matrix) — always included in both passes so they test the same population and rate on the same scale
 2. **Dynamic context:** Semantic search results from the EKB matching patterns found in the contract code (e.g., if the contract uses `HEIGHT`, pull timelock patterns; if it uses oracle data inputs, pull oracle authentication patterns)
 
 This gives the auditing LLM both the calibration data and specific relevant reference material for the contract being audited.
@@ -134,6 +148,8 @@ This gives the auditing LLM both the calibration data and specific relevant refe
 
 ## References
 
+- Audit Program (procedures, traps, severity matrix) — `content/reference/ergoscript/audit-program.md`
+- Contract Audit Engagement skill — `content/skills/contract-audit-engagement.md`
 - Known ErgoScript Security Issues — `content/reference/ergoscript/known-issues.md`
 - ErgoScript Audit Context (LLM Pitfalls) — `content/reference/ergoscript/audit-context.md`
 - Ergo Labs implementation — `ergolabs.degens.world/contract-audit`

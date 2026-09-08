@@ -232,5 +232,10 @@ export function getAuditContext(): string {
     parts.push(fs.readFileSync(methodologyPath, "utf-8"));
   }
 
+  const auditProgramPath = path.join(esDir, "audit-program.md");
+  if (fs.existsSync(auditProgramPath)) {
+    parts.push(fs.readFileSync(auditProgramPath, "utf-8"));
+  }
+
   return parts.join("\n\n---\n\n");
 }

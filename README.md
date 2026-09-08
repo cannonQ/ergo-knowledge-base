@@ -48,6 +48,7 @@ Available skills:
 - **eip004** — EIP-4 NFT/token operations
 - **plasma-avl** — AVL tree operations with Plasma-Toolkit (mainnet patterns)
 - **scala-test-harness** — Scala/AppKit test harness patterns (GroupElement vs SigmaProp, HEIGHT off-by-one, error→fix reference)
+- **contract-audit-engagement** — Financial-audit method for contract sets: value ledger of every spend path, fixed procedure checklist, two independent passes with burden-on-safe adjudication, severity matrix, workpapers, retest, sign-off
 
 Pass `"list"` to `get_skill` to see all available skills at any time.
 
@@ -55,11 +56,13 @@ Pass `"list"` to `get_skill` to see all available skills at any time.
 
 Two independent tools implement a two-pass audit framework:
 
-1. **`audit_contract`** (Pass 1) — Returns security context (9 known vulnerability categories, secure design patterns, LLM pitfall calibration) plus EKB documentation dynamically matched to your contract's patterns. The LLM performs the initial audit using this grounding data.
+1. **`audit_contract`** (Pass 1) — Returns security context (9 known vulnerability categories, secure design patterns, LLM pitfall calibration, and the Audit Program: debit-side procedure checklist, pre-named trap register T1–T19 from real findings, severity matrix) plus EKB documentation dynamically matched to your contract's patterns. The LLM performs the initial audit using this grounding data.
 
 2. **`audit_verify`** (Pass 2) — Takes the original code and your Pass 1 findings. Returns the same security context but with **independent reviewer framing**: *"Another auditor produced these findings. Assume they made mistakes."* This eliminates confirmation bias and catches false positives and missed issues.
 
 The two-tool split means Pass 2 approaches the contract fresh — or in Claude Code, you can spawn a subagent for Pass 2 (literally separate context window). Works with any LLM: Claude, Gemini, GPT, etc.
+
+For any contract that holds or moves funds, run Pass 1 **twice in independent contexts** before Pass 2, and adjudicate every disagreement with the burden on the side that said safe. A single Pass 1 declared the Dexy LP cluster clean while the pool was being drained. See the `contract-audit-engagement` skill for the full method.
 
 ## What to Ask
 
