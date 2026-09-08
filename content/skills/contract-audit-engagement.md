@@ -40,6 +40,20 @@ This skill is the engagement around them.
 
 ---
 
+## 0. If you are not an auditor
+
+| Audit term | Plain meaning here |
+|---|---|
+| Assertion | The property a test checks (input genuine, every path covered, amount right, timing not gameable, right key, right branch, docs match code) |
+| Population | Everything that must be tested: every (box, spend path) pair |
+| Materiality / severity matrix | The severity scale, fixed before anyone reads code so it cannot drift per finding |
+| Vouching | Tracing a value movement to the line that authorises it |
+| Management representations | What the developer states the protocol assumes: initial state, invariants, who is honest, what is deliberately unchecked |
+| Compensating control | When a check is absent, the other thing that stops the bad outcome |
+| Workpaper | The evidence file a conclusion points at |
+| Concurring review | A second reviewer whose job is to break your finding |
+| Fraud risk assessment | Who has an incentive to exploit a hole, not just whether it exists |
+
 ## 1. The one idea: audit the debit side
 
 A financial auditor vouches every disbursement and confirms every cash balance,
@@ -79,16 +93,41 @@ violates, so the report and the workpapers share one vocabulary:
 material weakness. Here it is a single PK over a whitelist, config box, or oracle.
 Report these as **KEY-RISK**, in their own section, not in the defect table.
 
+**Assumptions and omissions.** Every protocol works under assumptions about initial
+state, invariants, actors, and off-chain parties. Some are enforced by a line; some
+hold only because the developer expects them to. They are obtained from the developer
+before fieldwork (the way an auditor obtains management's representations) and
+verified into a register. Fieldwork tests inside them first, which is what separates a
+real exploit from one that needs an assumption to fail, and then with each
+easy-to-fail row removed. In eUTXO every check a script does *not* make is a decision:
+intentional omissions go in the register with the developer's reason, and the reason
+is verified against the code.
+
+**Incentives.** Auditors assess fraud risk from pressure, opportunity, and
+rationalisation. Code review finds opportunity only. A profitable hole will be used by
+rational actors, whose population is everyone; the likelihood axis of the matrix is the
+**actor threshold**: how many actors, of what kind, must deviate. One anonymous actor
+is the lowest bar. A design whose rational move harms the protocol is a finding on the
+same matrix as a code defect.
+
+**The contracts are not the whole system.** A user signs what a builder constructed
+and a frontend displayed. Builders and frontend are in scope by default when a UI
+exists; scoping them out is a recorded decision.
+
 ---
 
 ## 2. Engagement lifecycle
 
 ```
-00 Engagement   scope memo: commit, contracts, instances, recipient, deadline, type
+00 Engagement   scope memo: commit, contracts, instances, recipient, deadline, type;
+                developer questionnaire sent; off-chain scope decided
 01 Walkthrough  interaction map: boxes, tokens, who spends what
+01b Assumptions the developer's representations, verified: initial state, invariants,
+                actors, off-chain, intentional omissions; ranked by how easily they fail
 02 Value ledger the debit-side register: every box × every spend path
-03 Fieldwork    procedure checklist per spend path, from source only;
-                two independent passes on every fund-holding contract
+03 Fieldwork    procedure checklist per spend path, from source only, inside the
+                assumptions then with each removed; two independent passes on every
+                fund-holding contract; incentive (G) and off-chain (B) procedures
 04 Adjudicate   every dual-pass disagreement, burden on the side that said safe;
                 then an independent falsification pass on every HIGH/MEDIUM
 05 Report       management letter to the developer
@@ -112,6 +151,18 @@ reported that does not point at a workpaper.
 | 0.6 | Confirm the severity matrix applies unchanged. Any project-specific adjustment is written here, before fieldwork, with a reason. |
 | 0.7 | List the tooling available (EKB audit tools, compiler, MockChain, node). A procedure that needs absent tooling is N/A with that reason, never quietly downgraded. |
 | 0.8 | Copy the trap register from `audit-program` and add any traps specific to this engagement. Every fieldwork agent returns a verdict per trap per contract. |
+| 0.9 | **Send the developer questionnaire** (below). Answers seed the assumptions register. Do not wait for it to start the walkthrough; do wait, or infer and mark inferred, before fieldwork. |
+| 0.10 | **Decide off-chain scope.** Builders and frontend in scope by default when a UI exists; record the decision and the paths. |
+
+**Developer questionnaire.** (1) Initial state: what must be true of genesis boxes,
+supplies, tree parameters, spare-token holders. (2) Invariants: what stays true across
+every transaction, and which line enforces each. (3) Actors: who is assumed honest and
+in what proportion; what a rational participant does on each path; who is paid to
+keep, liquidate, challenge, reset, and how much. (4) Off-chain: what keepers, oracles,
+or parameters must keep doing; what happens if they stop. (5) Intentional omissions:
+which checks were left out, why, and what closes each instead. (6) Known sharp edges:
+what looks like a bug but is not; what looks minor but is dangerous. (7) Deployment:
+which instances exist or are planned and which holds the most value.
 
 ### Phase 1 · Walkthrough
 
@@ -123,6 +174,18 @@ assumption the contracts depend on.
 
 Phase 1 maps. It does not audit. Suspected issues go in a "candidate findings" list
 with `file:line` and are proven or dropped in Phase 3.
+
+### Phase 1b · Assumptions register
+
+One row per assumption, five kinds: initial state, invariant, actor, off-chain,
+intentional omission. Columns: id, kind, assumption, stated by (developer / inferred),
+enforced by (`file:line`) or **unenforced**, compensating control, what breaks if it
+fails, fails with (one actor / k actors / proportion / honest liveness failure / never
+without a code change), dependent findings. Every developer representation and every
+trust edge from the walkthrough becomes a row. An unenforced row with no compensating
+control is a candidate finding before fieldwork. Each intentional omission's reason is
+verified against the code. Rows are ranked by how easily they fail; one-actor rows are
+tested first.
 
 ### Phase 2 · Value ledger
 
@@ -170,9 +233,17 @@ singleton coupling forced the real pool to input 0. No such line exists. A singl
 assigned to mint and redeem would have declared the pool clean. The pool was already
 empty.
 
+*Inside the assumptions, then without them.* Every procedure runs first with the
+register taken as true. Then, for each row marked as failing with one actor, the
+procedures re-run on the paths it touches. A finding that depends on an assumption
+failing carries the row id and its actor threshold as precondition.
+
 **The procedures** are D-1..D-13 (debit side, per spend path), C-1..C-3 (credit side),
-S-1..S-4 (source level, per contract), and E-1..E-6 (entity level), as listed in
-`audit-program`. Each ends done (line cite), exception (finding id), or N/A (reason).
+S-1..S-4 (source level, per contract), A-1..A-3 (per register row), G-1..G-5
+(incentives, once, design level), B-1..B-5 (builders and frontend, when in scope), and
+E-1..E-6 (entity level), as listed in `audit-program`. Each ends done (line cite),
+exception (finding id), or N/A (reason). Design-level and off-chain findings go through
+the same finding record, concurring review, and matrix as code findings.
 
 **Evidence.** Every exception gets a finding record with a constructed scenario. Every
 library or chain semantic a result depends on (AVL `getMany` duplicate behaviour,
@@ -202,14 +273,18 @@ the rest selectively.
    counts, the single most important result, positive or negative.
 2. **Scope and method.** Commit, contracts, instances, tooling, and **what was not
    done**, stated here rather than buried.
-3. **Findings table.** Id, severity, deployment status, location, title, fix size.
-4. **KEY-RISK section**, separate from findings: the trust assumptions, whether the
+3. **Findings table.** Id, severity, deployment status, kind (code / design /
+   off-chain), location, title, fix size.
+4. **Assumptions the opinion rests on.** The register rows verified, and the
+   unenforced rows with their compensating controls, so a reader who disagrees with a
+   row knows which findings move.
+5. **KEY-RISK section**, separate from findings: the trust assumptions, whether the
    developer pre-disclosed them, what must change before mainnet.
-5. **Per-finding detail** for HIGH and MEDIUM.
-6. **LOW and INFO** as a table plus a launch-readiness checklist.
-7. **What was verified sound.** Traps found absent, paths proven leak-free. This is
+6. **Per-finding detail** for HIGH and MEDIUM, including design-level and off-chain.
+7. **LOW and INFO** as a table plus a launch-readiness checklist.
+8. **What was verified sound.** Traps found absent, paths proven leak-free. This is
    what makes the opinion paragraph credible.
-8. **Re-pin note.** Every contract fix moves hashes; say what must be re-minted.
+9. **Re-pin note.** Every contract fix moves hashes; say what must be re-minted.
 
 ### Phase 6 · Response log
 
@@ -269,6 +344,7 @@ AUDITS/                        never committed
   00-ENGAGEMENT.md             scope memo
   00-source-hashes.txt         sha256 per in-scope file at the pinned commit
   01-INTERACTION-MAP.md        walkthrough
+  01-ASSUMPTIONS.md            developer representations, verified
   02-VALUE-LEDGER.md           debit-side register
   02-PROGRAM-CHECKLIST.md      procedure × row reconciliation, both passes
   03-WORKPAPERS/WS-*.md        one per contract group; both passes side by side
@@ -307,6 +383,9 @@ Open questions:       Q-3
 | Field | Content |
 |---|---|
 | Severity | Magnitude class · likelihood class · cell · modifiers · final |
+| Actor threshold | One anonymous actor / one with state precondition / k-of-n / proportion / honest liveness failure; profitable (rational) or griefing-only |
+| Depends on assumption | none / A-n and its "fails with" |
+| Kind | code / design (incentive) / off-chain (builder, frontend) |
 | Deployment status | live / latent / patched on-chain / not deployed / pre-deployment |
 | Assertion | One of the seven |
 | Procedure | The D- / C- / S- / E- line |
@@ -374,6 +453,13 @@ Tooling available:   | Tool | Available | Procedures N/A if absent |
 Pre-named traps:     T1.. plus engagement-specific
 House rules: cite file:line for every claim; "checked here" vs "assumed elsewhere" is a
   named trust edge; never edit source, sign, or touch a node during review; AUDITS/ never committed.
+```
+
+**01-ASSUMPTIONS.md**
+
+```
+| A | Kind | Assumption | Stated by | Enforced by (file:line) / UNENFORCED | Compensating control | What breaks if it fails | Fails with | Dependent findings |
+Omissions verified: | A | Developer's reason | Holds? | Evidence (redundancy line or cost) |
 ```
 
 **02-VALUE-LEDGER.md**

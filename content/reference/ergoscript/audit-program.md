@@ -35,6 +35,22 @@ Paths that create a claim (deposit, register, mint) are the credit side: confirm
 matching value actually arrived and the claim is bounded by it. Everything else is
 presentation.
 
+## Assumptions and omissions
+
+Every protocol works under assumptions: initial state, invariants across transitions,
+which actors are honest and in what proportion, what off-chain parties keep doing.
+Some are enforced by a line; some hold only because the developer expects them to.
+Obtain them from the developer before fieldwork and put them in a register with:
+enforced by (`file:line`) or **unenforced**, compensating control, what breaks if it
+fails, and how easily it fails (one actor / k actors / proportion / honest liveness
+failure). Test inside the assumptions first, so a scenario that needs an assumption to
+fail is not reported as if reachable. Then remove each easy-to-fail row and re-test.
+
+In eUTXO, **every check a script does not make is a decision.** Intentional omissions
+go in the register with the developer's reason; verify it against the code (cite the
+line that makes the omitted check redundant, or the cost that makes it unaffordable).
+An omission with neither is a finding under Completeness.
+
 ## Procedures
 
 Run every debit-side procedure on every spend path of every fund-holding box. Record
@@ -74,6 +90,39 @@ each as **done** (line cite), **exception** (finding), or **N/A** (reason).
 | S-2 | **Fix diffusion.** Every check one contract does right, every finding, every trap: search every sibling. Asymmetry is the signal. |
 | S-3 | **Static test audit.** Read tests as evidence of intended tx layouts even if they cannot be run. A test placing an unconstrained box at an unrestricted position is evidence *for* a finding. |
 | S-4 | **Instance parity.** Every deployed instance of the contract set at equal rigour, ranked by value held, not by which is the flagship. |
+
+### Assumptions (per register row)
+
+| # | Procedure |
+|---|---|
+| A-1 | Enforcing line found, or unenforced with a named compensating control, or a finding. |
+| A-2 | Each intentional omission's reason verified against code: redundant (cite line) or unaffordable (cite cost), else a finding. |
+| A-3 | Failure test: with this row removed, which spend paths' results change, and at what actor threshold. |
+
+### Incentives (once, design level)
+
+Sound scripts can still fail if the rational move for some role is one the design did
+not intend. This is the fraud-risk assessment: incentive, not just opportunity.
+
+| # | Procedure |
+|---|---|
+| G-1 | **Payoff table.** Per role, per path: honest play vs deviant play. Any cell where deviation pays more is a finding candidate. |
+| G-2 | **Actor threshold.** Per finding: how many actors of what kind must deviate (one, k-of-n, 51% of stake, all honest keepers offline for T). One anonymous actor is the lowest bar. |
+| G-3 | **Rational vs malicious.** Profitable deviation: the population is everyone, class as if permissionless. Griefing-only: cost relative to harm sets the class. "Needs a malicious actor" never lowers a cell by itself. |
+| G-4 | **Permissionless incentives.** Who is paid to keep, liquidate, challenge, reset; is it enough; what if nobody does. |
+| G-5 | **Adverse states.** When does rational play harm the protocol (bank run, profitable oracle manipulation, cascade, reseeding a drained pool at a chosen price). |
+
+### Off-chain (builders and frontend, in scope by default when a UI exists)
+
+The user signs what a builder constructed and a frontend displayed.
+
+| # | Procedure |
+|---|---|
+| B-1 | Every user action maps to a builder and one contract path. Contract paths no builder constructs (refunds, exits) are stuck value in practice: M-Lock. |
+| B-2 | The builder pins what the script leaves open (payee, residual). A script that lets the builder choose is safe only if every builder chooses correctly: an off-chain trust edge. |
+| B-3 | Displayed equals enforced: slippage, fees, recipients, amounts, deadlines. |
+| B-4 | Every server-supplied value that enters a transaction; what a compromised backend could make the user sign. |
+| B-5 | Signing scope: the user signs exactly what was shown; nothing added after display. |
 
 ### Entity level (once)
 
@@ -123,11 +172,13 @@ protocol-owned box). M-Integrity: no direct value path, but a mechanism protecti
 others' value is defeated. M-Lock: value or function permanently unusable. M-Own: only
 the actor's own funds. M-None: no value path.
 
-**Likelihood.** L-Open: anyone, ~fee cost, no precondition. L-Conditional: permissionless
-with a realistic precondition. L-Costly: large cost, liveness failure by honest parties,
-or a victim error first. L-Escalated: a credential does more than the design issued it
-for (one unit bypasses a quorum; key for A reaches B). L-Privileged: a key the design
-trusts, for the action it grants.
+**Likelihood is the actor threshold**: how many actors, of what kind, must deviate.
+L-Open: one anonymous actor, ~fee cost, no precondition. L-Conditional: one actor with
+a realistic state precondition. L-Costly: collusion of several, a proportion of stake
+or hashrate, honest liveness failure, or a victim error first. L-Escalated: a
+credential does more than the design issued it for (one unit bypasses a quorum; key
+for A reaches B). L-Privileged: a key the design trusts, for the action it grants.
+Profitable deviation means rational actors do it: class as if permissionless.
 
 | | L-Open | L-Conditional | L-Costly | L-Escalated | L-Privileged |
 |---|---|---|---|---|---|
@@ -138,7 +189,10 @@ trusts, for the action it grants.
 | **M-Own** | LOW | LOW | LOW | LOW | INFO |
 | **M-None** | INFO | INFO | INFO | INFO | INFO |
 
-Multiple paths: classify each, take the higher. **Modifiers:** front-runnable (note, no
+Multiple paths: classify each, take the higher. A finding reachable only if a register
+assumption fails carries that row and its threshold as precondition and is rated on
+that threshold. Design-level (incentive) and off-chain (builder, frontend) findings are
+rated on the same matrix; there is no softer scale for game-theory findings. **Modifiers:** front-runnable (note, no
 change); liveness-dependent safety (floor MEDIUM); full on-chain shield verified this
 audit (drop one level, floor LOW); partial shield (no change); latent, enabling state
 not yet on-chain (no change). **Deployment status is a column, not a cell:** live,
@@ -151,7 +205,9 @@ correctness with a one-line fix is LOW; hygiene with no behavioural effect is IN
 
 Every finding carries: assertion violated (Existence, Completeness, Accuracy, Cutoff,
 Rights & Obligations, Classification, Presentation); procedure that surfaced it;
-`file:line`; magnitude class, likelihood class, cell, modifiers; a numbered scenario
+`file:line`; kind (code / design / off-chain); magnitude class, likelihood class,
+cell, modifiers; actor threshold and whether profitable or griefing-only; the register
+assumption it depends on, if any; a numbered scenario
 with magnitudes; who can do it and the precondition; for value findings the
 reconciliation (value in, pinned out, residual, residual goes to); the smallest fix
 that closes every variant; and confirmation the honest path still passes under the fix.
