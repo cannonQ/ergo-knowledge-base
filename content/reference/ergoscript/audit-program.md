@@ -88,7 +88,7 @@ each as **done** (line cite), **exception** (finding), or **N/A** (reason).
 |---|---|
 | S-1 | **Header vs enforced logic.** List every claim the header makes; verify each against code. Read the comment *after* the code. |
 | S-2 | **Fix diffusion.** Every check one contract does right, every finding, every trap: search every sibling. Asymmetry is the signal. |
-| S-3 | **Static test audit.** Read tests as evidence of intended tx layouts even if they cannot be run. A test placing an unconstrained box at an unrestricted position is evidence *for* a finding. |
+| S-3 | **Static test audit.** Read tests as evidence of intended tx layouts even if they cannot be run. A test placing an unconstrained box at an unrestricted position is evidence *for* a finding. Check that line numbers the tests cite still match the pinned source; stale anchors are INFO. |
 | S-4 | **Instance parity.** Every deployed instance of the contract set at equal rigour, ranked by value held, not by which is the flagship. |
 
 ### Assumptions (per register row)
@@ -136,8 +136,12 @@ The user signs what a builder constructed and a frontend displayed.
 
 ## Pre-named traps
 
-Every one comes from a real finding. Return PRESENT / ABSENT / PARTIAL / N/A per
-contract with `file:line` either way. ABSENT without a cited line is not a verdict.
+Every one comes from a real finding. Return a verdict per contract with `file:line`
+either way. The vocabulary is fixed and the pole matters: **PRESENT** = the
+vulnerability class is present; **ABSENT** = the class applies and the closing line is
+cited; **N/A** = the construct does not exist in this contract; **PARTIAL** = present on
+some paths, or pending a named probe. "PRESENT (enforced)" is not a verdict, and
+ABSENT without a cited line is not a verdict.
 
 | ID | Class | Check | Origin |
 |---|---|---|---|
@@ -168,7 +172,9 @@ logged rulings, not arguments.
 
 **Magnitude.** M-Total: all protocol-held value or a pool any user's funds sit in.
 M-Pooled: bounded value belonging to someone other than the actor (other users, or a
-protocol-owned box). M-Integrity: no direct value path, but a mechanism protecting
+protocol-owned box); one of several identical pools or vaults is M-Pooled unless the
+attack reaches every instance in one transaction or repeats across all at no marginal
+cost, which is M-Total. M-Integrity: no direct value path, but a mechanism protecting
 others' value is defeated. M-Lock: value or function permanently unusable. M-Own: only
 the actor's own funds. M-None: no value path.
 
@@ -178,7 +184,10 @@ a realistic state precondition. L-Costly: collusion of several, a proportion of 
 or hashrate, honest liveness failure, or a victim error first. L-Escalated: a
 credential does more than the design issued it for (one unit bypasses a quorum; key
 for A reaches B). L-Privileged: a key the design trusts, for the action it grants.
-Profitable deviation means rational actors do it: class as if permissionless.
+Profitable deviation means rational actors do it: class as if permissionless. A defect
+with no deviating actor at all (an honest path that cannot be mined) is a reliability
+failure rated by the LOW/INFO test, not by this axis, unless it disables a protection
+users depend on within a window (then the liveness floor, MEDIUM).
 
 | | L-Open | L-Conditional | L-Costly | L-Escalated | L-Privileged |
 |---|---|---|---|---|---|

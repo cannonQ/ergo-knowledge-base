@@ -178,7 +178,9 @@ with `file:line` and are proven or dropped in Phase 3.
 ### Phase 1b · Assumptions register
 
 One row per assumption, five kinds: initial state, invariant, actor, off-chain,
-intentional omission. Columns: id, kind, assumption, stated by (developer / inferred),
+intentional omission. Columns: id, kind, assumption, stated by (`questionnaire` /
+`docs (path)` / `header` / `inferred (code)`; docs and header are the developer's
+written representations and count as documented intent),
 enforced by (`file:line`) or **unenforced**, compensating control, what breaks if it
 fails, fails with (one actor / k actors / proportion / honest liveness failure / never
 without a code change), dependent findings. Every developer representation and every
@@ -221,11 +223,26 @@ deployed system, chain access is used for exactly two entity-level procedures
 fieldwork by the lead, not by the fieldwork agents.
 
 *Dual pass with burden on "safe."* Every H-ranked row, meaning every contract that
-holds or moves funds, gets two independent passes by two separate agents with the same
-traps and no sight of each other's work. Their per-trap and per-procedure verdicts are
-recorded side by side. Any disagreement is a mandatory adjudication in Phase 4, and the
-burden is on whichever side said safe: it must cite the line that closes the attack.
-If it cannot, the finding stands.
+holds or moves funds, gets two independent passes on the same brief with no sight of
+each other's work, and the two passes are **differently shaped**: a *coverage* pass
+that runs the procedures and cites the closing line for each, and a *prosecutor* pass
+that presumes every path exploitable, tries to build the extracting transaction, and
+concedes only to a cited line it has tried to route around. Run them on different
+model tiers where possible. Two identical passes measure reproducibility, not
+independence: the first smoke test of this method ran two coverage passes on one brief
+and got near-identical returns, while every real disagreement came from
+differently-shaped passes (the prosecutor framing, an incentives pass, a blind severity
+re-derivation, and the falsifier). Verdicts are recorded side by side. Any
+disagreement is a mandatory adjudication in Phase 4, and the burden is on whichever
+side said safe: it must cite the line that closes the attack. If it cannot, the
+finding stands.
+
+*The brief.* Both passes receive one brief file (commit, files, ledger rows,
+assumptions register rows, traps, EKB security context, house rules) identified by
+its sha256, never a prompt re-typed twice. If the EKB context carries its own Pass 1
+instructions or a 1-to-10 rating request, the brief says the return schema and the
+matrix override them. Passes label findings `<ledger row>/<procedure>/<slug>`, never
+by ordinal, so the two returns can be merged by underlying fact.
 
 *Origin.* On Dexy, auditor P2-4 (main and swap) composed the LP decoy layout and rated
 it HIGH. Auditor P2-5 (mint and redeem), given the same trap, refuted it, arguing that
@@ -258,7 +275,7 @@ cell with an unresolved `→ ADJ-n` is unfinished work.
 
 | # | Do |
 |---|---|
-| 4.0 | **Adjudicate every dual-pass disagreement.** Read the source at the cited lines. The safe side must have named the line that closes the attack; verify that line does what was claimed. If it does not exist or does not close it, the finding stands at the severity the other pass derived. Adjudication is decided from source; a landed transaction is corroboration, never the deciding evidence. Record as `ADJ-n`: both positions, the line cited, what was found there, outcome. A "safe" outcome without a verified line is not permitted. |
+| 4.0 | **Adjudicate every dual-pass disagreement.** Read the source at the cited lines. The safe side must have named the line that closes the attack; verify that line does what was claimed. If it does not exist or does not close it, the finding stands at the severity the other pass derived. Adjudication is decided from source; a landed transaction is corroboration, never the deciding evidence. Record as `ADJ-n`: both positions, the line cited, what was found there, outcome. A "safe" outcome without a verified line is not permitted. Then **merge by underlying fact**: the coverage pass, the prosecutor, the incentives pass, and the off-chain pass each describe the same defect with their own label and cell; one finding record per fact, with a derivation row listing every pass's cell. |
 | 4.1 | Every HIGH and MEDIUM goes to an independent falsification pass with the finding record and the source only. Verdict: CONFIRMED / OVERSTATED / WRONG / STALE-ANCHOR. |
 | 4.2 | Every prescribed fix is checked for rejecting legitimate spends. A fix that breaks the honest path is not a fix. |
 | 4.3 | Severity is re-derived from the matrix by the reviewer without seeing the original cell. Disagreements are rulings (`R-n`) with the matrix cell cited. |
@@ -383,10 +400,12 @@ Open questions:       Q-3
 | Field | Content |
 |---|---|
 | Severity | Magnitude class · likelihood class · cell · modifiers · final |
+| Derivation | Each pass's cell for this fact (coverage / prosecutor / incentives / blind re-derivation / falsifier) |
+| Fix reviewed by | Falsifier (HIGH/MEDIUM) or blank = unreviewed |
 | Actor threshold | One anonymous actor / one with state precondition / k-of-n / proportion / honest liveness failure; profitable (rational) or griefing-only |
 | Depends on assumption | none / A-n and its "fails with" |
 | Kind | code / design (incentive) / off-chain (builder, frontend) |
-| Deployment status | live / latent / patched on-chain / not deployed / pre-deployment |
+| Deployment status | live / latent / patched on-chain / not deployed / pre-deployment, **with a cite** (evidence file and height) for any on-chain state claim |
 | Assertion | One of the seven |
 | Procedure | The D- / C- / S- / E- line |
 | Location | `file:line` at the pinned commit · ledger row |
@@ -413,16 +432,23 @@ unless it was run in this engagement; a committed green artifact is not evidence
 their context, so both passes carry the same procedures, traps, and matrix. The
 engagement wraps them:
 
-1. **Phase 3, pass A and pass B.** For each H-ranked contract group, run
-   `audit_contract` twice in two separate contexts. In Claude Code that is two
-   subagents dispatched in parallel with the same prompt: the contract source, the
-   memo, the traps, and the instruction to return per-trap verdicts with line cites
-   and per-procedure results. Neither sees the other. Save both reports unedited.
+1. **Phase 3, coverage and prosecutor.** For each H-ranked contract group, call
+   `audit_contract` once, save the whole package, and put only its security-context
+   and matched-docs sections into one brief file. Then run two separate contexts on
+   that brief: a coverage pass (procedures, closing lines) and a prosecutor pass
+   (presume exploitable, build the transaction, concede only to a line you tried to
+   route around), on different model tiers if you can. In Claude Code that is two
+   subagents dispatched in parallel with the same brief path and hash. Neither sees
+   the other. Save both returns unedited.
 2. **Phase 4.0, adjudicate.** Diff the two verdict sets. For each disagreement, read
    the cited lines yourself and rule with the burden on safe.
-3. **Phase 4.1, concurring.** Run `audit_verify` (or a dedicated falsification agent)
-   on the merged findings, with the source and the finding records only. This is the
-   "another auditor produced these; assume they made mistakes" pass.
+3. **Phase 4.1, concurring.** Run a dedicated falsification agent on each HIGH and
+   MEDIUM record with the source and that record only. Then call `audit_verify` with
+   the merged findings: **it returns a Pass-2 prompt, not an opinion.** Give that
+   prompt to one more independent context as a missed-issues sweep, ignore its
+   1-to-10 rating, and route anything new back through adjudication. The
+   falsifier's "attack the recommended fix" step is the only review a prescribed fix
+   gets; say in the report that LOW and INFO fixes are unreviewed.
 4. **Phases 5–8** are documents and a retest; the tools are not involved.
 
 The tools cannot enforce that the two Pass 1 runs were independent. That is the
