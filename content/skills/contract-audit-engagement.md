@@ -153,6 +153,7 @@ reported that does not point at a workpaper.
 | 0.8 | Copy the trap register from `audit-program` and add any traps specific to this engagement. Every fieldwork agent returns a verdict per trap per contract. |
 | 0.9 | **Send the developer questionnaire** (below). Answers seed the assumptions register. Do not wait for it to start the walkthrough; do wait, or infer and mark inferred, before fieldwork. |
 | 0.10 | **Decide off-chain scope.** Builders and frontend in scope by default when a UI exists; record the decision and the paths. |
+| 0.11 | **Write the engagement letter.** One page to the developer, sent with the questionnaire: what is reviewed and at which commit, how, what they will get, what is needed from them (answers, permission to run tests, a contact), what happens after the report, disclosure terms (findings private first; they decide public release), what the review is not, timing. Derived from the memo but never the memo: the memo carries house rules, the tooling table, and the trap register, and stays internal. |
 
 **Developer questionnaire.** (1) Initial state: what must be true of genesis boxes,
 supplies, tree parameters, spare-token holders. (2) Invariants: what stays true across
@@ -461,7 +462,24 @@ the two-tool audit.
 
 Minimal fill-in versions. Copy into `AUDITS/` at the start of an engagement.
 
-**00-ENGAGEMENT.md**
+**ENGAGEMENT-LETTER.md** (one page, to the developer)
+
+```
+To / From / Date
+What we are reviewing: <N> contracts under <path> at commit <hash>, plus builders<, frontend>
+How: map every box and spend path; assumptions from your docs and answers; fixed checklist;
+     two independent reviewers per contract; adversarial check on serious findings; severity
+     scale fixed in advance; source-only, no tx built or broadcast, tests read unless you permit a run
+What you get: opinion; findings table; trust assumptions separate from defects; assumptions the
+     opinion rests on; launch checklist; what was tested and found sound; file:line on everything
+What we need: questionnaire answers by <date>; may we run <test cmd>; a follow-up contact
+After the report: response log per finding; retest at your fix commit; sign-off naming the commit
+Disclosure: findings to you privately first; you decide public release
+What this is not: a certified audit or a warranty; limitations stated in the report
+Timing: <deadline and why>
+```
+
+**00-ENGAGEMENT.md** (internal, never sent)
 
 ```
 Project:            Repo / path:
