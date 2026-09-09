@@ -114,6 +114,14 @@ same matrix as a code defect.
 and a frontend displayed. Builders and frontend are in scope by default when a UI
 exists; scoping them out is a recorded decision.
 
+**Review, not audit — name it honestly.** This method produces a *review* unless every
+contract received the full per-contract treatment (the EKB two-pass tool included,
+nothing truncated). Title the deliverable a review, head the summary "Summary" not
+"Opinion", and give a coverage sentence stating what each contract received and any
+tool degradation (a cluster that overflowed an input, a probe that could not settle a
+semantics question, a file read only statically). When the claim and the work diverge,
+the claim moves down to meet the work.
+
 ---
 
 ## 2. Engagement lifecycle
@@ -433,9 +441,11 @@ unless it was run in this engagement; a committed green artifact is not evidence
 their context, so both passes carry the same procedures, traps, and matrix. The
 engagement wraps them:
 
-1. **Phase 3, coverage and prosecutor.** For each H-ranked contract group, call
-   `audit_contract` once, save the whole package, and put only its security-context
-   and matched-docs sections into one brief file. Then run two separate contexts on
+1. **Phase 3, coverage and prosecutor.** Call `audit_contract` **once per contract**,
+   not once per cluster: it is a per-contract tool whose matched-docs are a semantic
+   search on that contract's patterns, and concatenating a cluster dilutes the match
+   and overflows the input. Put the security-context and matched-docs sections for a
+   group's contracts into that group's brief file. Then run two separate contexts on
    that brief: a coverage pass (procedures, closing lines) and a prosecutor pass
    (presume exploitable, build the transaction, concede only to a line you tried to
    route around), on different model tiers if you can. In Claude Code that is two
@@ -468,7 +478,7 @@ Minimal fill-in versions. Copy into `AUDITS/` at the start of an engagement.
 To / From / Date
 What we are reviewing: <N> contracts under <path> at commit <hash>, plus builders<, frontend>
 How: map every box and spend path; assumptions from your docs and answers; fixed checklist;
-     two independent reviewers per contract; adversarial check on serious findings; severity
+     two independent review passes reading every contract; adversarial check on serious findings; severity
      scale fixed in advance; source-only, no tx built or broadcast, tests read unless you permit a run
 What you get: opinion; findings table; trust assumptions separate from defects; assumptions the
      opinion rests on; launch checklist; what was tested and found sound; file:line on everything
