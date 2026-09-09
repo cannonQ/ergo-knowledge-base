@@ -289,7 +289,7 @@ cell with an unresolved `→ ADJ-n` is unfinished work.
 | 4.0 | **Adjudicate every dual-pass disagreement.** Read the source at the cited lines. The safe side must have named the line that closes the attack; verify that line does what was claimed. If it does not exist or does not close it, the finding stands at the severity the other pass derived. Adjudication is decided from source; a landed transaction is corroboration, never the deciding evidence. Record as `ADJ-n`: both positions, the line cited, what was found there, outcome. A "safe" outcome without a verified line is not permitted. Then **merge by underlying fact**: the coverage pass, the prosecutor, the incentives pass, and the off-chain pass each describe the same defect with their own label and cell; one finding record per fact, with a derivation row listing every pass's cell. |
 | 4.1 | Every HIGH and MEDIUM goes to an independent falsification pass with the finding record and the source only. Verdict: CONFIRMED / OVERSTATED / WRONG / STALE-ANCHOR. |
 | 4.2 | Every prescribed fix is checked for rejecting legitimate spends. A fix that breaks the honest path is not a fix. |
-| 4.3 | Severity is re-derived from the matrix by the reviewer without seeing the original cell. Disagreements are rulings (`R-n`) with the matrix cell cited. |
+| 4.3 | Severity is re-derived from the matrix, blind to the original cell, in batches of about ten records. This is a mechanical classification and a check on the lead's cells, so it runs on a cheaper, independent model (Sonnet 5) rather than the Opus fieldwork tier; every disagreement is a ruling (`R-n`) with the matrix cell cited, never a verdict. |
 | 4.4 | Anchors re-verified against the pinned commit. |
 
 ### Phase 5 · Report
