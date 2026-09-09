@@ -12,6 +12,10 @@ updated: 2026-09-08
 ---
 # ErgoScript Audit Program
 
+These tools run **once per contract, never on several contracts concatenated** — the
+matched-docs are a semantic search on one contract's patterns, and bundling dilutes the
+match and overflows the input. One `audit_contract` and one `audit_verify` per contract.
+
 This is the working checklist for a contract audit. It is injected into both audit
 passes so that Pass 1 and Pass 2 test the same population, answer the same traps, and
 rate on the same matrix. The full engagement method (phases, workpapers, dual-pass
