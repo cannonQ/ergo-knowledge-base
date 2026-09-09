@@ -73,6 +73,7 @@ each as **done** (line cite), **exception** (finding), or **N/A** (reason).
 | D-11 | **Liveness dependence.** Does safety require someone to act within a window? Name who and the window. Floor MEDIUM. | Cutoff |
 | D-12 | **Termination and lock.** Can the box reach a state with no valid spend? Refund or eviction path for stuck value? | Completeness |
 | D-13 | **Front-running.** If permissionless, can a mempool observer replace an honest tx spending the same box with a hostile variant? | Existence |
+| D-14 | **Lifecycle (multi-transaction).** Walk the box create → use → expire → renew → collect; a sequence of individually-valid txs can harm someone (entry slashable after expiry, registration with no renewal, singleton aging into rent) even when every single tx passed D-1..D-13. The procedure a single-pass audit most often skips. | Completeness, Cutoff |
 
 ### Credit side (per claim-creating path)
 
@@ -175,8 +176,10 @@ M-Pooled: bounded value belonging to someone other than the actor (other users, 
 protocol-owned box); one of several identical pools or vaults is M-Pooled unless the
 attack reaches every instance in one transaction or repeats across all at no marginal
 cost, which is M-Total. M-Integrity: no direct value path, but a mechanism protecting
-others' value is defeated. M-Lock: value or function permanently unusable. M-Own: only
-the actor's own funds. M-None: no value path.
+others' value is defeated. M-Lock: value or function permanently unusable. M-Delay:
+protocol function delayed or temporarily denied, bounded, no value at risk once it
+resumes (distinct from the permanent M-Lock). M-Own: only the actor's own funds, or a
+lock the victim's own signature creates. M-None: no value path.
 
 **Likelihood is the actor threshold**: how many actors, of what kind, must deviate.
 L-Open: one anonymous actor, ~fee cost, no precondition. L-Conditional: one actor with
@@ -184,7 +187,7 @@ a realistic state precondition. L-Costly: collusion of several, a proportion of 
 or hashrate, honest liveness failure, or a victim error first. L-Escalated: a
 credential does more than the design issued it for (one unit bypasses a quorum; key
 for A reaches B). L-Privileged: a key the design trusts, for the action it grants.
-Profitable deviation means rational actors do it: class as if permissionless. A defect
+An honest-liveness failure is L-Costly by definition, and a precondition the shipped client cannot currently produce is L-Costly at that commit. Profitable deviation means rational actors do it: class as if permissionless. A defect
 with no deviating actor at all (an honest path that cannot be mined) is a reliability
 failure rated by the LOW/INFO test, not by this axis, unless it disables a protection
 users depend on within a window (then the liveness floor, MEDIUM).
@@ -195,10 +198,11 @@ users depend on within a window (then the liveness floor, MEDIUM).
 | **M-Pooled** | HIGH | HIGH | MEDIUM | HIGH | KEY-RISK |
 | **M-Integrity** | HIGH | MEDIUM | MEDIUM | MEDIUM | KEY-RISK |
 | **M-Lock** | HIGH | MEDIUM | MEDIUM | MEDIUM | LOW |
+| **M-Delay** | LOW | LOW | INFO | LOW | INFO |
 | **M-Own** | LOW | LOW | LOW | LOW | INFO |
 | **M-None** | INFO | INFO | INFO | INFO | INFO |
 
-Multiple paths: classify each, take the higher. A finding reachable only if a register
+Multiple paths: classify each, take the higher. A deploy-time coupling whose failure is total and undetectable after launch is LOW (launch-blocking): rated LOW but its checklist item cannot be signed off without evidence. A finding reachable only if a register
 assumption fails carries that row and its threshold as precondition and is rated on
 that threshold. Design-level (incentive) and off-chain (builder, frontend) findings are
 rated on the same matrix; there is no softer scale for game-theory findings. **Modifiers:** front-runnable (note, no
