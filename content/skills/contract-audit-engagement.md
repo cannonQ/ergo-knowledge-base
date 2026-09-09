@@ -181,6 +181,8 @@ how the counterparty is identified, the lifecycle of each value-holding box from
 creation to terminal spend, every admin key and config box, and every off-chain
 assumption the contracts depend on.
 
+The cluster is the interaction lens and it comes first on purpose: a per-contract EKB call cannot see dependencies, trust edges, or a spend of A that only makes sense given B. The map produces, per contract, a short hand-forward list (dependencies, trust edges, cluster-surfaced things to check) carried into that contract's per-contract EKB call and its Phase 3 brief, so the deep pass verifies what the cluster found rather than re-deriving it.
+
 Phase 1 maps. It does not audit. Suspected issues go in a "candidate findings" list
 with `file:line` and are proven or dropped in Phase 3.
 
