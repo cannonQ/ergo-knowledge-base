@@ -191,7 +191,7 @@ a realistic state precondition. L-Costly: collusion of several, a proportion of 
 or hashrate, honest liveness failure, or a victim error first. L-Escalated: a
 credential does more than the design issued it for (one unit bypasses a quorum; key
 for A reaches B). L-Privileged: a key the design trusts, for the action it grants.
-An honest-liveness failure is L-Costly by definition, and a precondition the shipped client cannot currently produce is L-Costly at that commit. Profitable deviation means rational actors do it: class as if permissionless. A defect
+An honest-liveness failure is L-Costly by definition, and a precondition the shipped client cannot currently produce is L-Costly at that commit. A keeper or refresh path that was never built is such a precondition (L-Costly, launch-blocking), not a certainty that raises the cell. An attack rational only for a different population (a node-less miner, a stakeless holder) is rated for that population and named; a genuine three-way split routes to the developer. Profitable deviation means rational actors do it: class as if permissionless. A defect
 with no deviating actor at all (an honest path that cannot be mined) is a reliability
 failure rated by the LOW/INFO test, not by this axis, unless it disables a protection
 users depend on within a window (then the liveness floor, MEDIUM).
@@ -206,7 +206,7 @@ users depend on within a window (then the liveness floor, MEDIUM).
 | **M-Own** | LOW | LOW | LOW | LOW | INFO |
 | **M-None** | INFO | INFO | INFO | INFO | INFO |
 
-Multiple paths: classify each, take the higher. A deploy-time coupling whose failure is total and undetectable after launch is LOW (launch-blocking): rated LOW but its checklist item cannot be signed off without evidence. A finding reachable only if a register
+Multiple paths: classify each, take the higher. A deploy-time coupling — a constant set once at launch and never touched again — whose failure is total and undetectable is LOW (launch-blocking): rated LOW but its checklist item cannot be signed off without evidence. A value changed in normal operation (a whitelist, a proof set, a rotating key) is not a coupling; a mismatch there is an operations state rated on its merits. A finding reachable only if a register
 assumption fails carries that row and its threshold as precondition and is rated on
 that threshold. Design-level (incentive) and off-chain (builder, frontend) findings are
 rated on the same matrix; there is no softer scale for game-theory findings. **Modifiers:** front-runnable (note, no
