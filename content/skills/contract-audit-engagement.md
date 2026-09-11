@@ -315,7 +315,11 @@ the rest selectively.
    correction), **Verified** (falsifier verdict; omit if none ran). Across the whole
    developer-facing report, no prose paragraph over ~120 words; longer becomes bullets
    or a table. The reader triages from the bullets and opens the finding records only
-   for the derivation.
+   for the derivation. No em dashes anywhere in the report (colon, semicolon, period,
+   or parentheses instead; a Unicode minus in a code span is not an em dash). No
+   AI-prose flourishes ("worth noting", "delve", "crucial", "robust", "leverage") and
+   no anthropomorphic verbs on boxes or rent; say what happens. Empty table cells
+   read "none" or "n/a", never a lone dash.
 7. **LOW and INFO** as a table plus a launch-readiness checklist.
 8. **What was verified sound.** Traps found absent, paths proven leak-free. This is
    what makes the opinion paragraph credible.
