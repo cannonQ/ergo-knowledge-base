@@ -309,7 +309,13 @@ the rest selectively.
    row knows which findings move.
 5. **KEY-RISK section**, separate from findings: the trust assumptions, whether the
    developer pre-disclosed them, what must change before mainnet.
-6. **Per-finding detail** for HIGH and MEDIUM, including design-level and off-chain.
+6. **Per-finding detail** for HIGH and MEDIUM, including design-level and off-chain —
+   as four bullets each, never a run-on paragraph: **What** (mechanism, `file:line`),
+   **Why it matters** (consequence, who), **Fix** (smallest change, any falsifier
+   correction), **Verified** (falsifier verdict; omit if none ran). Across the whole
+   developer-facing report, no prose paragraph over ~120 words; longer becomes bullets
+   or a table. The reader triages from the bullets and opens the finding records only
+   for the derivation.
 7. **LOW and INFO** as a table plus a launch-readiness checklist.
 8. **What was verified sound.** Traps found absent, paths proven leak-free. This is
    what makes the opinion paragraph credible.
