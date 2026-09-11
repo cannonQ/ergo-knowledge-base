@@ -138,6 +138,7 @@ The user signs what a builder constructed and a frontend displayed.
 | E-3 | **Off-chain coupling.** What breaks if the keeper or parameter is wrong or absent. |
 | E-4 | **Build and hash pinning.** Repo builds; hash-pinning tests green *in this run*; re-pin procedure documented. |
 | E-5 | **Traps.** Every trap below has an explicit verdict per contract with a line cite either way. |
+| E-8 | **Cross-group composition.** Consolidate every trust edge (X assumes Y checks Z; closed by `file:line` or UNVERIFIED; how the counterparty is pinned) across all groups, then ask — over the edges alone, no source — which unverified or cross-group edges compose into an attack. Each candidate names the lines to read; settle it from source. Per-group passes see only their own end of an edge; this step sees both ends. The Dexy drain was two such edges composing. |
 
 ## Pre-named traps
 
