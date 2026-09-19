@@ -621,6 +621,7 @@ the next engagement's program, for everyone who calls the audit tools.
 
 ## References
 
+- Runnable package (runbook, agents, templates, validator with tests): https://github.com/cannonQ/contract-audit-skill (AGPL-3.0). Install in Claude Code with `npx skills add https://github.com/cannonQ/contract-audit-skill --skill contract-audit`; other hosts follow its README.
 - `audit-program` — procedures, traps, severity matrix (injected into both audit tools)
 - `known-issues` — the nine general vulnerability categories
 - `audit-context` — LLM pitfall calibration
