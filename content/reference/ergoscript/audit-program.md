@@ -8,7 +8,7 @@ sdk: [none]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-08
+updated: 2026-09-19
 ---
 # ErgoScript Audit Program
 
@@ -140,6 +140,14 @@ The user signs what a builder constructed and a frontend displayed.
 | E-5 | **Traps.** Every trap below has an explicit verdict per contract with a line cite either way. |
 | E-8 | **Cross-group composition.** Consolidate every trust edge (X assumes Y checks Z; closed by `file:line` or UNVERIFIED; how the counterparty is pinned) across all groups, then ask — over the edges alone, no source — which unverified or cross-group edges compose into an attack. Each candidate names the lines to read; settle it from source. Per-group passes see only their own end of an edge; this step sees both ends. The Dexy drain was two such edges composing. |
 
+## Coverage check
+
+Before fieldwork, one read-only agent on a cheap model is given only the interaction
+map and the value ledger (no source) and names any box, terminal spend, or credit path
+with no ledger row; each proposal is settled from source (add the row or log a
+decision). The stdlib `validate-audits.py --phase {3,5,8}` then gates fieldwork
+dispatch, the report, and sign-off as a hard gate.
+
 ## Pre-named traps
 
 Every one comes from a real finding. Return a verdict per contract with `file:line`
@@ -230,3 +238,10 @@ with magnitudes; who can do it and the precondition; for value findings the
 reconciliation (value in, pinned out, residual, residual goes to); the smallest fix
 that closes every variant; and confirmation the honest path still passes under the fix.
 A finding without a constructed transaction is a hypothesis and is listed separately.
+
+A candidate whose deciding fact is outside source or unsettled by any tool this session
+is a **needs-validation record** (NV-n) with its trace, blocker, and plan and no
+severity, listed in its own "Needs validation" report section, never in the findings
+table. A refuted candidate is a **rejected record** (REJ-n) with the line that closed
+it and the commit that line was read at; a later pass on the same code closes a
+matching candidate by reference when that line is unchanged, else re-adjudicates it. A finding title never names a severity or KEY-RISK.

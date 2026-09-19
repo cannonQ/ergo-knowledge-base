@@ -8,7 +8,7 @@ sdk: [none]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-08
+updated: 2026-09-19
 ---
 # Contract Audit Engagement
 
@@ -137,7 +137,7 @@ the claim moves down to meet the work.
                 assumptions then with each removed; two independent passes on every
                 fund-holding contract; incentive (G) and off-chain (B) procedures
 04 Adjudicate   every dual-pass disagreement, burden on the side that said safe;
-                then an independent falsification pass on every HIGH/MEDIUM
+                then an independent falsification pass on every CRITICAL/HIGH/MEDIUM
 05 Report       management letter to the developer
 06 Response     developer replies logged per finding
 07 Retest       re-run the specific procedure against the fix commit
@@ -222,6 +222,15 @@ Add credit-side rows for every claim-creating path (what value must arrive, whic
 checks it, bounded by value?). Reconcile: every box in the walkthrough has a row;
 every terminal spend has a row.
 
+**Coverage critic.** After the ledger is drafted, one read-only agent on a cheap
+model (Sonnet 5) is given only the interaction map and the value ledger, no source,
+and names boxes, terminal spends, and credit paths with no ledger row (return
+sections: missing rows, rows without a box, terminal spends unlisted, stop), saved to
+`evidence/agent-coverage-critic.md`. QB settles each proposal from source: add the
+row, or log `DEC-n` with the reason. QB's own reconcile above stays; this is the
+independent check on it, the way the blind re-derivation checks QB's cells. Gate: no
+Phase 3 dispatch until every proposal is added or `DEC-n`'d (validator `--phase 3`).
+
 ### Phase 3 · Fieldwork
 
 **Two standing rules.**
@@ -277,6 +286,10 @@ the same finding record, concurring review, and matrix as code findings.
 library or chain semantic a result depends on (AVL `getMany` duplicate behaviour,
 serialization offsets) is settled by an empirical probe with the output saved verbatim.
 Agents return the procedure ids they covered and the ones they could not.
+A probe request or open question that cannot be settled this session is recorded with
+its trace (`path:line`), its blocker (the exact unresolved fact), and its plan (the
+probe, node check, or developer question that would settle it), so Phase 4 can lift it
+into a needs-validation record (NV-n).
 
 **Reconcile the checklist** at the end of Phase 3: every procedure id against every
 H-ranked row, with both passes in each cell (`✓/✓`, `X/X (F-003)`, `X/✓ → ADJ-2`). A
@@ -288,10 +301,13 @@ cell with an unresolved `→ ADJ-n` is unfinished work.
 |---|---|
 | 4.−1 | **Cross-group composition check (E-8).** Before adjudicating, consolidate every trust edge from the map and both passes into one table (from-contract, assumption, counterparty, closed-by line or UNVERIFIED, counterparty pin). Give one read-only agent that table, the box/NFT inventory, and the trap register — no source — and ask which unverified or cross-group edges compose into an attack, with the lines to read. Settle each candidate from source; survivors become findings (kind: composition) and go to the falsifier. Per-group passes see only their own end of an edge; this is the cheap way to see both ends without a monolithic whole-protocol pass. |
 | 4.0 | **Adjudicate every dual-pass disagreement.** Read the source at the cited lines. The safe side must have named the line that closes the attack; verify that line does what was claimed. If it does not exist or does not close it, the finding stands at the severity the other pass derived. Adjudication is decided from source; a landed transaction is corroboration, never the deciding evidence. Record as `ADJ-n`: both positions, the line cited, what was found there, outcome. A "safe" outcome without a verified line is not permitted. Then **merge by underlying fact**: the coverage pass, the prosecutor, the incentives pass, and the off-chain pass each describe the same defect with their own label and cell; one finding record per fact, with a derivation row listing every pass's cell. |
-| 4.1 | Every HIGH and MEDIUM goes to an independent falsification pass with the finding record and the source only. Verdict: CONFIRMED / OVERSTATED / WRONG / STALE-ANCHOR. |
+| 4.1 | Every CRITICAL, HIGH, and MEDIUM goes to an independent falsification pass with the finding record and the source only. Verdict: CONFIRMED / OVERSTATED / WRONG / STALE-ANCHOR. |
 | 4.2 | Every prescribed fix is checked for rejecting legitimate spends. A fix that breaks the honest path is not a fix. |
 | 4.3 | Severity is re-derived from the matrix, blind to the original cell, in batches of about ten records. This is a mechanical classification and a check on the lead's cells, so it runs on a cheaper, independent model (Sonnet 5) rather than the Opus fieldwork tier; every disagreement is a ruling (`R-n`) with the matrix cell cited, never a verdict. |
 | 4.4 | Anchors re-verified against the pinned commit. |
+| 4.5 | **Needs-validation records (NV-n).** Every structured open item with a source trace and a named blocker becomes a record in `04-NEEDS-VALIDATION.md`: an unrun probe request, an open question with a trace, a falsifier OVERSTATED whose residual claim rests on an unsettled fact, a coverage-critic proposal source cannot reach this session, or a developer question. Each carries its trace, blocker, and plan (`probe:` / `node:` / `developer:`) and `severity: none`, and never enters the findings table. QB lifts these; the agents never write them. A `?` with no source trace is a scope limitation, not an NV. |
+| 4.6 | **Rejected register (REJ-n).** Every refuted candidate becomes a record in `04-REJECTED.md` with the line that closed it (`closed_by`, `path:line`) and the commit that line was read at. Every falsifier WRONG withdraws its finding (`status: withdrawn`) and adds a REJ entry with the same label; every ADJ resolved safe where a pass had filed an exception adds one; every composition candidate that does not hold adds one. Phase 7 and any later pass on the same code read it. |
+| 4.7 | **Validator gate.** The stdlib `validate-audits.py <AUDITS> --phase {3,5,8}` is a hard gate; a non-zero exit blocks the phase. `--phase 3` (before fieldwork dispatch): the Phase 0-2 files and `00-source-hashes.txt` exist, the ledger has an H row, the reconciliation section is filled, the coverage-critic evidence and ledger line exist. `--phase 5` (before the report): every finding and workpaper front matter parses, the matrix rule holds, the checklist and ADJ references resolve, withdrawn findings have a REJ entry, NV records carry `severity: none`, REJ records carry a `closed_by` line. `--phase 8` (before sign-off): the report exists with zero em dashes and a `## Needs validation` section listing every NV, and the response log, retest, and sign-off exist. |
 
 ### Phase 5 · Report
 
@@ -309,7 +325,7 @@ the rest selectively.
    row knows which findings move.
 5. **KEY-RISK section**, separate from findings: the trust assumptions, whether the
    developer pre-disclosed them, what must change before mainnet.
-6. **Per-finding detail** for HIGH and MEDIUM, including design-level and off-chain —
+6. **Per-finding detail** for CRITICAL, HIGH, and MEDIUM, including design-level and off-chain —
    as four bullets each, never a run-on paragraph: **What** (mechanism, `file:line`),
    **Why it matters** (consequence, who), **Fix** (smallest change, any falsifier
    correction), **Verified** (falsifier verdict; omit if none ran). Across the whole
@@ -321,6 +337,10 @@ the rest selectively.
    no anthropomorphic verbs on boxes or rent; say what happens. Empty table cells
    read "none" or "n/a", never a lone dash.
 7. **LOW and INFO** as a table plus a launch-readiness checklist.
+7b. **Needs validation.** One entry per `NV-n`, three bullets each: What / Blocker /
+   Plan. No severity, and never in the findings table. A candidate with a source trace
+   whose deciding fact is unsettled is disclosed here, so the developer can supply the
+   fact or the retest can run the plan.
 8. **What was verified sound.** Traps found absent, paths proven leak-free. This is
    what makes the opinion paragraph credible.
 9. **Re-pin note.** Every contract fix moves hashes; say what must be re-minted.
@@ -331,6 +351,9 @@ One row per finding: developer response (date, source), disposition (Fix / Accep
 Defer / Dispute / No response), fix commit. A dispute triggers a re-run of the
 falsification pass with the developer's argument as input; a dispute that survives
 stays a finding, one that does not is withdrawn and the withdrawal is logged.
+A needs-validation record answered by the developer is dispositioned like a finding:
+with the fact settled it becomes a finding (rated on the matrix, then sent to the
+falsifier) or a REJ entry.
 
 ### Phase 7 · Retest
 
@@ -338,12 +361,17 @@ For each finding with disposition Fix, at the fix commit: re-run the *specific
 procedure* that surfaced it, not a general re-read; construct the original attack
 transaction, which must fail; construct the honest transaction on the same path,
 which must pass; confirm the hash re-pin landed. Result: Closed / Partial / Not fixed.
+Retest reads `04-REJECTED.md`: a new candidate whose label matches a REJ entry is
+closed by reference when the closing line is unchanged at the fix commit, else it is
+re-adjudicated. Every NV whose plan was executed is re-checked and gets a retest row.
 
 ### Phase 8 · Sign-off
 
 The opinion at the retest commit, the open items with disposition and reason, any
 checklist lines that ended `?` or N/A as scope limitations, and the subsequent-events
 caveat: the opinion covers the retest commit and nothing after it.
+`validate-audits.py --phase 8` passes before sign-off, and every still-open NV is
+listed as an open item without a severity.
 
 ---
 
@@ -388,58 +416,50 @@ AUDITS/                        never committed
   02-PROGRAM-CHECKLIST.md      procedure × row reconciliation, both passes
   03-WORKPAPERS/WS-*.md        one per contract group; both passes side by side
   04-CONCURRING.md             adjudications and falsifier verdicts
+  04-NEEDS-VALIDATION.md       needs-validation records, NV-n, no severity
+  04-REJECTED.md               refuted candidates, REJ-n, with the closing line
   05-REPORT.md                 management letter
   06-RESPONSE-LOG.md
   07-RETEST.md
   08-SIGNOFF.md
   findings/F-NNN.md            one per finding, fixed schema
-  evidence/                    probe-*.txt verbatim; agent-*-a.md / -b.md unedited
+  evidence/                    probe-*.txt verbatim; agent-*-a.md / -b.md unedited; agent-coverage-critic.md
   notes.md                     rulings R-n, adjudications ADJ-n, decisions, open questions, dead ends
 ```
 
-**Reference codes.** `WS-A §3.2`, `VL-12`, `F-007`, `EV/probe-avl-getmany.txt`, `D-7`,
+**Reference codes.** `WS-A §3.2`, `VL-12`, `F-007`, `NV-3`, `REJ-2`, `EV/probe-avl-getmany.txt`, `D-7`,
 `R-3`, `ADJ-2`. A finding cites the ledger row, the procedure, the workpaper section,
 and the evidence. Nothing in the report is unsupported by something in the folder.
 
 **Tickmarks.** `✓` verified to source · `P` probe-confirmed · `F` falsifier-confirmed ·
 `X` exception (finding id) · `–` N/A (reason) · `?` open. A `?` that survives to the
-report is disclosed as a scope limitation.
+report is an NV record if it names a candidate defect with a source trace, otherwise a scope limitation.
 
-**Workpaper header.**
+**Workpaper header.** Every file in `03-WORKPAPERS/` opens with YAML front matter
+carrying the fixed fields: `workpaper`, `group`, `commit`, `pass_a`, `pass_b`,
+`pass_b_waived`, `ledger_rows`, `exceptions`, `open_questions`. When `pass_b` is
+`none`, `pass_b_waived` names the `DEC-n` that waived the second pass. The prose lines
+that follow (brief sha256, adjudicated by, procedures performed) are the fields the
+front matter does not carry; the validator parses the front matter at `--phase 5`.
 
-```
-# WS-A · <group>
-Pass A by:            Pass B by:            Date:
-Commit:               Adjudicated by:
-Ledger rows covered:  VL-1, VL-2, VL-5
-Procedures performed: D-1..D-13 on VL-1, VL-2 (both passes); D-1..D-8 on VL-5 (sampled, DEC-2)
-Exceptions:           F-001, F-004
-Open questions:       Q-3
-```
+**Finding record** (`findings/F-NNN.md`). The fixed fields live in the record's YAML
+front matter, not a header table: `id`, `label`, `title`, `status`, `kind`,
+`assertion`, `procedure`, `ledger_rows`, `anchors`, `magnitude`, `likelihood`,
+`modifiers`, `severity`, `ruling`, `actor_threshold`, `depends_on`,
+`deployment_status`, `falsifier`, `fix_reviewed_by`. The body holds the prose sections,
+in this order: `## Claim`, `## Scenario`, `## Who and precondition`,
+`## Reconciliation (value findings)`, `## Derivation` (coverage cell, prosecutor cell,
+incentives cell, blind re-derivation cell, falsifier verdict, and what the merged
+record was built from), `## Evidence`, `## Fix`, `## Response (Phase 6)`,
+`## Retest (Phase 7)`. A fixed field is never carried in both the front matter and the
+body; the validator parses the front matter at `--phase 5`.
 
-**Finding record** (`findings/F-NNN.md`), fixed fields:
-
-| Field | Content |
-|---|---|
-| Severity | Magnitude class · likelihood class · cell · modifiers · final |
-| Derivation | Each pass's cell for this fact (coverage / prosecutor / incentives / blind re-derivation / falsifier) |
-| Fix reviewed by | Falsifier (HIGH/MEDIUM) or blank = unreviewed |
-| Actor threshold | One anonymous actor / one with state precondition / k-of-n / proportion / honest liveness failure; profitable (rational) or griefing-only |
-| Depends on assumption | none / A-n and its "fails with" |
-| Kind | code / design (incentive) / off-chain (builder, frontend) |
-| Deployment status | live / latent / patched on-chain / not deployed / pre-deployment, **with a cite** (evidence file and height) for any on-chain state claim |
-| Assertion | One of the seven |
-| Procedure | The D- / C- / S- / E- line |
-| Location | `file:line` at the pinned commit · ledger row |
-| Claim | One paragraph: the transaction that should not be valid, is |
-| Scenario | Numbered steps with magnitudes |
-| Who and precondition | |
-| Reconciliation | Value in · pinned out · residual · residual goes to |
-| Evidence | Workpaper section · probe file · agent report |
-| Concurring | Falsifier verdict and date, or pending |
-| Fix | Smallest change closing every variant · honest path still passes · regression test · re-pin consequence |
-| Response | Filled in Phase 6 |
-| Retest | Filled in Phase 7 |
+**Validator.** `validate-audits.py` is a stdlib Python script (no PyYAML, no pip) run
+as a hard gate at three phases: `python3 validate-audits.py <AUDITS> --phase {3,5,8}`
+exits 0 with no errors and 1 with a numbered error list (`E-n path: message`), and a
+non-zero exit blocks the phase. It parses the front matter, checks the enums and the
+matrix rule, and reconciles the checklist; it never touches a node, an explorer, or
+the network. Legacy records with no front matter produce errors, not a crash.
 
 **Evidence rules.** Probe output is saved verbatim including the command; an edited
 probe is not evidence. Agent reports are saved unedited; the two passes are saved
@@ -543,6 +563,31 @@ Reconciliation: every walkthrough box has a row · every terminal spend has a ro
 | ADJ | Contract / trap | Pass A said | Pass B said | Line cited by safe side | Found at that line | Outcome |
 ```
 
+**04-NEEDS-VALIDATION.md**
+
+```
+## NV-1 · AVL getMany on repeated keys
+- label: VL-2/D-10/getmany-duplicates
+- raised_by: pass B                       # pass A | pass B | falsifier (F-00n OVERSTATED) | QB | probe request | coverage critic | developer
+- trace: contracts/Payout.ergo:210, contracts/Payout.ergo:233
+- claimed: what the defect is if the fact resolves against the code (one line)
+- blocker: the exact unresolved fact, outside source or unsettled by any tool this session
+- plan: probe: <exact MockChain/appkit question> | node: <read-only check> | developer: <question>   (at least one)
+- severity: none
+```
+
+**04-REJECTED.md**
+
+```
+## REJ-1 · Decoy input at INPUTS(0) on mint
+- label: VL-2/D-2/decoy-input
+- raised_by: pass B                       # pass A | pass B | falsifier WRONG on F-00n | composition C-n | prior run <tag> | developer dispute
+- claimed: one line
+- closed_by: contracts/mint.es:88 (pins INPUTS(0).tokens(0)._1 == lpNFT)
+- decided_in: ADJ-4                       # ADJ-n | 04-CONCURRING.md F-00n | DEC-n | 06-RESPONSE-LOG.md F-00n
+- commit: 1b892c4                         # the commit the closing line was read at
+```
+
 **07-RETEST.md**
 
 ```
@@ -555,7 +600,7 @@ Accepted / deferred (no procedure run): | Finding | Disposition | Developer's re
 
 ```
 Opinion: At commit <retest hash>, the contracts listed in 00-ENGAGEMENT.md were reviewed
-under this program. All HIGH and MEDIUM findings are Closed except those listed below.
+under this program. All CRITICAL, HIGH, and MEDIUM findings are Closed except those listed below.
 Open items: | Finding | Severity | Disposition | Reason |
 Scope limitations: checklist lines that ended ? or N/A for tooling reasons
 Subsequent events: this opinion covers the retest commit only.
@@ -566,7 +611,7 @@ Signed: session / date
 
 ## 7. Adding to the trap register
 
-At sign-off, each HIGH or MEDIUM that was not already a listed class gets a row in
+At sign-off, each CRITICAL, HIGH, or MEDIUM that was not already a listed class gets a row in
 `audit-program`: class name, the procedure(s) that should have caught it, origin
 engagement and finding, the one-paragraph check. The origin column is the audit trail
 for why the trap exists. That file is how one engagement's fieldwork compounds into
