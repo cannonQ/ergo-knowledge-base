@@ -1,7 +1,7 @@
 # Ergo Developer Knowledge Base — Full Context
 
 Total documents: 571
-Estimated tokens: ~1,138,396
+Estimated tokens: ~1,139,995
 
 ========================================================================
 
@@ -2538,7 +2538,7 @@ tags: [stabilitynexus, benefactionplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/bene_contract/contract_v1_1.es
@@ -2649,6 +2649,10 @@ This ensures no tokens are double-counted during complex multi-step transactions
 def isSigmaPropEqualToBoxProp(propAndBox: (SigmaProp, Box)): Boolean = {
   val propBytes: Coll[Byte] = prop.propBytes
   val treeBytes: Coll[
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -2660,7 +2664,7 @@ tags: [stabilitynexus, benefactionplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/bene_contract/contract_v2.es
@@ -2779,6 +2783,10 @@ val r8 = SELF.R8[Coll[Coll[Byte]]].get
 val ownerErgoTree = r8(0)          // P2PK/P2S authorization
 val devFeeHash = r8(1)             // Dev fee recipient validation
 val devFee = byteArrayToBigInt(r8(2))  // Fee percentage
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -3050,7 +3058,7 @@ tags: [stabilitynexus, benefactionplatform-ergo, dao, ergoscript, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 project: stabilitynexus-benefactionplatform-ergo
@@ -3163,6 +3171,10 @@ where:
 
 ```ergoscript
 available
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -3492,7 +3504,7 @@ tags: [stabilitynexus, bountiful-bountyplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Bountiful-BountyPlatform-Ergo"
 contract_file: contracts/dev_fee.es
@@ -3623,6 +3635,10 @@ Based on the code structure, this contract composes with:
 ```
 Platform Contracts → Accumulate Fees → dev_fee.es (Guard) → 
   Fee Distribution Tx → 
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -4138,7 +4154,7 @@ tags: [stabilitynexus, bountiful-bountyplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Bountiful-BountyPlatform-Ergo"
 contract_file: contracts/mint.es
@@ -4295,6 +4311,10 @@ Bounty contract box created; IDT locked in new state box
 
 ```ergoscript
 {
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -4306,7 +4326,7 @@ tags: [stabilitynexus, bountiful-bountyplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Bountiful-BountyPlatform-Ergo"
 contract_file: contracts/proposal_v1_0.es
@@ -4443,6 +4463,10 @@ This contract does **not explicitly manage Native tokens or NFTs**. However:
 4. **Constructing Maintenance Transaction** (proposer):
    ```
    - Input:
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -6415,7 +6439,7 @@ tags: [savonarolalabs, crystal-pool, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-08
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/SavonarolaLabs/crystal-pool"
 contract_file: src/lib/contracts/buy-token-for-erg.es
@@ -6525,6 +6549,10 @@ Buy Order (this contract)
   ↓ (outputs)
 Liquidity Pool (inferred; consumes tokens)
   ↓ (
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -7936,7 +7964,7 @@ tags: [kushti, dexy-stable, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/kushti/dexy-stable"
 contract_file: contracts/bank/payout.es
@@ -8077,6 +8105,10 @@ The off-chain payout bot must:
      ],
      dataInputs: [
        Box(Oracle, tokens=[oracleNFT], R4=nanoErg
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -15807,7 +15839,7 @@ tags: [kushti, dexy-stable, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/kushti/dexy-stable"
 contract_file: contracts/lp/proxy/SwapBuyV2.es
@@ -15926,6 +15958,10 @@ The contract enforces **`sigmaProp(RefundProp || validTrade)`**, meaning:
    - Calculate fair quote using CFMM formula:
      ```
      quote = poolReservesX * baseAmount / (poolReservesY + baseAmount) * 996/1000
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -16971,7 +17007,7 @@ tags: [duckpools, lend-protocol-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/duckpools/lend-protocol-contracts"
 contract_file: contracts/pools/drafts/SIGUSD-POOL/repayment.md
@@ -17091,6 +17127,10 @@ All state tracking relies on:
 ### Example Off-Chain Flow
 ```
 1. User selects loan to repay (obtains l
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -19686,7 +19726,7 @@ tags: [duckpools, lend-protocol-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/duckpools/lend-protocol-contracts"
 contract_file: contracts/pools/Generic-Token-Pool/parentInterest.md
@@ -19832,6 +19872,10 @@ Invariant 1 (History Monotonicity):
 Invariant 2 (Token Conservation):
   totalSupply(ChildToken) == numActiveChildren
   ⟹ decreasing by 1 per rotation prevents
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -23561,7 +23605,7 @@ tags: [duckpools, lend-protocol-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/duckpools/lend-protocol-contracts"
 contract_file: contracts/pools/drafts/SIGUSD-POOL/Proxy-Contracts/withdraw.md
@@ -23695,6 +23739,10 @@ This contract acts as a **withdrawal proxy** in the duckpools lending protocol, 
 This contract implements a **two-stage state machine**:
 ```
 [Pending Request] ──(timeout)──> [Refunded to User]
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -26147,7 +26195,7 @@ tags: [duckpools, voting-bot, defi, python]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/duckpools/voting-bot"
 project: duckpools-voting-bot
@@ -26301,6 +26349,10 @@ unsigned_tx = {
 
 # Sign via node wallet (node holds the bot key)
 signed_tx = node_calls.sign_tx(unsigned_tx)
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -27023,7 +27075,7 @@ tags: [ergo-lend, ergo-lend-documentation, defi, scala]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/Ergo-Lend/ergo-lend-documentation"
 project: ergo-lend-ergo-lend-documentation
@@ -27147,6 +27199,10 @@ val lendingBox: OutBox = txBuilder.outBoxBuilder()
     deadline,        // R6
     interestRate,    // R7
     lenderCollection // R8 
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -27721,7 +27777,7 @@ tags: [stabilitynexus, gluon-ergo-sdk, defi, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Gluon-Ergo-SDK"
 project: stabilitynexus-gluon-ergo-sdk
@@ -27857,6 +27913,10 @@ These calls should be refreshed before each transaction construction to ensure y
 
 ```typescript
 const ergAmount
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -27982,7 +28042,7 @@ tags: [c8e4, hodlbox, defi, typescript, svelte]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-08
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/c8e4/hodlbox"
 project: c8e4-hodlbox
@@ -28123,6 +28183,10 @@ const lockOutput = new OutputBuilder(
 )
   .setAdditionalRegisters({
     R4: SConst
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -30140,7 +30204,7 @@ tags: [acosmrkas, mew-lock, defi, typescript, svelte]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/AcoSmrkas/mew-lock"
 project: acosmrkas-mew-lock
@@ -30242,6 +30306,10 @@ The frontend is a SvelteKit/TypeScript single-page application that functions as
 4. No re-locking:      OUTPUTS.forall(_.propositionBytes != SELF.propositionBytes)
                        → assets cannot be recycled into a new lock in the same TX
 5. Dev fee ER
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -30253,7 +30321,7 @@ tags: [acosmrkas, mew-prediction, defi, typescript, svelte]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/AcoSmrkas/mew-prediction"
 project: acosmrkas-mew-prediction
@@ -30417,6 +30485,10 @@ Campaign Boxes are identified by their **State NFT Token ID** (fixed at creation
 // Find current campaign Box by NFT
 const response = await fetch(
   `https://api.ergoplatform.com/api/v1/boxes/unspent/byTokenId/${campaignN
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -30428,7 +30500,7 @@ tags: [minotaur-ergo, minotaur-wallet, infrastructure, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-08
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/minotaur-ergo/minotaur-wallet"
 project: minotaur-ergo-minotaur-wallet
@@ -30525,6 +30597,10 @@ TX Builder: fetch unspent Boxes from Network Layer
 UnsignedTransaction (via ergo-lib-wasm)
     │  displayed to user for confirmation (ErgoTree, Registers, tokens shown)
     
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -30536,7 +30612,7 @@ tags: [nautls, nautilus-wallet, infrastructure, typescript, vue]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/nautls/nautilus-wallet"
 project: nautls-nautilus-wallet
@@ -30658,6 +30734,10 @@ const ergo = await window.ergoConnector.nautilus.getContext();
 // After EIP-12 v2, `window.ergo` may also be populated after connect()
 
 // 4. Read wallet state
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -32111,7 +32191,7 @@ tags: [paideiadao, paideia-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/paideiadao/paideia-contracts"
 contract_file: paideia_contracts/contracts/staking/ergoscript/1.0/stake.es
@@ -32233,6 +32313,10 @@ User initiates unstake:
 #### 3. **Add Stake Transaction Construction**
 ```
 User adds tokens to stake:
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -32404,7 +32488,7 @@ tags: [paideiadao, paideia-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/paideiadao/paideia-contracts"
 contract_file: paideia_contracts/contracts/staking/ergoscript/1.0/stakeProxy.es
@@ -32521,6 +32605,10 @@ All tokens follow the **Token ID rule** (first 32 bytes of transaction ID for ne
    - Output(4): ExecutorReward → executor address
      * value: _executorReward
    - Output(5): MinerFee → miner address
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -35054,7 +35142,7 @@ tags: [paideiadao, paideia-offchain, dao, python]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/paideiadao/paideia-offchain"
 project: paideiadao-paideia-offchain
@@ -35196,6 +35284,10 @@ unsigned_tx = CreateProposalTx(
     vote_options=["Yes", "No", "Abstain"],
     end_height=current_height + 720,   # ~1 day at 2-min blocks
     input_
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -37639,7 +37731,7 @@ tags: [rosen-bridge, scanner, infrastructure, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/rosen-bridge/scanner"
 project: rosen-bridge-scanner
@@ -37806,6 +37898,10 @@ const obsExtractor = new ObservationExtractor(
 
 // 3. Register extractors — the scanner calls processBlock / rollbackBlock
 scanner.registerExt
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -38597,7 +38693,7 @@ tags: [thierrym1212, sigmao, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/ThierryM1212/SigmaO"
 contract_file: contract/Sell_Token_Request.es
@@ -38732,6 +38828,10 @@ The contract assumes the buyer (Output 1) validates token ownership in a separat
 2. Verify (validCloseEmpty OR validSellToken)
    ├─ validCloseEmpty: simple refund
    
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -39253,7 +39353,7 @@ tags: [k-singh, sigma-finance, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/K-Singh/Sigma-Finance"
 contract_file: contracts/BondContractERG.ergo
@@ -39390,6 +39490,10 @@ OpenOrder Box
 BondContractERG Box (holds collateral, enforces terms)
     ↓ (split into two paths)
     ├─→ RepaymentBox (to Lender) + ReturnBox (to Borrower)  
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -41372,7 +41476,7 @@ tags: [djedalliance, djed-ergo, defi, ergoscript, scala]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/DjedAlliance/Djed-Ergo"
 project: djedalliance-djed-ergo
@@ -41509,6 +41613,10 @@ val ageusdBank: AgeUSDBank = AgeUSDBank.fromStateBox(
 
 ```scala
 val
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -90446,7 +90554,7 @@ tags: [amm-lp-mechanics, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [spectrum-finance/ergo-dex, kushti/dexy-stable]
 ---
@@ -90660,6 +90768,10 @@ final case class CfmmPool(x: Long, y: Long, lp: Long, config: PoolConfig) {
 object CfmmPool {
   /** Initialize a new pool from initial deposits.
    *  burnLP tokens are locked forever to prevent the pool ever reaching 
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -90671,7 +90783,7 @@ tags: [constant-segregation, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [ergoplatform/sigmastate-interpreter, fleet-sdk/fleet]
 ---
@@ -90869,6 +90981,10 @@ import { OutputBuilder, SAFE_MIN_BOX_VALUE, TransactionBuilder } from "@fleet-sd
 
 const vestingOutput = new OutputBuilder(
   SAFE_MIN_BOX_VALUE,    // Minimum
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -91040,7 +91156,7 @@ tags: [eip12-dapp-connector, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [nautls/nautilus-wallet, ThierryM1212/SAFEW, fleet-sdk/fleet]
 ---
@@ -91296,6 +91412,10 @@ export interface EIP12AuthApi {
 }
 
 // ─── Context API (the `ergo` object) ──────
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -91307,7 +91427,7 @@ tags: [ergoauth, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [paideiadao/paideia-app]
 ---
@@ -91524,6 +91644,10 @@ export default async function handler(
 // server/api/auth/verify.ts
 import { NextApiRequest, NextApiResponse } from "next";
 import { Address, Wallet, ErgoBoxes } from "er
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -91535,7 +91659,7 @@ tags: [ergopay-signing, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [arkadianet/citadel, nautls/nautilus-wallet]
 ---
@@ -91742,6 +91866,10 @@ ErgoClient.create(nodeUrl, networkType, "", Parameters.MainnetNetworkPrefix)
     // ── Reduce to ReducedTransaction for ErgoPay ──────────────────────
     // Reduction evaluates ErgoScript context variables (height, self, inputs,
     // outputs, data
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -91753,7 +91881,7 @@ tags: [headless-dapp, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [DjedAlliance/Djed-Ergo, StabilityNexus/Gluon-Ergo-SDK]
 ---
@@ -91964,6 +92092,10 @@ impl BankBox {
     /// as the reserve base.
     pub fn base_reserves(&self) -> NanoErg {
         self.0.value.as_u
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -91975,7 +92107,7 @@ tags: [offchain-bots, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [spectrum-finance/ergo-dex-backend, duckpools/lend-protocol-contracts, duckpools/voting-bot]
 ---
@@ -92201,6 +92333,10 @@ export class ErgoNodeClient {
     limit = 100
   ): Promise<ErgoTransaction[]> {
     const { data } = await this.http.
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -92212,7 +92348,7 @@ tags: [onchain-state-tracking, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [rosen-bridge/scanner, paideiadao/paideia-state, ergo-pad/danaides]
 ---
@@ -92472,6 +92608,10 @@ interface ErgoTransaction {
 /**
  * PoolExtractor monitors a specific liquidity pool identified by its
  * Singleton NFT (pool
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -92483,7 +92623,7 @@ tags: [oracle-data-consumption, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [ergoplatform/oracle-core, kushti/dexy-stable, DjedAlliance/Djed-Ergo]
 ---
@@ -92668,6 +92808,10 @@ interface OraclePoolBox {
 // Step 1: Fetch the oracle Pool Box from the node
 // The Pool Box is identified by the Pool NFT Token ID.
 // ──────────────────
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -92679,7 +92823,7 @@ tags: [plasma-avl-tree, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [paideiadao/paideia-contracts, ergoplatform/sigmastate-interpreter]
 ---
@@ -92854,6 +92998,10 @@ This is the core staking contract. The AVL tree maps `staker_address_bytes → s
   // ─── New digest must match what the output box declares ──────────────────
   val newStakeState = newStakeStateOpt.get
   val successorState = successor.R4[AvlTree
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -92865,7 +93013,7 @@ tags: [proxy-contracts, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [kushti/dexy-stable, paideiadao/paideia-contracts, duckpools/lend-protocol-contracts]
 ---
@@ -93063,6 +93211,10 @@ Below is a production-ready proxy script modeled on the patterns from Dexy and P
 
   // 6. Executor box can go to any address (executor chooses their own P2PK).
   //    The cap
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -93074,7 +93226,7 @@ tags: [singleton-state-nft, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [kushti/dexy-stable, DjedAlliance/Djed-Ergo, ergoplatform/oracle-core, paideiadao/paideia-contracts]
 ---
@@ -93275,6 +93427,10 @@ The Bank box is the canonical real-world example. It holds the `bankNFT` in `tok
   // ------------------------------------------------------------------
   val selfBankNft = SELF.tokens(0)._1
   val isBankBox   = selfBankNft == bankNFT        // sanity; enforced by NFT uniqu
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -93286,7 +93442,7 @@ tags: [token-minting-eip4, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [fleet-sdk/fleet, fleet-sdk/fleet-by-example, arkadianet/citadel, LiliumErgo/scala-api]
 ---
@@ -93511,6 +93667,10 @@ async function mintNFT(
 function encodeString(s: string): string {
   const bytes = new TextEncoder().encode(s);
   // Sigma type prefix: 0e = Coll[Byte],
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -93522,7 +93682,7 @@ tags: [transaction-building, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [fleet-sdk/fleet, fleet-sdk/fleet-by-example, arkadianet/citadel, ergoplatform/ergo-appkit]
 ---
@@ -93794,6 +93954,10 @@ Registers R4–R9 store typed **ErgoScript** constants. Pass serialized hex-enco
 
 ```typescript
 import { OutputBuilder, SAFE_MIN_BOX_VALUE, SConstant, SColl, SByte }
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -101124,7 +101288,7 @@ When auditing ErgoScript contracts:
 <!-- FILE: content/reference/ergoscript/audit-program.md -->
 ---
 title: "ErgoScript Audit Program — Procedures, Traps, and Severity Matrix"
-description: "Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T19, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill."
+description: "Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T21, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill."
 category: reference
 difficulty: advanced
 tags: [ergoscript, audit, security, severity, traps, debit-side, procedures]
@@ -101132,7 +101296,7 @@ sdk: [none]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-19
+updated: 2026-09-24
 ---
 # ErgoScript Audit Program
 
@@ -101302,6 +101466,8 @@ ABSENT without a cited line is not a verdict.
 | T17 | Token-weighted quorum with concentrated supply | Quorum sums token amounts; if one address holds a quorum, governance is that address. KEY-RISK. | Dexy F-6 `update.es:52` |
 | T18 | Proportional redeem with no liquidity floor | Ratio-invariant fee lets a dominant holder drain to dust; supply 0 bricks mint; pool price resets for downstream consumers. | Dexy F-7 `redeem.es:35` |
 | T19 | Stale trigger reads as sustained | Trigger records first height; reset needs an actor; consumers gate on `trigger < HEIGHT - T`; nobody resets. | Dexy F-8 `tracking.es:111` |
+| T20 | Long arithmetic on a delta before the BigInt upcast | A product or sum of two `Long` deltas computed before `.toBigInt` overflows and throws: fail-closed, but it caps a legitimate value at a ceiling. Find the upcast point and check whether any arithmetic is done Long-first (D-5). | Lithos v2 F-039 (LithosDex; missed by both passes and the EKB tools, recovered only at retest) |
+| T21 | Owner-only path proves ownership on inputs but never requires the token to survive | The path checks the caller holds the ownership token on the input side but never pins it into an output, so a resize, claim, or redeem can burn the owner's own token. Every owner-gated path must force the ownership token into a successor (D-4, D-7). | Lithos v2 F-040 (LithosDex; self-harm class, missed by both passes and the EKB tools) |
 
 ## Severity matrix
 
@@ -105601,7 +105767,7 @@ tags: [ergoplatform, ergo-node-interface-rust, sdk, rust]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-07
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/ergoplatform/ergo-node-interface-rust"
 project: ergoplatform-ergo-node-interface-rust
@@ -105721,6 +105887,10 @@ use ergo_node_interface::NodeInterface;
 
 // Direct construction
 let node = NodeInterface::new("your_api_key", "127.0.0.1",
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
@@ -106082,7 +106252,7 @@ tags: [fleet-sdk, docs, sdk, markdown]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/fleet-sdk/docs"
 project: fleet-sdk-docs
@@ -106226,6 +106396,10 @@ type Box = {
   value: string | bigint;          // nanoergs
   assets: { tokenId: string; amount: string | bigint }[];
   ergoTree:
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
+
 
 ========================================================================
 
