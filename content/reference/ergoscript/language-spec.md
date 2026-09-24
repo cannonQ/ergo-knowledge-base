@@ -5,7 +5,7 @@ tags: [ergoscript, language-spec, types, contracts, sigmaprop, avl-tree, box, re
 category: reference
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-02
+updated: 2026-09-23
 estimated_tokens: 13250
 source: original
 author: ahrobe
@@ -15,7 +15,7 @@ ergo_version: "6.0"
 
 # ErgoScript Language Description
 
-### Introduction
+## Introduction
 
 ErgoScript is a language to write contracts for [Ergo
 blockchain](https://ergoplatform.org). ErgoScript contracts can be compiled to
@@ -69,7 +69,7 @@ method)
 
 The following sections describe ErgoScript and its operations. 
 
-#### ErgoScript language features overview
+### ErgoScript language features overview
 
 - syntax borrowed from Scala but simplified
 - standard syntax and semantics for well known constructs (operations, code blocks, if branches etc.)
@@ -80,7 +80,7 @@ The following sections describe ErgoScript and its operations.
 - semicolon inference in blocks
 - type constructors: Pair, Coll, Option
 
-#### Operations and constructs overview
+### Operations and constructs overview
 
 - Binary operations: `>, <, >=, <=, +, -, &&, ||, ==, !=, |, &, *, /, %, ^, ++`
 - predefined primitives: `deserializeTo`, `serialize`, `blake2b256`, `byteArrayToBigInt`, `proveDlog` etc. 
@@ -94,7 +94,7 @@ The following sections describe ErgoScript and its operations.
 - user defined function declarations: `def isProven(pk: GroupElement) = proveDlog(pk).isProven`
 - lambdas and high-order methods: `OUTPUTS.exists { (out: Box) => out.value >= minToRaise }`
 
-#### Data types 
+### Data types 
 
 In ErgoScript, everything is an object in the sense that we can call member functions and properties on any variable.
 Some of the types can have a special internal representation - for example, numbers and booleans can be
@@ -130,7 +130,7 @@ types as in the following example.
 }
 ```
 
-#### Literal syntax and Constants
+### Literal syntax and Constants
 
 Literals are used to introduce values of some types directly in program text
 like in the following example:
@@ -146,10 +146,10 @@ Note that many types don't have literal syntax and their values are introduced
 by applying operations, for example `deserialize` function can be used to introduce
 a constant of any type by using Base64 encoded string (See [predefined function](#PredefinedFunctions)).
 
-### Data Types
+## Data Types
 <a name="DataTypes"></a>
 
-#### Primitive Types
+### Primitive Types
 
 Below we specify methods of pre-defined types using Scala-like declaration of
 classes. Note, the `Boolean` type doesn't have pre-defined methods in addition
@@ -293,7 +293,7 @@ bi.modInverse(m) > 0 // returns multiplicative inverse of bi mod m
 ```
 
 
-#### Context Data 
+### Context Data 
 
 Every script is executed in a context, which is a collection of data available
 for operations in the script. The context data is available using the `CONTEXT`
@@ -454,7 +454,7 @@ class PreHeader {
 
 ```
 
-#### Box type
+### Box type
 
 Box represents a unit of storage in Ergo blockchain. It contains 10 registers
 (indexed 0-9). First 4 are mandatory and the others are optional.
@@ -568,7 +568,7 @@ box.R3[Int].isDefined
 box.R3[Int].getOrElse(d) 
 ```
 
-#### GroupElement
+### GroupElement
 ```scala
 /** Base class for points on elliptic curves. */
 class GroupElement {
@@ -598,7 +598,7 @@ class GroupElement {
 }
 ```
 
-#### SigmaProp
+### SigmaProp
 ```scala
 /** Proposition which can be proven and verified by sigma protocol. */
 trait SigmaProp {
@@ -647,7 +647,7 @@ trait SigmaProp {
 }
 ```
 
-#### AvlTree
+### AvlTree
 
 ```scala
 /** Type of data which efficiently authenticates potentially huge dataset having key-value dictionary interface.
@@ -791,7 +791,7 @@ class AvlTree {
 }
 ```
 
-#### Option[T]
+### Option[T]
 
 ```scala
 /** Represents optional values. Instances of `Option`
@@ -843,7 +843,7 @@ class Option[A] {
 }
 ```
 
-#### Coll[T]
+### Coll[T]
 
 ```scala
 /** Indexed (zero-based) collection of elements of type `A` 
@@ -1032,7 +1032,7 @@ satisfying some predicate (condition)
 val ok = OUTPUTS.exists { (box: Box) => box.value > 1000 }
 ``` 
 
-### Global functions
+## Global functions
 
 There are some functions which do not belong to other types, thus they put under `Global` type. Those functions are:
 
@@ -1098,7 +1098,7 @@ src == restored
 ```
 
 
-### Predefined functions
+## Predefined functions
 <a name="PredefinedFunctions"></a>
 
 ErgoScript standard library include predefined functions that can be called 

@@ -176,7 +176,7 @@ ErgoScript's foundation on Sigma Protocols allows for powerful cryptographic pri
 * [Light Verifying Nodes](nipopow_nodes.md)
 * [eUTXO Model Explanation](eutxo.md)
 * [Ergo Whitepaper](https://ergoplatform.org/en/whitepaper/)
-* [ErgoScript Language Specification](lang-spec.md) (Detailed reference)
+* [ErgoScript Language Specification](../../reference/ergoscript/language-spec.md) (Detailed reference)
 * [Advanced ErgoScript Tutorial](https://ergoplatform.org/docs/AdvancedErgoScriptTutorial.pdf)
 
 ## Comparative Analysis

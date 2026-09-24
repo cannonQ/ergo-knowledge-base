@@ -2,10 +2,10 @@
 title: "ErgoScript Audit Context — LLM Pitfalls & Calibration"
 category: reference
 difficulty: advanced
-tags: [ergoscript, audit, llm, security, calibration]
+tags: [ergoscript, audit, llm, security, calibration, semantics, probes]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-03-09
+updated: 2026-09-23
 ---
 # ErgoScript Audit Context — LLM Pitfalls & Calibration
 
@@ -54,6 +54,55 @@ LLMs miss that some patterns are intentional design choices:
 - `getVar` is off-chain supplied and may be intentionally flexible to support multiple UIs/backends
 
 **Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake.
+
+---
+
+## Settled Semantics (empirical, do not re-derive)
+
+Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during the
+ErgoDEX engagement, 2026-09-17 to 2026-09-20. These are probe results, not inferences, and
+each has already flipped at least one real finding's verdict.
+
+**Arithmetic and indexing fail closed, they do not fail open.**
+
+- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS and the whole
+  script fails, including when the read sits inside an untaken `if` arm. A `tokens.size >= n`
+  guard makes the same script pass. `getOrElse` returns the default.
+- `Long * Int` and `Long * Long` overflow THROW ("long overflow"). The same product taken
+  `.toBigInt` first does not overflow.
+- `BigInt` division by zero THROWS ("BigInteger divide by zero").
+
+Consequence: a finding whose impact depends on one of these silently producing a wrong value
+is wrong as written. The transaction does not exist. Rate the denial of service, not the theft.
+
+**`getOrElse` on a register rescues only the ABSENT register.**
+
+`box.R4[Int].getOrElse(0)` against a box whose R4 is present but of another type THROWS
+("Cannot getReg[Int](4): invalid type of value ... at id=4"). The default is supplied for
+`None` only.
+
+- A "fails open to the default" finding against a wrong-typed register is therefore usually
+  WRONG: the read fails closed instead.
+- A box whose own script reads `R4[Int]` unconditionally is UNSPENDABLE BY ANYONE if its R4 is
+  wrong-typed. That is a full shield and it is worth crediting before rating a dependent
+  contract's register read.
+- A refund arm's reachability must be argued from who controls the box layout, not from the
+  read being throw-safe.
+
+**`getMany` returns a repeated key repeatedly.** A collection taken from a context variable
+and passed to `getMany` without a distinctness check yields duplicate entries, so a per-entry
+sum or payout can be satisfied more than once by one real entry. This is the origin of trap T8.
+
+**Two harness caveats, so a clean probe is not mistaken for a safe contract.**
+
+- A MockChain PASS does not prove node validity on value. MockChain does not enforce the node's
+  min-value-per-byte rule: an output of 59,999 nanoERG executes there although a token-free
+  P2PK box needs about 60,000. Confirm with the node's `POST /transactions/check`, or compute
+  the minimum from the serialized size.
+- `TransactionBuilder.from([...])` runs an input selector that SILENTLY DROPS listed inputs the
+  outputs do not need, so a script box may never be spent and every script appears to pass,
+  including `sigmaProp(false)`. Pass `{ ensureInclusion: true }` and assert `tx.inputs.length`
+  before trusting any probe result.
 
 ---
 
