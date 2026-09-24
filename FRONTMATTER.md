@@ -15,7 +15,7 @@ embedding pipeline all rely on these fields.
 | `title` | `string` | Human-readable title. Contract docs: `"org/repo — filename.ext"`. Overviews: `"org/repo — Overview"`. Patterns: descriptive name. |
 | `description` | `string` | One-sentence summary. Used in `llms.txt` entries and search result snippets. |
 | `tags` | `list[string]` | Lowercase keywords for filtering and topic indexing. Include org slug, repo slug, and relevant domain terms. |
-| `category` | `enum` | Document type: `concept`, `cookbook`, `reference`, `guide`, `ecosystem`, `pattern` |
+| `category` | `enum` | Document type: `concept`, `cookbook`, `reference`, `guide`, `ecosystem`, `pattern`, `skill` |
 | `difficulty` | `enum` | Target audience: `beginner`, `intermediate`, `advanced` |
 | `sdk` | `list[string]` | Which SDK(s) the doc covers: `fleet-sdk`, `appkit`, `sigma-rust`, `python`, `none` |
 | `updated` | `date` | ISO 8601 date (`YYYY-MM-DD`) of last generation or edit. |
@@ -70,6 +70,7 @@ category:
   - guide          # Long-form tutorials
   - ecosystem      # Per-project docs (overviews + contract analyses)
   - pattern        # Cross-cutting integration patterns
+  - skill          # Step-by-step task instructions served whole by get_skill
 
 difficulty:
   - beginner       # No prior Ergo knowledge needed
