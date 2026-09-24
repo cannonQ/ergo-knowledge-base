@@ -1,7 +1,7 @@
 # Ergo Developer Knowledge Base — Full Context
 
-Total documents: 564
-Estimated tokens: ~1,125,833
+Total documents: 571
+Estimated tokens: ~1,138,396
 
 ========================================================================
 
@@ -30950,6 +30950,444 @@ The ErgoScript contract uses a top-level OR:
 
 ========================================================================
 
+<!-- FILE: content/ecosystem/oracle-pools/contracts/ballot-contract.md -->
+---
+title: "Oracle Pool v2 — Ballot Contract"
+description: "Owner-signed voting for pool governance updates and ballot token transfer"
+category: ecosystem
+difficulty: advanced
+tags: [oracle-pool, eip-0023, ergoscript, governance, voting]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/ballot_contract.es"
+project: ergoplatform-oracle-core
+updated: 2026-03-15
+---
+
+# Ballot Contract (EIP-0023)
+
+Guards each ballot box used in the oracle pool governance mechanism. Ballot token holders vote for pool updates (new script, reward token changes) by setting registers on their ballot box. A threshold of votes triggers the update via the [update contract](update-contract.md).
+
+## Box Layout
+
+- **tokens(0):** Ballot token
+- **R4:** Owner's public key (GroupElement)
+- **R5:** Creation height of the update box being voted on (Int)
+- **R6:** Hash of the new pool box script (Coll[Byte])
+- **R7:** New reward token ID (Coll[Byte])
+- **R8:** New reward token amount (Long)
+
+## ErgoScript
+
+```ergoscript
+{ // This box (ballot box):
+  // R4 the group element of the owner of the ballot token [GroupElement]
+  // R5 the creation height of the update box [Int]
+  // R6 the value voted for [Coll[Byte]]
+  // R7 the reward token id [Coll[Byte]]
+  // R8 the reward token amount [Long]
+
+  val updateNFT = fromBase64("...") // replace with actual
+
+  val minStorageRent = 10000000L
+
+  val selfPubKey = SELF.R4[GroupElement].get
+
+  val outIndex = getVar[Int](0).get
+  val output = OUTPUTS(outIndex)
+
+  val isSimpleCopy = output.R4[GroupElement].isDefined                && // ballot boxes are transferable
+                     output.propositionBytes == SELF.propositionBytes &&
+                     output.tokens == SELF.tokens                     &&
+                     output.value >= minStorageRent
+
+  val update = INPUTS.size > 1                           &&
+               INPUTS(1).tokens.size > 0                 &&
+               INPUTS(1).tokens(0)._1 == updateNFT       && // can only update when update box is 2nd input
+               output.R4[GroupElement].get == selfPubKey && // public key preserved
+               output.value >= SELF.value                && // value preserved or increased
+               ! (output.R5[Any].isDefined)                 // no more registers; prevents reuse as valid vote
+
+  val owner = proveDlog(selfPubKey)
+
+  // unlike in collection, spender need not be a ballot token holder
+  isSimpleCopy && (owner || update)
+}
+```
+
+## Key Design Patterns
+
+- **`isSimpleCopy && (owner || update)`** — Two spending paths: owner signs (vote/transfer), or update box is present as input 1.
+- **`! (output.R5[Any].isDefined)`** during update — Clears all registers beyond R4 after the update executes. Prevents a ballot from being counted twice in the same update cycle.
+- **`INPUTS(1).tokens(0)._1 == updateNFT`** — The ballot can only be consumed during an update when the update box is specifically at input index 1.
+- **Transferable by design** — `output.R4[GroupElement].isDefined` (not `.get == selfPubKey`) allows the owner to set a different public key, transferring ballot ownership.
+
+## Voting Flow
+
+1. Owner sets R5 = update box creation height, R6 = hash of proposed new pool script, R7 = reward token ID, R8 = reward token amount
+2. Multiple ballot holders do the same (must all agree on the same values)
+3. When `minVotes` (default 6) ballots match, the [update contract](update-contract.md) can execute
+4. After update, ballot registers are cleared (R5+ emptied)
+
+
+========================================================================
+
+<!-- FILE: content/ecosystem/oracle-pools/contracts/oracle-contract.md -->
+---
+title: "Oracle Pool v2 — Oracle Contract"
+description: "Owner-signed data point posting, reward token accumulation, and oracle token transfer"
+category: ecosystem
+difficulty: advanced
+tags: [oracle-pool, eip-0023, ergoscript, oracle-box, proveDlog]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/oracle_contract.es"
+project: ergoplatform-oracle-core
+updated: 2026-03-15
+---
+
+# Oracle Contract (EIP-0023)
+
+Guards each oracle box. Supports three operations: owner-initiated actions (publish data, extract rewards, transfer token) and collection (during refresh, pool adds reward tokens).
+
+## Box Layout
+
+- **tokens(0):** Oracle token (one per oracle)
+- **tokens(1):** Reward tokens (accumulated during refresh cycles)
+- **R4:** Owner's public key (GroupElement)
+- **R5:** Epoch counter at post time (Int)
+- **R6:** Published data point / rate (Long)
+
+## ErgoScript
+
+```ergoscript
+{ // This box (oracle box)
+  //   R4 public key (GroupElement)
+  //   R5 epoch counter of current epoch (Int)
+  //   R6 data point (Long) or empty
+  //
+  //   tokens(0) oracle token (one)
+  //   tokens(1) reward tokens collected (one or more)
+  //
+  //   When publishing a datapoint, there must be at least one reward token at index 1
+  //
+  //   Connected to pool NFT in input #0 (not refresh NFT in input #1)
+  //   This way, the same box works after updating the pool
+
+  val poolNFT = fromBase64("...") // replace with actual
+
+  val otherTokenId = INPUTS(0).tokens(0)._1
+
+  val minStorageRent = 10000000L
+  val selfPubKey = SELF.R4[GroupElement].get
+  val outIndex = getVar[Int](0).get
+  val output = OUTPUTS(outIndex)
+
+  val isSimpleCopy = output.tokens(0) == SELF.tokens(0)                && // oracle token preserved
+                     output.propositionBytes == SELF.propositionBytes  && // script preserved
+                     output.R4[GroupElement].isDefined                 && // must have a public key
+                     output.value >= minStorageRent                       // prevent garbage collection
+
+  val collection = otherTokenId == poolNFT                    && // first input must be pool box
+                   output.tokens(1)._1 == SELF.tokens(1)._1   && // reward tokenId preserved
+                   output.tokens(1)._2 > SELF.tokens(1)._2    && // at least one reward token added
+                   output.R4[GroupElement].get == selfPubKey  && // preserve public key during collection
+                   output.value >= SELF.value                 && // nanoErgs preserved
+                   ! (output.R5[Any].isDefined)                  // no registers beyond R4; prevents reuse as valid data-point
+
+  val owner = proveDlog(selfPubKey)
+
+  // owner can transfer to another public key by setting different value in R4
+  isSimpleCopy && (owner || collection)
+}
+```
+
+## Key Design Patterns
+
+- **`getVar[Int](0)` for output index** — The oracle's output position is passed as a context variable, enabling flexible transaction construction where oracles appear at varying indices.
+- **`isSimpleCopy && (owner || collection)`** — Two spending paths: owner signs (publish/transfer/extract), or pool box is present as input 0 (collection during refresh).
+- **`! (output.R5[Any].isDefined)`** during collection — Clears R5/R6 to prevent a collected oracle box from being counted as a fresh data point in the same epoch.
+- **`output.tokens(1)._2 > SELF.tokens(1)._2`** — Enforces that at least one reward token is added during collection. The refresh contract controls the exact amount.
+- **Connected to pool NFT, not refresh NFT** — Deliberate design choice: the oracle box checks `INPUTS(0)` for pool-NFT. This means the same oracle box works after a pool update (new refresh-NFT) without needing to be recreated.
+
+## Security Notes
+
+- `minStorageRent = 10000000L` (0.01 ERG) prevents oracle boxes from being garbage-collected by storage rent.
+- Owner can change R4 (public key transfer) but the script itself is preserved — no path to change the contract.
+- During collection, the public key is explicitly preserved (`output.R4[GroupElement].get == selfPubKey`), preventing oracle theft during refresh.
+
+
+========================================================================
+
+<!-- FILE: content/ecosystem/oracle-pools/contracts/pool-contract.md -->
+---
+title: "Oracle Pool v2 — Pool Contract"
+description: "Minimal pool box guard requiring refresh-NFT or update-NFT in second input"
+category: ecosystem
+difficulty: advanced
+tags: [oracle-pool, eip-0023, ergoscript, pool-box, singleton-nft]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/pool_contract.es"
+project: ergoplatform-oracle-core
+updated: 2026-03-15
+---
+
+# Pool Contract (EIP-0023)
+
+The pool contract is deliberately minimal — it only checks that the second input contains either the refresh-NFT or the update-NFT. All validation logic is delegated to those contracts, keeping the pool box compact for use as a data-input in consumer dApps (SigmaUSD, Dexy, etc.).
+
+## Box Layout
+
+- **tokens(0):** Pool-NFT (singleton identifying this as the canonical pool box)
+- **tokens(1):** Reward tokens (emitted to oracles during refresh)
+- **R4:** Current data point / rate (Long)
+- **R5:** Current epoch counter (Int)
+
+## ErgoScript
+
+```ergoscript
+{
+  // This box (pool box)
+  //   epoch start height is stored in creation Height (R3)
+  //   R4 Current data point (Long)
+  //   R5 Current epoch counter (Int)
+  //
+  //   tokens(0) pool token (NFT)
+  //   tokens(1) reward tokens
+  //   When initializing the box, there must be one reward token.
+  //   When claiming reward, one token must be left unclaimed
+
+  val otherTokenId = INPUTS(1).tokens(0)._1
+  val refreshNFT = fromBase64("...") // replace with actual token id
+  val updateNFT = fromBase64("...")  // replace with actual token id
+
+  sigmaProp(otherTokenId == refreshNFT || otherTokenId == updateNFT)
+}
+```
+
+## Security Notes
+
+- The pool box can **only** be spent when the refresh box or update box is the second input. This is enforced by checking `INPUTS(1).tokens(0)._1`.
+- All rate validation, reward accounting, and epoch checks are in the [refresh contract](refresh-contract.md), not here.
+- Consumer dApps reference the pool box as a **data-input** (read-only), so the pool box is never spent by external protocols.
+
+
+========================================================================
+
+<!-- FILE: content/ecosystem/oracle-pools/contracts/refresh-contract.md -->
+---
+title: "Oracle Pool v2 — Refresh Contract"
+description: "Epoch validation, data point sorting/averaging, deviation filtering, and reward token emission"
+category: ecosystem
+difficulty: advanced
+tags: [oracle-pool, eip-0023, ergoscript, refresh, data-aggregation]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/refresh_contract.es"
+project: ergoplatform-oracle-core
+updated: 2026-03-15
+---
+
+# Refresh Contract (EIP-0023)
+
+The refresh contract contains the core oracle pool logic. It guards the refresh box and enforces all rules for updating the pool rate: epoch expiry, minimum data points, sorted ordering, deviation bounds, correct averaging, and reward token accounting.
+
+## Box Layout
+
+- **tokens(0):** Refresh-NFT (singleton)
+
+## ErgoScript
+
+```ergoscript
+{ // This box (refresh box)
+  //   tokens(0) refresh token (NFT)
+
+  val oracleTokenId = fromBase64("...") // replace with actual
+  val poolNFT = fromBase64("...")        // replace with actual
+  val epochLength = 30
+  val minDataPoints = 4
+  val buffer = 4
+  val maxDeviationPercent = 5 // percent
+
+  val minStartHeight = HEIGHT - epochLength
+  val spenderIndex = getVar[Int](0).get // index of spender's data-point box
+
+  val poolIn = INPUTS(0)
+  val poolOut = OUTPUTS(0)
+  val selfOut = OUTPUTS(1)
+
+  def isValidDataPoint(b: Box) = if (b.R6[Long].isDefined) {
+    b.creationInfo._1    >= minStartHeight &&  // data point must not be too old
+    b.tokens(0)._1       == oracleTokenId  &&  // first token id must be oracle token
+    b.R5[Int].get        == poolIn.R5[Int].get // must correspond to this epoch
+  } else false
+
+  val dataPoints = INPUTS.filter(isValidDataPoint)
+  val pubKey = dataPoints(spenderIndex).R4[GroupElement].get
+
+  val enoughDataPoints = dataPoints.size >= minDataPoints
+  val rewardEmitted = dataPoints.size * 2 // one extra token per box as collector reward
+  val epochOver = poolIn.creationInfo._1 < minStartHeight
+
+  val startData = 1L // we don't allow 0 data points
+  val startSum = 0L
+  // data-points expected sorted in INCREASING order
+
+  val lastSortedSum = dataPoints.fold((startData, (true, startSum)), {
+        (t: (Long, (Boolean, Long)), b: Box) =>
+           val currData = b.R6[Long].get
+           val prevData = t._1
+           val wasSorted = t._2._1
+           val oldSum = t._2._2
+           val newSum = oldSum + currData
+
+           val isSorted = wasSorted && prevData <= currData
+
+           (currData, (isSorted, newSum))
+    }
+  )
+
+  val lastData = lastSortedSum._1
+  val isSorted = lastSortedSum._2._1
+  val sum = lastSortedSum._2._2
+  val average = sum / dataPoints.size
+
+  val maxDelta = lastData * maxDeviationPercent / 100
+  val firstData = dataPoints(0).R6[Long].get
+
+  proveDlog(pubKey)                                               &&
+  epochOver                                                       &&
+  enoughDataPoints                                                &&
+  isSorted                                                        &&
+  lastData - firstData     <= maxDelta                            &&
+  poolIn.tokens(0)._1      == poolNFT                             &&
+  poolOut.tokens(0)        == poolIn.tokens(0)                    && // preserve pool NFT
+  poolOut.tokens(1)._1     == poolIn.tokens(1)._1                 && // reward token id preserved
+  poolOut.tokens(1)._2     >= poolIn.tokens(1)._2 - rewardEmitted && // reward amount correctly reduced
+  poolOut.tokens.size      == poolIn.tokens.size                  && // cannot inject more tokens
+  poolOut.R4[Long].get     == average                             && // rate = average
+  poolOut.R5[Int].get      == poolIn.R5[Int].get + 1              && // counter incremented
+  poolOut.propositionBytes == poolIn.propositionBytes             && // preserve pool script
+  poolOut.value            >= poolIn.value                        &&
+  poolOut.creationInfo._1  >= HEIGHT - buffer                     && // correct start epoch height
+  selfOut.tokens           == SELF.tokens                         && // refresh NFT preserved
+  selfOut.propositionBytes == SELF.propositionBytes               && // script preserved
+  selfOut.value            >= SELF.value
+}
+```
+
+## Key Design Patterns
+
+- **`INPUTS.filter(isValidDataPoint)`** — Filters oracle boxes from all inputs using token ID and epoch counter checks. Classic eUTXO pattern for multi-box validation.
+- **`.fold()` for sort verification + summation** — Single pass computes both sorted-order check and running sum. Avoids needing a separate sort operation.
+- **`proveDlog(pubKey)`** — The refresh transaction must be signed by one of the participating oracles (the "collector"), identified by context variable `getVar[Int](0)`.
+- **`rewardEmitted = dataPoints.size * 2`** — Each valid oracle gets 1 reward token; the collector gets an extra `n+1` tokens. Incentivizes including maximum oracles.
+- **Deviation check** — `lastData - firstData <= maxDelta` on sorted data ensures outliers are rejected. The 5% default prevents manipulation.
+
+## Security Notes
+
+- `startData = 1L` prevents zero-value data points from passing validation.
+- `poolOut.tokens.size == poolIn.tokens.size` prevents token injection attacks.
+- `poolOut.propositionBytes == poolIn.propositionBytes` ensures the pool script cannot be changed via refresh (only via update).
+- Epoch counter in R5 prevents replay of old data points — oracles must match the current epoch.
+
+
+========================================================================
+
+<!-- FILE: content/ecosystem/oracle-pools/contracts/update-contract.md -->
+---
+title: "Oracle Pool v2 — Update Contract"
+description: "Governance threshold check, ballot counting, and pool box script replacement"
+category: ecosystem
+difficulty: advanced
+tags: [oracle-pool, eip-0023, ergoscript, governance, update]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/update_contract.es"
+project: ergoplatform-oracle-core
+updated: 2026-03-15
+---
+
+# Update Contract (EIP-0023)
+
+Guards the update box and enforces the governance threshold for pool updates. Counts valid ballot boxes, verifies they all agree on the proposed change, and ensures the pool box is correctly replaced while preserving tokens, rate, and epoch counter.
+
+## Box Layout
+
+- **tokens(0):** Update-NFT (singleton)
+- **Registers:** Empty (stateless)
+
+## ErgoScript
+
+```ergoscript
+{ // This box (update box):
+  // Registers empty
+  //
+  // ballot boxes (Inputs)
+  // R4 the pub key of voter [GroupElement] (not used here)
+  // R5 the creation height of this box [Int]
+  // R6 the value voted for [Coll[Byte]] (hash of the new pool box script)
+  // R7 the reward token id in new box
+  // R8 the number of reward tokens in new box
+
+  val poolNFT = fromBase64("...")      // replace with actual
+  val ballotTokenId = fromBase64("...") // replace with actual
+  val minVotes = 6
+
+  val poolIn = INPUTS(0)  // pool box is 1st input
+  val poolOut = OUTPUTS(0) // copy of pool box is 1st output
+
+  val updateBoxOut = OUTPUTS(1) // copy of this box is 2nd output
+
+  // compute the hash of the pool output box — this should match what ballots voted for
+  val poolOutHash = blake2b256(poolOut.propositionBytes)
+  val rewardTokenId = poolOut.tokens(1)._1
+  val rewardAmt = poolOut.tokens(1)._2
+
+  val validPoolIn = poolIn.tokens(0)._1 == poolNFT
+
+  val validPoolOut = poolIn.tokens(0) == poolOut.tokens(0)                && // NFT preserved
+                     poolIn.value == poolOut.value                        && // value preserved
+                     poolIn.R4[Long] == poolOut.R4[Long]                  && // rate preserved
+                     poolIn.R5[Int] == poolOut.R5[Int]                    && // counter preserved
+                     ! (poolOut.R6[Any].isDefined)
+
+  val validUpdateOut = updateBoxOut.tokens == SELF.tokens                     &&
+                       updateBoxOut.propositionBytes == SELF.propositionBytes &&
+                       updateBoxOut.value >= SELF.value                       &&
+                       updateBoxOut.creationInfo._1 > SELF.creationInfo._1    &&
+                       ! (updateBoxOut.R4[Any].isDefined)
+
+  def isValidBallot(b:Box) = if (b.tokens.size > 0) {
+    b.tokens(0)._1 == ballotTokenId       &&
+    b.R5[Int].get == SELF.creationInfo._1 && // vote corresponds to this update box
+    b.R6[Coll[Byte]].get == poolOutHash   && // voted for this pool script
+    b.R7[Coll[Byte]].get == rewardTokenId && // voted for this reward token
+    b.R8[Long].get == rewardAmt              // voted for this reward amount
+  } else false
+
+  val ballotBoxes = INPUTS.filter(isValidBallot)
+
+  val votesCount = ballotBoxes.fold(0L, {(accum: Long, b: Box) => accum + b.tokens(0)._2})
+
+  sigmaProp(validPoolIn && validPoolOut && validUpdateOut && votesCount >= minVotes)
+}
+```
+
+## Key Design Patterns
+
+- **`blake2b256(poolOut.propositionBytes)`** — The update contract hashes the *output* pool box script and compares it against what each ballot voted for (R6). This is a **hash-locked governance** pattern — voters commit to a specific contract hash, not the contract itself.
+- **`b.R5[Int].get == SELF.creationInfo._1`** — Each ballot's R5 must match the update box's creation height. This ties votes to a specific update proposal and prevents stale votes from being reused.
+- **`updateBoxOut.creationInfo._1 > SELF.creationInfo._1`** — The output update box must have a strictly higher creation height, invalidating all current ballots. This is the "vote reset" mechanism — after any update (successful or not), a new round of voting is required.
+- **`ballotBoxes.fold(0L, ... + b.tokens(0)._2)`** — Vote counting sums ballot token quantities, not just box count. If someone holds multiple ballot tokens in one box, each token counts as one vote.
+- **`validPoolOut` preserves R4 (rate) and R5 (counter)** — The update can change the pool script but must preserve the current oracle data. This prevents an update from disrupting active data feeds.
+
+## Security Notes
+
+- `! (poolOut.R6[Any].isDefined)` — Ensures no extra registers are injected into the new pool box.
+- `! (updateBoxOut.R4[Any].isDefined)` — The output update box has empty registers, preventing it from being misused as a ballot.
+- The update box is **stateless** (no meaningful registers) — its only role is to gate the update transaction and provide a creation height for ballot correlation.
+- Three things are voted on independently: pool script hash (R6), reward token ID (R7), reward token amount (R8). All must match across all counted ballots.
+
+
+========================================================================
+
 <!-- FILE: content/ecosystem/oracle-pools/overview_oracle-pools.md -->
 ---
 title: ergoplatform/oracle-core — Overview
@@ -43978,7 +44416,7 @@ ErgoScript's foundation on Sigma Protocols allows for powerful cryptographic pri
 * [Light Verifying Nodes](nipopow_nodes.md)
 * [eUTXO Model Explanation](eutxo.md)
 * [Ergo Whitepaper](https://ergoplatform.org/en/whitepaper/)
-* [ErgoScript Language Specification](lang-spec.md) (Detailed reference)
+* [ErgoScript Language Specification](../../reference/ergoscript/language-spec.md) (Detailed reference)
 * [Advanced ErgoScript Tutorial](https://ergoplatform.org/docs/AdvancedErgoScriptTutorial.pdf)
 
 ## Comparative Analysis
@@ -44306,7 +44744,7 @@ HEIGHT < 4000000            // address 2fp75qcgMrTNR2vuLhiJYQt
 
 This script uses the context variable `HEIGHT`, which signifies the height of the block in which the transaction is mined. If the blockchain height is less than 4,000,000, the box associated with this address becomes ["anyone-can-spend"](anyone-can-spend.md). Conversely, if the blockchain height equals or exceeds 4,000,000, the box becomes ["no-one-can-spend"](no-one-can-spend.md).
 
-Apart from `HEIGHT`, ErgoScript supports other context variables such as `OUTPUTS`, `INPUTS`, and `minerPubKey`. These variables offer additional tools for writing more specific and flexible scripts. For more details on context variables and their usage, please refer to the [ErgoScript language specification](lang-spec.md).
+Apart from `HEIGHT`, ErgoScript supports other context variables such as `OUTPUTS`, `INPUTS`, and `minerPubKey`. These variables offer additional tools for writing more specific and flexible scripts. For more details on context variables and their usage, please refer to the [ErgoScript language specification](../../../reference/ergoscript/language-spec.md).
 
 
 ========================================================================
@@ -47838,1044 +48276,6 @@ The 'S' in front of `SGroupElement` refers to the sigma state code under the Erg
 - [case class AvlTreeData(digest: ADDigest](https://github.com/ScorexFoundation/sigmastate-interpreter/blob/fe7319f6ddd131d4bc02f46313f3590721f39f3b/interpreter/shared/src/main/scala/sigmastate/AvlTreeData.scala#L54)
 
 ## Height
-
-
-========================================================================
-
-<!-- FILE: content/guides/ergodocs-tutorials/sigma/lang-spec.md -->
----
-title: "ErgoScript Language Description"
-category: guide
-difficulty: beginner
-tags: [ergo]
-source: ergodocs
-source_url: "https://docs.ergoplatform.com/dev/scs/sigma/lang-spec/"
-updated: 2026-03-08
----
-
-# ErgoScript Language Description
-
-> 🔗 From [sigmastate-interpreter](https://github.com/ScorexFoundation/sigmastate-interpreter/blob/develop/docs/LangSpec.md)
-
-### Introduction
-
-ErgoScript is a language to write contracts for [Ergo blockchain](https://ergoplatform.org). ErgoScript contracts can be compiled to [ErgoTrees](ergotree.md), [serialized](serialization.md) and stored in UTXOs.
-
-A good starting point to writing contracts is to use [ErgoScript by Example](https://github.com/ergoplatform/ergoscript-by-example) with [Ergo Playgrounds](https://github.com/ergoplatform/ergo-playgrounds) or [Appkit](https://github.com/ergoplatform/ergo-appkit).
-
-The ErgoScript compiler is [published](https://mvnrepository.com/artifact/org.scorexfoundation/sigma-state)
-as a library which is cross compiled for Java 7 and Java 8+ and can be used from any JVM lanugage, Android or JavaFX.
-
-The following example shows how source code of ErgoScript contract can be used to create new transaction using [Appkit](https://github.com/ergoplatform/ergo-appkit), see [FreezeCoin.java](https://github.com/aslesarenko/ergo-appkit-examples/blob/master/java-examples/src/main/java/org/ergoplatform/appkit/examples/FreezeCoin.java) for more details.
-
-```scala
-// To create transaction we use a builder obtained from the context
-// the builder keeps relationship with the context to access necessary blockchain data.
-UnsignedTransactionBuilder txB = ctx.newTxBuilder();
-
-// create new box using new builder obtained from the transaction builder
-// in this case we compile new ErgoContract from source ErgoScript code
-OutBox newBox = txB.outBoxBuilder()
-        .value(amountToPay)
-        .contract(ctx.compileContract(
-                ConstantsBuilder.create()
-                        .item("freezeDeadline", ctx.getHeight() + newBoxDelay)
-                        .item("pkOwner", prover.getP2PKAddress().pubkey())
-                        .build(),
-                "{ " +
-                "  val deadlinePassed = sigmaProp(HEIGHT > freezeDeadline)" +
-                "  deadlinePassed && pkOwner " +
-                "}"))
-        .build();
-```
-
-The contract is given as the string literal which contains the block of `val` declarations followed by the logical expression. The expression defines the all possible conditions to spend the box. The contract can also contain _**named
-constants**_ (which cannot be represented as literals in the source code).
-
-In the example `freezeDeadline` and `pkOwner` are named constants. The concrete values of named constants should be given to the compiler (see `compileContract` method)
-
-**The following sections describe ErgoScript and its operations.**
-
-#### ErgoScript language features overview
-
-- Syntax borrowed from Scala
-- Standard syntax and semantics for well known constructs (operations, code blocks, if branches etc.)
-- High-order language with first-class lambdas which are used in collection operations
-- Call-by-value (eager evaluation)
-- Statically typed with local type inference
-- Blocks are expressions
-- Semicolon inference in blocks
-- Type constructors: Pair, Coll, Option
-
-#### Operations and constructs overview
-
-- Binary operations: `>, <, >=, <=, +, -, &&, ||, ==, !=, |, &, *, /, %, ^, ++`
-- Predefined primitives: `blake2b256`, `byteArrayToBigInt`, `proveDlog` etc.
-- Val declarations: `val h = blake2b256(pubkey)`
-- If-then-else clause: `if (x > 0) 1 else 0`
-- Collection literals: `Coll(1, 2, 3, 4)`
-- Generic high-order collection operations: `map`, `filter`, `fold`, `exists`, `forall`, etc.
-- Accessing fields of any predefined types: `box.value`
-- Method invocation for predefined types: `coll.map({ x => x + 1 })`
-- Function invocations (predefined and user defined): `proveDlog(pubkey)`
-- User defined function declarations: `def isProven(pk: GroupElement) = proveDlog(pk).isProven`
-- Lambdas and high-order methods: `OUTPUTS.exists { (out: Box) => out.value >= minToRaise }`
-
-#### Data types
-
-In ErgoScript, everything is an object in the sense that we can call member functions and properties on any variable.
-Some of the types can have a special internal representation - for example, numbers and booleans can be
-represented as primitive values at runtime - but to the user they look like ordinary classes.
-NOTE: in ErgoScript we use _type_, _class_ and _trait_ as synonyms, we prefer _type_ when talking about primitive values and
-_trait_ or _class_ when talking about methods.
-
-Type Name        |   Description
------------------|------------------------------
-`Any`            | a supertype of any other type (not used directly in ErgoScript)
-`Unit`           | a type with a single value `()`
-`Boolean`        | a type with two logical values `true` and `false`
-`Byte`           | 8 bit signed integer
-`Short`          | 16 bit signed integer
-`Int`            | 32 bit signed integer
-`Long`           | 64 bit signed integer
-`BigInt`         | 256 bit signed integer
-`SigmaProp`      | a type representing a _sigma proposition_ which can be verified by executing a Sigma protocol with zero-knowledge proof of knowledge. Every contract should return a value of this type.
-`AvlTree`        | represents a digest of authenticated dynamic dictionary and can be used to verify proofs of operations performed on the dictionary
-`GroupElement`   | elliptic curve points
-`Box`            | a box containing a monetary value (in NanoErgs), tokens and registers along with a guarding proposition
-`Option[T]`      | a container which either have some value of type `T` or none.
-`Coll[T]`        | a collection of arbitrary length with all values of type `T`
-`(T1,T2)`        | a pair of values where T1, T2 can be different types
-
-The type constructors `Coll`, `(_,_)` can be used to construct complex
-types as in the following example.
-
-```scala
-{
-  val keyValues = OUTPUTS(0).R4[Coll[(Int, (Byte, Long))]].get
-  ...
-}
-```
-
-#### Literal syntax and Constants
-
-Literals are used to introduce values of some types directly in program text
-like in the following example:
-
-```scala
-val unit: Unit = ()       // unit constant
-val long: Int = 10        // interger value literal
-val bool: Boolean = true  // logical literal
-val arr = Coll(1, 2, 3)   // constructs a collection with given items
-val str = "abc"           // string of characters 
-```
-
-Note that many types don't have literal syntax and their values are introduced
-by applying operations, for example `deserialize` function can be used to introduce
-a constant of any type by using Base64 encoded string (See [predefined function](#PredefinedFunctions)).
-
-### Data Types
-
-<a name="DataTypes"></a>
-
-#### Primitive Types
-
-Below we specify methods of pre-defined types using Scala-like declaration of classes.
-
-Note, the `Boolean` type doesn't have pre-defined methods in addition to the standard operations.
-
-> Note, ErgoScript doesn't allow to define new `class` types, however it has many pre-defined classes with methods defined below.
-
-Every numeric type has the following methods.
-
-```scala
-/** Base supertype for all numeric types. */
-class Numeric {
-  /** Convert this Numeric value to Byte. 
-   * @throws ArithmeticException if overflow happens. 
-   */
-  def toByte: Byte
-  
-  /** Convert this Numeric value to Short. 
-   * @throws ArithmeticException if overflow happens. 
-   */
-  def toShort: Short
-  
-  /** Convert this Numeric value to Int. 
-   * @throws ArithmeticException if overflow happens. 
-   */
-  def toInt: Int
-  
-  /** Convert this Numeric value to Long. 
-   * @throws ArithmeticException if overflow happens. 
-   */
-  def toLong: Long
-  
-  /** Convert this Numeric value to BigInt. */
-  def toBigInt: BigInt
-}
-```
-
-All the predefined numeric types inherit Numeric class and its methods.
-
-They can be thought of as being pre-defined, like the following.
-
-```scala
-class Byte extends Numeric
-class Short extends Numeric
-class Int extends Numeric
-class Long extends Numeric
-class BigInt extends Numeric
-```
-
-#### Context Data
-
-Every script is executed in a context, which is a collection of data available
-for operations in the script. The context data is available using the `CONTEXT`
-variable which is of pre-defined class `Context` which is shown below.
-
-There are also shortcut variables which are available in every script to
-simplify access to the most commonly used context data.
-
-Variable          |  Type               | Shortcut for ...
-------------------|---------------------|----------------------
-`HEIGHT`          | `Int`               | `CONTEXT.HEIGHT`
-`SELF`            | `Box`               | `CONTEXT.SELF`
-`INPUTS`          | `Coll[Box]`         | `CONTEXT.INPUTS`  
-`OUTPUTS`         | `Coll[Box]`         | `CONTEXT.OUTPUTS`
-
-The following listing shows the methods of pre-defined `Context`, `Header`,
-`PreHeader` types.
-
-```scala
-/** Represents data available in ErgoScript using `CONTEXT` global variable */
-class Context {
-  /** Height (block number) of the block which is currently being validated. */
-  def HEIGHT: Int
-  
-  /** Box whose proposition is being currently executing */
-  def SELF: Box
-
-  /** Zero based index in `inputs` of `selfBox` */
-  def selfBoxIndex: Int
-  
-  /** A collection of inputs of the current transaction, the transaction where
-    * selfBox is one of the inputs. 
-    */
-  def INPUTS: Coll[Box]
-  
-  /** A collection of data inputs of the current transaction. Data inputs are
-    * not going to be spent and thus don't participate in transaction validation
-    * as `INPUTS`, but data boxes are available in guarding propositions of
-    * `INPUTS` and thus can be used in spending logic.
-    */
-  def dataInputs: Coll[Box]
-  
-  /** A collection of outputs of the current transaction. */
-  def OUTPUTS: Coll[Box]
-  
-  /** Authenticated dynamic dictionary digest representing Utxo state before
-    * current state. 
-    */
-  def LastBlockUtxoRootHash: AvlTree
-  
-  /** A fixed number of last block headers in descending order (first header is
-    * the newest one) */
-  def headers: Coll[Header]
-
-/** Fields of a new block header, that can be predicted by a miner before block's formation */
-  def preHeader: PreHeader
-  /** Bytes of encoded miner's public key.
-    * Same as `preHeader.minerPk.getEncoded`
-    */
-  def minerPubKey: Coll[Byte] 
-}
-
-/** Represents data of the block headers available in scripts. */
-class Header {  
-  /** Bytes representation of ModifierId of this Header */
-  def id: Coll[Byte]
-
-  /** Block version, to be increased on every soft and hardfork. */
-  def version: Byte
-  
-  /** Id of parent block (as bytes) */
-  def parentId: Coll[Byte] // 
-  
-  /** Hash of ADProofs for transactions in a block */
-  def ADProofsRoot: Coll[Byte] // Digest32. Can we build AvlTree out of it? 
-
-  /** AvlTree) of a state after block application */
-  def stateRoot: Coll[Byte]  // ADDigest  //33 bytes! extra byte with tree height here!
-
-  /** Root hash (for a Merkle tree) of transactions in a block. */
-  def transactionsRoot: Coll[Byte]  // Digest32
-
-  /** Block timestamp (in milliseconds since beginning of Unix Epoch) */
-  def timestamp: Long
-
-  /** Current difficulty in a compressed view.
-    * NOTE: actually it is unsigned Int*/
-  def nBits: Long  // actually it is unsigned Int 
-
-  /** Block height */
-  def height: Int
-
-  /** Root hash of extension section (Digest32) */
-  def extensionRoot: Coll[Byte]
-
-  /** Miner's public key. Should be used to collect block rewards.
-    * Part of Autolykos solution (pk). 
-    */
-  def minerPk: GroupElement
-
-  /** One-time public key. Prevents revealing of miners secret. 
-    * Part of Autolykos solution (w). 
-    */
-  def powOnetimePk: GroupElement
-
-  /** Nonce value found by the miner. Part of Autolykos solution (n). */
-  def powNonce: Coll[Byte]
-
-  /** Distance between pseudo-random number, corresponding to nonce `powNonce`
-    * and a secret, corresponding to `minerPk`. The lower `powDistance` is, the
-    * harder it was to find this solution. 
-    * Part of Autolykos solution (d).
-    */
-  def powDistance: BigInt
-
-  /** Miner votes for changing system parameters. */
-  def votes: Coll[Byte]
-}
-
-/** Only header fields that can be predicted by a miner. */
-class PreHeader { 
-  /** Block version, to be increased on every soft and hardfork. */
-  def version: Byte
-
-  /** Id of parent block */
-  def parentId: Coll[Byte] // ModifierId
-
-  /** Block timestamp (in milliseconds since beginning of Unix Epoch) */
-  def timestamp: Long
-
-  /** Current difficulty in a compressed view.
-    * NOTE: actually it is 32-bit unsigned Int */
-  def nBits: Long
-
-  /** Block height */
-  def height: Int
-
-  /** Miner public key. Should be used to collect block rewards. */
-  def minerPk: GroupElement
-
-  /** Miner votes for changing system parameters. */
-  def votes: Coll[Byte]
-}
-
-```
-
-#### Box type
-
-Box represents a unit of storage in Ergo blockchain. It contains 10 registers
-(indexed 0-9). First 4 are mandatory and the others are optional.
-
-```scala
-/** Representation of Ergo boxes used during execution of ErgoTree operations. */
-class Box {
-  /** Box monetary value in NanoErg */
-  def value: Long 
-  
-  /** Blake2b256 hash of this box's content, basically equals to
-    * `blake2b256(bytes)` 
-    */
-  def id: Coll[Byte] 
-
-  /** Serialized bytes of guarding script, which should be evaluated to true in
-    * order to open this box. 
-    */
-  def propositionBytes: Coll[Byte] 
-  
-  /** Serialized bytes of this box's content, including proposition bytes. */
-  def bytes: Coll[Byte] 
-  
-  /** Serialized bytes of this box's content, excluding transactionId and index
-    * of output. 
-    */
-  def bytesWithoutRef: Coll[Byte]
-    
-  /** If `tx` is a transaction which generated this box, then `creationInfo._1`
-    * is a height of the tx's block. The `creationInfo._2` is a serialized
-    * transaction identifier followed by box index in the transaction outputs.
-    */
-  def creationInfo: (Int, Coll[Byte]) 
-  
-  /** Synonym of R2 obligatory register */
-  def tokens: Coll[(Coll[Byte], Long)] 
-  
-  /** Extracts register by id and type.
-    * ErgoScript is typed, so accessing a register is an operation which involves some
-    * expected type given in brackets. Thus `SELF.R4[Int]` expression should evaluate to a
-    * valid value of the `Option[Int]` type.
-    *
-    * For example `val x = SELF.R4[Int]` expects the
-    * register, if it is present, to have type `Int`. At runtime the corresponding type
-    * descriptor is passed as `implicit t: RType[T]` parameter of `getReg` method and
-    * checked against the actual value of the register.
-    *
-    * There are three cases:
-    * 1) If the register doesn't exist.
-    *   Then `val x = SELF.R4[Int]` succeeds and returns the None value, which conforms to
-    *   any value of type `Option[T]` for any T. (In the example above T is equal to
-    *   `Int`). Calling `x.get` fails when x is equal to None, but `x.isDefined`
-    *   succeeds and returns `false`.
-    * 2) If the register contains a value `v` of type `Int`.
-    *   Then `val x = SELF.R4[Int]` succeeds and returns `Some(v)`, which is a valid value
-    *   of type `Option[Int]`. In this case, calling `x.get` succeeds and returns the
-    *   value `v` of type `Int`. Calling `x.isDefined` returns `true`.
-    * 3) If the register contains a value `v` of type T other then `Int`.
-    *   Then `val x = SELF.R4[Int]` fails, because there is no way to return a valid value
-    *   of type `Option[Int]`. The value of register is present, so returning it as None
-    *   would break the typed semantics of registers collection.
-    *
-    * In some use cases one register may have values of different types. To access such
-    * register an additional register can be used as a tag.
-    *
-    * <pre class="stHighlight">
-    *   val tagOpt = SELF.R5[Int]
-    *   val res = if (tagOpt.isDefined) {
-    *     val tag = tagOpt.get
-    *     if (tag == 1) {
-    *       val x = SELF.R4[Int].get
-    *       // compute res using value x is of type Int
-    *     } else if (tag == 2) {
-    *       val x = SELF.R4[GroupElement].get
-    *       // compute res using value x is of type GroupElement
-    *     } else if (tag == 3) {
-    *       val x = SELF.R4[ Array[Byte] ].get
-    *       // compute res using value x of type Array[Byte]
-    *     } else {
-    *       // compute `res` when `tag` is not 1, 2 or 3
-    *     }
-    *   }
-    *   else {
-    *     // compute value of res when register is not present
-    *   }
-    * </pre>
-    *
-    * @param i zero-based identifier of the register.
-    * @tparam T expected type of the register.
-    * @return Some(value) if the register is defined AND has the given type.
-    *         None otherwise
-    * @throws special.sigma.InvalidType exception when the type of the register value is
-    *                                   different from T.
-    */
-  def Ri[T]: Option[T]
-
-  /** Executes the script stored in the register `regId` of the `SELF` box.
-    * Similar to `executeFromVar`, this performs a macro-like substitution and
-    * execution of the script (stored as `Coll[Byte]` representing serialized ErgoTree)
-    * found in the specified register.
-    *
-    * **Important Behavior Notes (based on interpreter implementation):**
-    * - **Missing Register:** If register `regId` does not exist in `SELF`, this
-    *   operation fails. Unlike `getVar` or `Ri`, it does **not** return an `Option`
-    *   or handle default values automatically in this case. The script author must
-    *   explicitly check for the register's existence first (e.g., using `SELF.Ri[Coll[Byte]](regId).isDefined`).
-    * - **Type Mismatch:** If the register exists but does not contain valid
-    *   serialized `ErgoTree` (`Coll[Byte]`), or if the executed script's result
-    *   type does not match the expected type `T`, the operation fails.
-    * - **No Automatic Option Wrapping:** The result type `T` is the direct result
-    *   of the executed script. If the executed script itself returns an `Option[X]`,
-    *   then `T` must be `Option[X]`. `executeFromSelfReg` does not automatically
-    *   wrap the result in an `Option`.
-    *
-    * This function is powerful for implementing complex state transitions and
-    * contract patterns where parts of the execution logic are stored within the box itself.
-    *
-    * @param regId zero-based identifier of the register (R4-R9) in the `SELF` box containing the script bytes.
-    * @tparam T expected type of the script's result after execution.
-    * @return The result of executing the script stored in the register.
-    * @throws InterpreterException if the register is not found, does not contain
-    *         valid serialized ErgoTree, or if the script execution fails or results
-    *         in a type different from T.
-    */
-  def executeFromSelfReg[T](regId: Int): T
-}
-```
-
-Besides properties, every box can have up to 10 numbered registers.
-The following syntax is supported to access registers on box objects:
-
-```scala
-box.R3[Int].get          // access R3 register, check that its value of type Int and return it
-box.R3[Int].isDefined    // check that value of R3 is defined and has type Int
-box.R3[Int].getOrElse(d) //access R3 register, check that its value of type Int, return it if defined, otherwise return `d`
-```
-
-#### GroupElement
-
-```scala
-/** Base class for points on elliptic curves. */
-class GroupElement {
-  /** Exponentiate this <code>GroupElement</code> to the given number.
-    * @param k The power.
-    * @return <code>this to the power of k</code>.
-    */
-  def exp(k: BigInt): GroupElement
-
-  /** Group operation. */
-  def multiply(that: GroupElement): GroupElement
-
-  /** Inverse element in the group. */
-  def negate: GroupElement
-
-  /** Get an encoding of the point value.
-    *
-    * @return the point encoding
-    */
-  def getEncoded: Coll[Byte]
-}
-```
-
-#### AvlTree
-
-```scala
-/** Type of data which efficiently authenticates potentially huge dataset having key-value dictionary interface.
-  * Only root hash of dynamic AVL+ tree, tree height, key length, optional value length, and access flags are stored
-  * in an instance of the datatype.
-  *
-  * Please note that standard hash function from `scorex.crypto.hash` is used, and height is stored along with root hash of
-  * the tree, thus `digest` size is always CryptoConstants.hashLength + 1 bytes.
-  */
-class AvlTree {
-  /** Returns digest of the state represented by this tree.
-    * Authenticated tree digest = root hash bytes ++ tree height
-    */
-  def digest: Coll[Byte]
-
-  /** Flags of enabled operations packed in single byte.
-    * isInsertAllowed == (enabledOperations & 0x01) != 0
-    * isUpdateAllowed == (enabledOperations & 0x02) != 0
-    * isRemoveAllowed == (enabledOperations & 0x04) != 0
-    */
-  def enabledOperations: Byte
-
-  /** All the elements under the tree have the same length of the keys */
-  def keyLength: Int
-  
-  /** If non-empty, all the values under the tree are of the same length. */
-  def valueLengthOpt: Option[Int]
-
-  /** Checks if Insert operation is allowed for this tree instance. */
-  def isInsertAllowed: Boolean
-
-  /** Checks if Update operation is allowed for this tree instance. */
-  def isUpdateAllowed: Boolean
-
-  /** Checks if Remove operation is allowed for this tree instance. */
-  def isRemoveAllowed: Boolean
-
-  /** Replace digest of this tree producing a new tree.
-    * Since AvlTree is immutable, this tree instance remains unchanged.
-    * @param newDigest   a new digest
-    * @return a copy of this AvlTree instance where `this.digest` replaced by
-    *         `newDigest`
-    */
-  def updateDigest(newDigest: Coll[Byte]): AvlTree
-
-  /** Enable/disable operations of this tree producing a new tree.
-    * Since AvlTree is immutable, `this` tree instance remains unchanged.
-    * @param newOperations a new flags which specify available operations on a
-    *                      new tree.
-    * @return              a copy of this AvlTree instance where
-    *                      `this.enabledOperations` replaced by `newOperations`
-    */
-  def updateOperations(newOperations: Byte): AvlTree
-
-  /** Checks if an entry with key `key` exists in this tree using proof `proof`.
-    * Throws exception if proof is incorrect.
-    *
-    * @note CAUTION! Does not support multiple keys check, use [[getMany]] instead.
-    * Return `true` if a leaf with the key `key` exists
-    * Return `false` if leaf with provided key does not exist.
-    * @param key    a key of an element of this authenticated dictionary.
-    * @param proof data to reconstruct part of the tree enough to perform the check
-    */
-  def contains(key: Coll[Byte], proof: Coll[Byte]): Boolean
-
-  /** Perform a lookup of key `key` in this tree using proof `proof`.
-    * Throws exception if proof is incorrect
-    *
-    * @note CAUTION! Does not support multiple keys check, use [[getMany]] instead.
-    * Return Some(bytes) of leaf with key `key` if it exists
-    * Return None if leaf with provided key does not exist.
-    * @param key    a key of an element of this authenticated dictionary.
-    * @param proof data to reconstruct part of the tree enough to get the value
-    *              by the key
-    */
-  def get(key: Coll[Byte], proof: Coll[Byte]): Option[Coll[Byte]]
-
-  /** Perform a lookup of many keys `keys` in this tree using proof `proof`.
-    *
-    * @note CAUTION! Keys must be ordered the same way they were in lookup
-    * before proof was generated.
-    * For each key return Some(bytes) of leaf if it exists and None if is doesn't.
-    * @param keys  keys of elements of this authenticated dictionary.
-    * @param proof data to reconstruct part of the tree enough to get the values
-    *              by the keys
-    */
-  def getMany(keys: Coll[Coll[Byte]], proof: Coll[Byte]): Coll[Option[Coll[Byte]]]
-
-  /** Perform insertions of key-value entries into this tree using proof `proof`.
-    * Throws exception if proof is incorrect
-    *
-    * @note CAUTION! Pairs must be ordered the same way they were in insert ops
-    * before proof was generated.
-    * Return Some(newTree) if successful
-    * Return None if operations were not performed.
-    * @param operations collection of key-value pairs to insert in this
-    *                   authenticated dictionary.
-    * @param proof data to reconstruct part of the tree
-    */
-  def insert(operations: Coll[(Coll[Byte], Coll[Byte])], proof: Coll[Byte]): Option[AvlTree]
-
-  /** Perform updates of key-value entries into this tree using proof `proof`.
-    * Throws exception if proof is incorrect
-    *
-    * @note CAUTION! Pairs must be ordered the same way they were in update ops
-    * before proof was generated.
-    * Return Some(newTree) if successful
-    * Return None if operations were not performed.
-    * @param operations collection of key-value pairs to update in this
-    *                   authenticated dictionary.
-    * @param proof      data to reconstruct part of the tree
-    */
-  def update(operations: Coll[(Coll[Byte], Coll[Byte])], proof: Coll[Byte]): Option[AvlTree]
-
-  /** Perform removal of entries into this tree using proof `proof`.
-    * Throws exception if proof is incorrect
-    * Return Some(newTree) if successful
-    * Return None if operations were not performed.
-    *
-    * @note CAUTION! Keys must be ordered the same way they were in remove ops
-    * before proof was generated.
-    * @param operations collection of keys to remove from this authenticated
-    *                   dictionary.
-    * @param proof      data to reconstruct part of the tree
-    */
-  def remove(operations: Coll[Coll[Byte]], proof: Coll[Byte]): Option[AvlTree]
-}
-```
-
-#### Option[T]
-
-```scala
-/** Represents optional values. Instances of `Option`
- *  are either an instance of `Some(x)` or the value `None`.
- */
-class Option[A] {
-  /** Returns true if the option is an instance of Some(value), false otherwise. 
-   */
-  def isDefined: Boolean;
-  
-  /** Returns the option's value if the option is nonempty, otherwise
-    * return the result of evaluating `default`.
-    * NOTE: the `default` is evaluated even if the option contains the value
-    * i.e. not lazily.
-    *
-    * @param default  the default expression.
-    */
-  def getOrElse[B](default: B): B  
-
-  /** Returns the option's value.
-   *  @note The option must be nonempty.
-   *  @throws InterpreterException if the option is empty.
-   */
-  def get: A
-
-  /** Returns a Some containing the result of applying $f to this option's
-   * value if this option is nonempty.
-   * Otherwise return None.
-   *
-   * @note This is similar to `flatMap` except here, $f does not need to wrap its result in an $option.
-   *
-   * @param  f   the function to apply
-   * @since  2.0
-   * @see flatMap
-   */
-  def map[B](f: A => B): Option[B]
-
-  
-  /** Returns this option if it is nonempty '''and''' applying the predicate $p to
-   * this option's value returns true. Otherwise, return $none.
-   *
-   * @param  p   the predicate used for testing.
-   * @since  2.0
-   */
-  def filter(p: A => Boolean): Option[A]
-}
-```
-
-#### Coll[T]
-
-```scala
-/** Indexed (zero-based) collection of elements of type `A` 
-  * @tparam A the collection element type
-  */
-class Coll[A] {
-  /** The number of elements in the collection */
-  def size: Int
-  
-  /** The element at given index.
-   *  Indices start at `0`; `xs.apply(0)` is the first element of collection `xs`.
-   *  Note the indexing syntax `xs(i)` is a shorthand for `xs.apply(i)`.
-   *
-   *  @param    i   the index
-   *  @return       the element at the given index
-   *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
-   */
-  def apply(i: Int): A
-  
-  /** The element of the collection or default value. 
-   * If an index is out of bounds (`i < 0 || i >= length`) then `default` value is returned.
-   *  @param    i   the index
-   *  @return       the element at the given index or default value if index is out or bounds
-   */
-  def getOrElse(i: Int, default: A): A
-  
-  /** Builds a new collection by applying a function to all elements of this collection.
-   *
-   *  @param f      the function to apply to each element.
-   *  @tparam B     the element type of the returned collection.
-   *  @return       a new collection of type `Coll[B]` resulting from applying the given function
-   *                `f` to each element of this collection and collecting the results.
-   */
-  def map[B](f: A => B): Coll[B]
-
-  /** For this collection (x0, ..., xN) and other collection (y0, ..., yM)
-   * produces a collection ((x0, y0), ..., (xK, yK)) where K = min(N, M) 
-   */
-  def zip[B](ys: Coll[B]): Coll[(A, B)]
-
-  /** Tests whether a predicate holds for at least one element of this collection.
-   *  @param   p     the predicate used to test elements.
-   *  @return        `true` if the given predicate `p` is satisfied by at least one element of this collection, otherwise `false`
-   */
-  def exists(p: A => Boolean): Boolean
-  
-  /** Tests whether a predicate holds for all elements of this collection.
-   *  @param   p   the predicate used to test elements.
-   *  @return      `true` if this collection is empty or the given predicate `p`
-   *               holds for all elements of this collection, otherwise `false`.
-   */
-  def forall(p: A => Boolean): Boolean
-  
-  /** Selects all elements of this collection which satisfy a predicate.
-   *  @param p     the predicate used to test elements.
-   *  @return      a new collection consisting of all elements of this collection that satisfy the given
-   *               predicate `p`. The order of the elements is preserved.
-   */
-  def filter(p: A => Boolean): Coll[A]
-  
-  /** Applies a binary operator to a start value and all elements of this collection,
-   *  going left to right.
-   *
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this collection,
-   *           going left to right with the start value `z` on the left:
-   *           {{{
-   *             op(...op(z, x_1), x_2, ..., x_n)
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the elements of this collection.
-   *           Returns `z` if this collection is empty.
-   */
-  def fold[B](z: B, op: (B, A) => B): B
-
-  /** Produces the range of all indices of this collection [0 .. size-1] */
-  def indices: Coll[Int]
-
-  /**
-    * Builds a new collection by applying a function to all elements of this collection
-    * and using the elements of the resulting collections.
-    *
-    * Function `f` is constrained to be of the form `x => x.someProperty`, otherwise
-    * it is illegal.
-    * 
-    * @param f the function to apply to each element.
-    * @tparam B the element type of the returned collection.
-    * @return a new collection of type `Coll[B]` resulting from applying the given collection-valued function
-    *         `f` to each element of this collection and concatenating the results.
-    */
-  def flatMap[B](f: A => Coll[B]): Coll[B]
-
-  /** Produces a new collection where a slice of elements in this collection is replaced by another sequence.
-    *
-    *  @param  from     the index of the first replaced element
-    *  @param  patch    the replacement sequence
-    *  @param  replaced the number of elements to drop in the original collection
-    *  @return          a new collection consisting of all elements of this collection
-    *                   except that `replaced` elements starting from `from` are replaced by `patch`.
-    */
-  def patch(from: Int, patch: Coll[A], replaced: Int): Coll[A]
-
-  /** A copy of this collection with one single replaced element.
-    *  @param  index  the position of the replacement
-    *  @param  elem   the replacing element
-    *  @return a new collection which is a copy of this collection with the element at position `index` replaced by `elem`.
-    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
-    */
-  def updated(index: Int, elem: A): Coll[A]
-
-  /** Returns a copy of this collection where elements at `indexes` are replaced
-    * with `values`. 
-    */
-  def updateMany(indexes: Coll[Int], values: Coll[A]): Coll[A]
-
-  /** Selects an interval of elements.  The returned collection is made up
-   *  of all elements `x` which satisfy the invariant:
-   *  {{{
-   *    from <= indexOf(x) < until
-   *  }}}
-   *  @param from   the lowest index to include from this collection.
-   *  @param until  the lowest index to EXCLUDE from this collection.
-   */
-  def slice(from: Int, until: Int): Coll[A]
-  
-  /** Puts the elements of other collection after the elements of this
-    * collection (concatenation of 2 collections).
-    */
-  def append(other: Coll[A]): Coll[A]
-  
-  /** Finds index of first occurrence of some value in this collection after or
-    * at some start index.
-    *  @param   elem   the element value to search for.
-    *  @param   from   the start index
-    *  @return  the index `>= from` of the first element of this collection that is equal (as determined by `==`)
-    *           to `elem`, or `-1`, if none exists.
-    */
-  def indexOf(elem: A, from: Int): Int
-}
-```
-
-Each item can be accessed by constant index, for example:
-
-```scala
-val myOutput = OUTPUTS(0)
-val myInput = INPUTS(0)
-```
-
-Any collection have the `size` property which returns the number of elements in
-the collection.
-
-```scala
-val size = OUTPUTS.size
-```
-
-The following script check the existence of some element in the collection
-satisfying some predicate (condition)
-
-```scala
-val ok = OUTPUTS.exists { (box: Box) => box.value > 1000 }
-```
-
-### Predefined global functions
-
-<a name="PredefinedFunctions"></a>
-
-ErgoScript standard library include predefined functions that can be called
-without prior declaration.
-
-The following function declarations are automatically imported into any script:
-
-```scala
-/** Returns true if all the elements in collection are true. */
-def allOf(conditions: Coll[Boolean]): Boolean
-
-/** Returns true if at least on element of the conditions is true */
-def anyOf(conditions: Coll[Boolean]): Boolean
-
-/** Similar to allOf, but performing logical XOR operation instead of `&&` */
-def xorOf(conditions: Coll[Boolean]): Boolean 
-
-/** Returns SigmaProp value which can be ZK proven to be true 
- * if at least k properties can be proven to be true. 
- */
-def atLeast(k: Int, properties: Coll[SigmaProp]): SigmaProp
-    
-/** Embedding of Boolean values to SigmaProp values. As an example, this
- * operation allows boolean expressions to be used as arguments of
- * `atLeast(..., sigmaProp(myCondition), ...)` operation.
- */
-def sigmaProp(condition: Boolean): SigmaProp
-        
-/** Cryptographic hash function Blake2b256 (See scorex.crypto.hash.Blake2b256) */
-def blake2b256(input: Coll[Byte]): Coll[Byte]
-
-/** Cryptographic hash function Sha256 (See scorex.crypto.hash.Sha256) */
-def sha256(input: Coll[Byte]): Coll[Byte]
-
-/** Create BigInt from a collection of bytes. */
-def byteArrayToBigInt(input: Coll[Byte]): BigInt
-
-/** Create Long from a collection of bytes. */
-def byteArrayToLong(input: Coll[Byte]): Long  
-
-/** Returns bytes representation of Long value. */
-def longToByteArray(input: Long): Coll[Byte]
-
-/** Convert bytes representation of group element (ECPoint) 
-  * to a new value of GroupElement (using
-  * org.bouncycastle.math.ec.ECCurve.decodePoint())
-  */
-def decodePoint(bytes: Coll[Byte]): GroupElement 
-
-
-/** Extracts Context variable by id and type.
-  * ErgoScript is typed, so accessing a the variables is an operation which involves
-  * some expected type given in brackets. Thus `getVar[Int](id)` expression should
-  * evaluate to a valid value of the `Option[Int]` type.
-  *
-  * For example `val x = getVar[Int](10)` expects the variable, if it is present, to have
-  * type `Int`. 
-  *
-  * There are three cases:
-  * 1) If the variable doesn't exist.
-  *   Then `val x = getVar[Int](id)` succeeds and returns the None value, which conforms to
-  *   any value of type `Option[T]` for any T. (In the example above T is equal to
-  *   `Int`). Calling `x.get` fails when x is equal to None, but `x.isDefined`
-  *   succeeds and returns `false`.
-  * 2) If the variable contains a value `v` of type `Int`.
-  *   Then `val x = getVar[Int](id)` succeeds and returns `Some(v)`, which is a valid value
-  *   of type `Option[Int]`. In this case, calling `x.get` succeeds and returns the
-  *   value `v` of type `Int`. Calling `x.isDefined` returns `true`.
-  * 3) If the variable contains a value `v` of type T other then `Int`.
-  *   Then `val x = getVar[Int](id)` fails, because there is no way to return a valid value
-  *   of type `Option[Int]`. The value of variable is present, so returning it as None
-  *   would break the typed semantics of variables collection.
-  *
-  * In some use cases one variable may have values of different types. To access such
-  * variable an additional variable can be used as a tag.
-  *
-  * <pre class="stHighlight">
-  *   val tagOpt = getVar[Int](id)
-  *   val res = if (tagOpt.isDefined) {
-  *     val tag = tagOpt.get
-  *     if (tag == 1) {
-  *       val x = getVar[Int](id2).get
-  *       // compute res when value x is of type Int
-  *     } else if (tag == 2) {
-  *       val x = getVar[GroupElement](id2).get
-  *       // compute res when value x is of type GroupElement
-  *     } else if (tag == 3) {
-  *       val x = getVar[ Array[Byte] ](id2).get
-  *       // compute res when value x of type Array[Byte]
-  *     } else {
-  *       // compute `res` when `tag` is not 1, 2 or 3
-  *     }
-  *   }
-  *   else {
-  *     // compute value of res when the variable is not present
-  *   }
-  * </pre>
-  *
-  * @param id zero-based identifier of the variable.
-  * @tparam T expected type of the variable.
-  * @return Some(value) if the variable is defined in the context AND has the given type.
-  *         None otherwise
-  * @throws special.sigma.InvalidType exception when the type of the variable value is
-  *                                   different from cT.
-  */
-def getVar[T](tag: Int): Option[T]
-
-/** Executes the script stored in the Context variable with the given tag.
-  * This is distinct from `getVar`, which simply retrieves the evaluated value stored
-  * in the variable. `executeFromVar` performs a macro-like substitution: it takes
-  * the script (typically stored as `Coll[Byte]` representing serialized ErgoTree)
-  * from the variable and executes it in the current context.
-  *
-  * This is particularly useful for advanced contract patterns like MAST (Merkleized
-  * Abstract Syntax Trees) where script fragments are stored and executed dynamically.
-  *
-  * @param tag zero-based identifier of the context variable containing the script bytes.
-  * @tparam T expected type of the script's result after execution.
-  * @return The result of executing the script stored in the variable.
-  * @throws InterpreterException if the variable is not found, does not contain
-  *         valid serialized ErgoTree, or if the script execution fails or results
-  *         in a type different from T.
-  */
-def executeFromVar[T](tag: Int): T
-
-/** Construct a new SigmaProp value representing public key of Diffie Hellman
-  * signature protocol. When executed as part of Sigma protocol allow to provide
-  * for a verifier a zero-knowledge proof of secret knowledge.
-  */
-def proveDHTuple(g: GroupElement, h: GroupElement, 
-                 u: GroupElement, v: GroupElement): SigmaProp
-                 
-/** Construct a new SigmaProp value representing public key of discrete
-  * logarithm signature protocol. When executed as part of Sigma protocol allow
-  * to provide for a verifier a zero-knowledge proof of secret knowledge.
-  */
-def proveDlog(value: GroupElement): SigmaProp
-
-/** Transforms Base16 encoded string literal into constant of type BigInt.
-  * It is a compile-time operation and only string literal (constant) can be its
-  * argument.
-  */
-def fromBase16(input: String): Coll[Byte]
-
-/** Transforms Base58 encoded string literal into constant of type Coll[Byte].
-  * It is a compile-time operation and only string literal (constant) can be its
-  * argument.
-  */
-def fromBase58(input: String): Coll[Byte]
-
-/** Transforms Base64 encoded string literal into constant of type Coll[Byte].
-  * It is a compile-time operation and only string literal (constant) can be its
-  * argument.
-  */
-def fromBase64(input: String): Coll[Byte]
-
-/** It is executed in compile time. The compiler takes Base58 encoding of public
-  * key as String literal and create GroupElement constant. Then the compiler
-  * used this constant to construct proveDlog public key out of it.
-  */
-def PK(input: String): SigmaProp
-    
-/** Deserializes values from Base58 encoded binary data at compile time into a
-  * value of type T.
-  */
-def deserialize[T](string: String): T
-
-/**
-  * Transforms serialized bytes of ErgoTree with segregated constants by
-  * replacing constants at given positions with new values. This operation allow
-  * to use serialized scripts as pre-defined templates.
-
-  * The typical usage is "check that output box have proposition equal to given
-  * script bytes, where minerPk (constants(0)) is replaced with currentMinerPk".
-  * Each constant in original scriptBytes have SType serialized before actual
-  * data (see ConstantSerializer). During substitution each value from newValues
-  * is checked to be an instance of the corresponding type. This means, the
-  * constants during substitution cannot change their types.
-  *
-  * @param scriptBytes serialized ErgoTree with ConstantSegregationFlag set to 1.
-  * @param positions zero based indexes in ErgoTree.constants array which should
-  *                  be replaced with new values
-  * @param newValues new values to be injected into the corresponding positions
-  *                  in ErgoTree.constants array
-  * @return original scriptBytes array where only specified constants are
-  *         replaced and all other bytes remain exactly the same
-  */
-def substConstants[T](scriptBytes: Coll[Byte], positions: Coll[Int], newValues: Coll[T]): Coll[Byte]
-```
-
-## Examples
-
-See [white paper for examples](https://ergoplatform.org/docs/ErgoScript.pdf)
 
 
 ========================================================================
@@ -91477,11 +90877,11 @@ const vestingOutput = new OutputBuilder(
 title: "Two-Pass Contract Audit Methodology"
 category: pattern
 difficulty: advanced
-tags: [ergoscript, audit, security, llm, two-pass]
+tags: [ergoscript, audit, security, llm, two-pass, dual-pass, adjudication, severity]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-03-09
+updated: 2026-09-08
 ---
 # Two-Pass Contract Audit Methodology
 
@@ -91549,17 +90949,30 @@ The second pass addresses all three by reviewing the first pass output against t
 
 ---
 
+## Why Two *Independent* Pass 1 Runs on Fund-Holding Contracts
+
+Pass 2 verifies Pass 1. It cannot recover a false negative that Pass 1 never raised. For any contract that holds or moves funds, run Pass 1 **twice, in two separate contexts, with the same pre-named traps and no sight of each other's output**, and only then run Pass 2 on the merged findings.
+
+**What happened without it.** In the Dexy-stable engagement (September 2026), two auditors were given the same trap on the same LP cluster: can a non-LP box at input 0 with a genuine swap box satisfy `swap.es` and yield a gain? The auditor on `main.es`/`swap.es` composed the decoy layout and rated it HIGH. The auditor on `mint.es`/`redeem.es` **refuted the same trap**, arguing that singleton coupling forced the real pool to input 0. No such line exists in the source. The contradiction is what forced a manual read; the pool had already been drained on mainnet. A single Pass 1 assigned to mint and redeem would have declared the cluster clean, and Pass 2 would have verified that.
+
+**Adjudication rule.** Any disagreement between the two runs is a mandatory adjudication, and the burden of proof is on whichever side said *safe*: it must cite the specific line that closes the attack, and the adjudicator verifies that line does what was claimed. If the line does not exist or does not close it, the finding stands at the severity the other run derived. An adjudication resolved as safe without a verified line is not permitted. Adjudication is decided from source; a landed transaction is corroboration, not the deciding evidence.
+
+**In Claude Code** this is two subagents dispatched in parallel with the same prompt. **With any client**, it is two separate conversations. The tools cannot enforce independence; the caller's orchestration is what provides it. The full engagement structure around this (scope memo, value ledger, procedure checklist, workpapers, retest, sign-off) is the `contract-audit-engagement` skill.
+
+---
+
 ## Pass 1: Initial Comprehensive Audit
 
 The first pass performs a standard security audit with pre-calibration:
 
 1. **Explain** what the contract does in simple terms
-2. **List vulnerabilities** found (with severity: CRITICAL, HIGH, MEDIUM, LOW)
-3. **Identify logic errors** or potential bugs
-4. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
-5. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
-6. **Provide specific recommendations** with code fixes
-7. **Rate overall security** (1-10)
+2. **Enumerate every spend path** of every value-holding box and run the debit-side procedures D-1..D-13 on each (see the Audit Program reference); state the reconciliation (inputs minus pinned outputs = residual, and who receives it)
+3. **Return a verdict per pre-named trap** (T1..T19) with `file:line` either way; ABSENT without a cited line is not a verdict
+4. **List findings** with severity derived from the matrix: magnitude class × likelihood class → cell, plus modifiers; deployment status as a separate field
+5. **Identify logic errors** or potential bugs
+6. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
+7. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
+8. **Provide specific recommendations** with code fixes, and confirm the honest path still passes under each fix
 
 **Key:** The system prompt includes the LLM pitfall warnings BEFORE the first pass runs. This pre-calibration reduces (but does not eliminate) false positives in Pass 1 itself.
 
@@ -91583,7 +90996,8 @@ The second pass receives both the original contract AND the complete Pass 1 outp
    - Edge cases in HEIGHT comparisons
    - Data input manipulation vectors
    - Front-running opportunities
-6. **Produce final consolidated report** with adjusted security rating
+6. **Re-derive severity from the matrix** for every finding without reference to Pass 1's cell; log any difference as a ruling with the cell cited
+7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent
 
 ---
 
@@ -91600,7 +91014,7 @@ The optional description field ("what the contract should do") enables **intent-
 
 When implementing this pattern as an MCP tool, the audit context should be dynamically assembled:
 
-1. **Static context:** Known issues, secure patterns, LLM pitfalls (always included)
+1. **Static context:** Known issues, secure patterns, LLM pitfalls, and the Audit Program (debit-side procedures, trap register, severity matrix) — always included in both passes so they test the same population and rate on the same scale
 2. **Dynamic context:** Semantic search results from the EKB matching patterns found in the contract code (e.g., if the contract uses `HEIGHT`, pull timelock patterns; if it uses oracle data inputs, pull oracle authentication patterns)
 
 This gives the auditing LLM both the calibration data and specific relevant reference material for the contract being audited.
@@ -91609,6 +91023,8 @@ This gives the auditing LLM both the calibration data and specific relevant refe
 
 ## References
 
+- Audit Program (procedures, traps, severity matrix) — `content/reference/ergoscript/audit-program.md`
+- Contract Audit Engagement skill — `content/skills/contract-audit-engagement.md`
 - Known ErgoScript Security Issues — `content/reference/ergoscript/known-issues.md`
 - ErgoScript Audit Context (LLM Pitfalls) — `content/reference/ergoscript/audit-context.md`
 - Ergo Labs implementation — `ergolabs.degens.world/contract-audit`
@@ -99890,6 +99306,134 @@ This proposed contract allows any kind of tokens to be auctioned while supportin
 
 ========================================================================
 
+<!-- FILE: content/reference/eips/eip-0023.md -->
+---
+title: "EIP-0023: Oracle Pool v2.0"
+description: "Oracle pool protocol v2 with compact pool box, token rewards, transferable oracle/ballot tokens, and epoch-based data collection"
+category: reference
+difficulty: advanced
+tags: [eip, eip-0023, oracle-pool, oracles, data-feeds, price-oracle]
+source: ergo-eips
+source_url: "https://github.com/ergoplatform/eips/pull/41"
+authors: "scalahub, greenhat, kettlebell, SethDusek"
+status: "Proposed"
+updated: 2026-03-15
+related_projects: [oracle-pools, oracle-core]
+---
+
+# EIP-0023: Oracle Pool v2.0
+
+- **Authors:** @scalahub, @greenhat, @kettlebell, @SethDusek
+- **Status:** Proposed (PR #41 — not yet merged, but live in production)
+- **Created:** 07-Sep-2021
+- **License:** CC0
+- **Reference implementation:** [ergoplatform/oracle-core](https://github.com/ergoplatform/oracle-core)
+- **Contracts source:** [eip-0023/contracts/](https://github.com/ergoplatform/eips/tree/cae50b72/eip-0023/contracts/)
+
+> **Note:** Despite being unmerged, EIP-23 is the **live production protocol** powering the ERG/USD oracle pool and other data feeds on mainnet. Oracle Core v2 implements this spec.
+
+Update to oracle pool v1.0 ([EIP-16](https://github.com/ergoplatform/eips/blob/eip16/eip-0016.md)). See also the [Oracle Pools developer overview](../../ecosystem/oracle-pools/overview_oracle-pools.md) for implementation details and the [contract analyses](../../ecosystem/oracle-pools/contracts/) for annotated ErgoScript.
+
+## Motivation — v1.0 Drawbacks
+
+1. Rewards generate a lot of dust
+2. Current rewards are too low
+3. Two types of pool boxes make dApps and update mechanism complex
+4. Oracle tokens are non-transferable — oracles locked permanently (same for ballot tokens)
+
+## Key Changes from v1.0
+
+| Feature | v1.0 | v2.0 |
+|---|---|---|
+| Pool addresses | Two (epoch-prep + live) | **Single pool address** |
+| Reward mechanism | ERG payouts (dust) | **Token rewards** accumulated in oracle boxes |
+| Oracle boxes in refresh | Data-inputs (read-only) | **Inputs** (spent and recreated with reward) |
+| Token transferability | Locked to original owner | **Freely transferable** (oracle + ballot tokens) |
+| Pool box complexity | Contains refresh logic | **Compact** — refresh logic in separate box |
+| Epoch tracking | Implicit | **Explicit epoch counter** in R5 |
+| Funding process | Separate funding required | **No separate funding** — pool emits reward tokens |
+
+## Parameters
+
+| Parameter | Symbol | Default | Meaning |
+|---|---|---|---|
+| Epoch period | `epochLength` | 30 | Blocks per epoch (~60 min) |
+| Buffer | `buffer` | 4 | Max height error for new epoch start |
+| Total oracles | — | 15 | Max oracles posting data points |
+| Min data points | `minDataPoints` | 4 | Min fresh data points to refresh |
+| Max deviation | `maxDeviationPercent` | 5 | Max % spread between first/last sorted data points |
+| Total ballots | — | 15 | Voters for governance updates |
+| Min votes | `minVotes` | 6 | Threshold for update approval |
+
+## Tokens
+
+| Token | Quantity | Purpose | Location |
+|---|---|---|---|
+| Pool-NFT | 1 | Identify pool box | Pool box |
+| Refresh-NFT | 1 | Identify refresh box | Refresh box |
+| Update-NFT | 1 | Identify update box | Update box |
+| Oracle tokens | 15 | Identify oracle boxes | Oracle boxes |
+| Ballot tokens | 15 | Identify ballot boxes | Ballot boxes |
+| Reward tokens | 100M | Oracle incentives | Pool box → Oracle boxes |
+
+## Box Types and Registers
+
+| Box | Tokens | Key Registers | Purpose |
+|---|---|---|---|
+| **Pool** | Pool-NFT, Reward tokens | R4: Rate (Long), R5: Epoch counter (Int) | Publish rate for dApps |
+| **Refresh** | Refresh-NFT | — | Guards refresh logic |
+| **Oracle** (×15) | Oracle token, Reward tokens | R4: PubKey (GroupElement), R5: Epoch counter (Int), R6: Rate (Long) | Post data points |
+| **Update** | Update-NFT | — | Guards governance updates |
+| **Ballot** (×15) | Ballot token | R4: PubKey (GroupElement), R5: Update box height (Int), R6: New pool hash (Coll[Byte]) | Vote for updates |
+
+## Contracts
+
+Five ErgoScript contracts implement the protocol:
+
+- [Pool Contract](../../ecosystem/oracle-pools/contracts/pool-contract.md) — Minimal guard: requires refresh-NFT or update-NFT in second input
+- [Refresh Contract](../../ecosystem/oracle-pools/contracts/refresh-contract.md) — Epoch validation, data point sorting/averaging, deviation check, reward emission
+- [Oracle Contract](../../ecosystem/oracle-pools/contracts/oracle-contract.md) — Owner-signed data posting, reward accumulation, token transfer
+- [Ballot Contract](../../ecosystem/oracle-pools/contracts/ballot-contract.md) — Owner-signed voting, update participation
+- [Update Contract](../../ecosystem/oracle-pools/contracts/update-contract.md) — Governance threshold check, pool box replacement
+
+## Transactions
+
+| Transaction | Inputs | Purpose |
+|---|---|---|
+| **Refresh pool** | Pool + Refresh + Oracles | Average data points → update pool rate |
+| **Publish data point** | Oracle | Oracle posts current rate |
+| **Extract reward tokens** | Oracle | Withdraw accumulated rewards |
+| **Transfer oracle token** | Oracle | Change oracle ownership |
+| **Vote for update** | Ballot | Cast governance vote |
+| **Update pool** | Pool + Update + Ballots | Replace pool box script |
+| **Transfer ballot token** | Ballot | Change ballot ownership |
+
+### Refresh Transaction Detail
+
+The refresh is the core transaction:
+1. Pool box (input 0) requires refresh box as input 1
+2. Refresh contract validates: epoch elapsed, min data points posted, sorted in increasing order, max deviation check
+3. Each oracle box is **spent** (not data-input) and recreated with +1 reward token
+4. Pool box output: averaged rate in R4, incremented epoch counter in R5
+5. Collector (tx creator) receives n+1 reward tokens; other oracles get 1 each (incentivizes including all valid oracles)
+
+### Update Rules
+
+Parameters are hard-wired in the refresh contract. Updating one component may require updating others:
+
+| To Update | Must Also Update |
+|---|---|
+| Pool params (epochLength, etc.) | Refresh-NFT + Refresh box |
+| Oracle tokens | Refresh-NFT + Refresh box + Oracle boxes |
+| Update-NFT | Update box + Ballot tokens + Ballot boxes |
+| Reward tokens | Pool box |
+| Ballot tokens | Update-NFT + Update box + Ballot boxes |
+
+Old boxes left for garbage collection via storage rent; their tokens become available to miners.
+
+
+========================================================================
+
 <!-- FILE: content/reference/eips/eip-0024.md -->
 ---
 title: "EIP-0024: Artwork Standard"
@@ -101445,10 +100989,10 @@ Implements a `proveDHTuple(g, h, u, v)` Sigma protocol proof, where the sender d
 title: "ErgoScript Audit Context — LLM Pitfalls & Calibration"
 category: reference
 difficulty: advanced
-tags: [ergoscript, audit, llm, security, calibration]
+tags: [ergoscript, audit, llm, security, calibration, semantics, probes]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-03-09
+updated: 2026-09-23
 ---
 # ErgoScript Audit Context — LLM Pitfalls & Calibration
 
@@ -101500,6 +101044,55 @@ LLMs miss that some patterns are intentional design choices:
 
 ---
 
+## Settled Semantics (empirical, do not re-derive)
+
+Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during the
+ErgoDEX engagement, 2026-09-17 to 2026-09-20. These are probe results, not inferences, and
+each has already flipped at least one real finding's verdict.
+
+**Arithmetic and indexing fail closed, they do not fail open.**
+
+- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS and the whole
+  script fails, including when the read sits inside an untaken `if` arm. A `tokens.size >= n`
+  guard makes the same script pass. `getOrElse` returns the default.
+- `Long * Int` and `Long * Long` overflow THROW ("long overflow"). The same product taken
+  `.toBigInt` first does not overflow.
+- `BigInt` division by zero THROWS ("BigInteger divide by zero").
+
+Consequence: a finding whose impact depends on one of these silently producing a wrong value
+is wrong as written. The transaction does not exist. Rate the denial of service, not the theft.
+
+**`getOrElse` on a register rescues only the ABSENT register.**
+
+`box.R4[Int].getOrElse(0)` against a box whose R4 is present but of another type THROWS
+("Cannot getReg[Int](4): invalid type of value ... at id=4"). The default is supplied for
+`None` only.
+
+- A "fails open to the default" finding against a wrong-typed register is therefore usually
+  WRONG: the read fails closed instead.
+- A box whose own script reads `R4[Int]` unconditionally is UNSPENDABLE BY ANYONE if its R4 is
+  wrong-typed. That is a full shield and it is worth crediting before rating a dependent
+  contract's register read.
+- A refund arm's reachability must be argued from who controls the box layout, not from the
+  read being throw-safe.
+
+**`getMany` returns a repeated key repeatedly.** A collection taken from a context variable
+and passed to `getMany` without a distinctness check yields duplicate entries, so a per-entry
+sum or payout can be satisfied more than once by one real entry. This is the origin of trap T8.
+
+**Two harness caveats, so a clean probe is not mistaken for a safe contract.**
+
+- A MockChain PASS does not prove node validity on value. MockChain does not enforce the node's
+  min-value-per-byte rule: an output of 59,999 nanoERG executes there although a token-free
+  P2PK box needs about 60,000. Confirm with the node's `POST /transactions/check`, or compute
+  the minimum from the serialized size.
+- `TransactionBuilder.from([...])` runs an input selector that SILENTLY DROPS listed inputs the
+  outputs do not need, so a script box may never be spent and every script appears to pass,
+  including `sigmaProp(false)`. Pass `{ ensureInclusion: true }` and assert `tx.inputs.length`
+  before trusting any probe result.
+
+---
+
 ## How to Use Audit Findings
 
 1. **Treat LLM audit findings as hypotheses** — verify each against the ErgoScript Language Specification (LangSpec) and the actual on-chain constraints.
@@ -101524,6 +101117,258 @@ When auditing ErgoScript contracts:
 6. Detect **OR-branch bypasses** — test each OR branch independently for unintended spending
 7. Check for **front-running vulnerabilities** — identify where sensitive data is revealed in the spending transaction
 8. Verify **data input validation** — ensure data inputs are authenticated, not just assumed
+
+
+========================================================================
+
+<!-- FILE: content/reference/ergoscript/audit-program.md -->
+---
+title: "ErgoScript Audit Program — Procedures, Traps, and Severity Matrix"
+description: "Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T19, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill."
+category: reference
+difficulty: advanced
+tags: [ergoscript, audit, security, severity, traps, debit-side, procedures]
+sdk: [none]
+author: CannonQ
+source: original
+license: AGPL-3.0
+updated: 2026-09-19
+---
+# ErgoScript Audit Program
+
+These tools run **once per contract, never on several contracts concatenated** — the
+matched-docs are a semantic search on one contract's patterns, and bundling dilutes the
+match and overflows the input. One `audit_contract` and one `audit_verify` per contract.
+
+This is the working checklist for a contract audit. It is injected into both audit
+passes so that Pass 1 and Pass 2 test the same population, answer the same traps, and
+rate on the same matrix. The full engagement method (phases, workpapers, dual-pass
+adjudication, delivery, retest) is the `contract-audit-engagement` skill.
+
+## The principle: audit the debit side
+
+Value under a contract leaves only when a guarded box is spent, and the script is the
+sole approval control over that spend. So the audit population is every (box, spend
+path) pair. For each one, answer the five questions an auditor asks of a cheque:
+
+| Cheque question | eUTXO question |
+|---|---|
+| Who approved it? | Who can build a valid spending tx: signature, or permissionless with conditions? |
+| Who is the payee? | Is every value-carrying output's script pinned, or is the recipient builder-chosen? |
+| Is the amount right? | Rounding, overflow, integer division, unit mismatch, sum conservation? |
+| Does it reconcile? | Inputs minus script-pinned outputs = residual. Who gets the residual? |
+| Recorded so it can't be paid twice? | Is the state update (AVL remove, register advance, successor box) enforced on *this* path? |
+
+Paths that create a claim (deposit, register, mint) are the credit side: confirm the
+matching value actually arrived and the claim is bounded by it. Everything else is
+presentation.
+
+## Assumptions and omissions
+
+Every protocol works under assumptions: initial state, invariants across transitions,
+which actors are honest and in what proportion, what off-chain parties keep doing.
+Some are enforced by a line; some hold only because the developer expects them to.
+Obtain them from the developer before fieldwork and put them in a register with:
+enforced by (`file:line`) or **unenforced**, compensating control, what breaks if it
+fails, and how easily it fails (one actor / k actors / proportion / honest liveness
+failure). Test inside the assumptions first, so a scenario that needs an assumption to
+fail is not reported as if reachable. Then remove each easy-to-fail row and re-test.
+
+In eUTXO, **every check a script does not make is a decision.** Intentional omissions
+go in the register with the developer's reason; verify it against the code (cite the
+line that makes the omitted check redundant, or the cost that makes it unaffordable).
+An omission with neither is a finding under Completeness.
+
+## Procedures
+
+Run every debit-side procedure on every spend path of every fund-holding box. Record
+each as **done** (line cite), **exception** (finding), or **N/A** (reason).
+
+### Debit side (per spend path)
+
+| # | Procedure | Assertion |
+|---|---|---|
+| D-1 | **Authorization.** Who can build a valid spending tx? If permissionless, list the conditions and confirm they are not trivially satisfiable. | Rights & Obligations |
+| D-2 | **Self-identification.** Does the script pin its own input (`SELF.id == INPUTS(i).id`, `selfBoxIndex`)? If it assumes `INPUTS(0)` is itself, can a builder place a decoy there? | Existence |
+| D-3 | **Counterparty identification.** Every input and data input read: pinned by NFT, by script hash, or only by position? | Existence |
+| D-4 | **Payee pinning.** Every output carrying value out: script constrained? Recipient from trusted state, or from a builder-supplied context var? | Completeness |
+| D-5 | **Amount.** Rounding direction, integer division, overflow reliance, unit mismatch, output sum tied to input? | Accuracy |
+| D-6 | **Reconciliation.** Inputs minus pinned outputs = residual. Bounded? Who receives it? An unbounded residual to the builder is a finding. | Completeness, Accuracy |
+| D-7 | **State update.** What must change so the same claim cannot be paid again, and is it enforced on *this* path, not just a sibling? | Completeness |
+| D-8 | **Path selection.** Can the builder force a different branch: op byte unread, threshold flipped by an inflated sum? | Classification |
+| D-9 | **Cutoff.** Every `HEIGHT` or time condition: can the window be shortened, moved, or backdated? Register bounded on both sides? | Cutoff |
+| D-10 | **Duplicates.** Every collection from a context var or register: distinctness required? `getMany` returns a repeated key repeatedly. | Existence |
+| D-11 | **Liveness dependence.** Does safety require someone to act within a window? Name who and the window. Floor MEDIUM. | Cutoff |
+| D-12 | **Termination and lock.** Can the box reach a state with no valid spend? Refund or eviction path for stuck value? | Completeness |
+| D-13 | **Front-running.** If permissionless, can a mempool observer replace an honest tx spending the same box with a hostile variant? | Existence |
+| D-14 | **Lifecycle (multi-transaction).** Walk the box create → use → expire → renew → collect; a sequence of individually-valid txs can harm someone (entry slashable after expiry, registration with no renewal, singleton aging into rent) even when every single tx passed D-1..D-13. The procedure a single-pass audit most often skips. | Completeness, Cutoff |
+
+### Credit side (per claim-creating path)
+
+| # | Procedure |
+|---|---|
+| C-1 | Does the value the claim represents actually arrive in a guarded box in the same tx, and is that checked? |
+| C-2 | Is the claim size bounded by the value that arrived? |
+| C-3 | Can a claim be created with zero or recycled value (same box counted twice, decoy deposit)? |
+
+### Source level (per contract)
+
+| # | Procedure |
+|---|---|
+| S-1 | **Header vs enforced logic.** List every claim the header makes; verify each against code. Read the comment *after* the code. |
+| S-2 | **Fix diffusion.** Every check one contract does right, every finding, every trap: search every sibling. Asymmetry is the signal. |
+| S-3 | **Static test audit.** Read tests as evidence of intended tx layouts even if they cannot be run. A test placing an unconstrained box at an unrestricted position is evidence *for* a finding. Check that line numbers the tests cite still match the pinned source; stale anchors are INFO. |
+| S-4 | **Instance parity.** Every deployed instance of the contract set at equal rigour, ranked by value held, not by which is the flagship. |
+
+### Assumptions (per register row)
+
+| # | Procedure |
+|---|---|
+| A-1 | Enforcing line found, or unenforced with a named compensating control, or a finding. |
+| A-2 | Each intentional omission's reason verified against code: redundant (cite line) or unaffordable (cite cost), else a finding. |
+| A-3 | Failure test: with this row removed, which spend paths' results change, and at what actor threshold. |
+
+### Incentives (once, design level)
+
+Sound scripts can still fail if the rational move for some role is one the design did
+not intend. This is the fraud-risk assessment: incentive, not just opportunity.
+
+| # | Procedure |
+|---|---|
+| G-1 | **Payoff table.** Per role, per path: honest play vs deviant play. Any cell where deviation pays more is a finding candidate. |
+| G-2 | **Actor threshold.** Per finding: how many actors of what kind must deviate (one, k-of-n, 51% of stake, all honest keepers offline for T). One anonymous actor is the lowest bar. |
+| G-3 | **Rational vs malicious.** Profitable deviation: the population is everyone, class as if permissionless. Griefing-only: cost relative to harm sets the class. "Needs a malicious actor" never lowers a cell by itself. |
+| G-4 | **Permissionless incentives.** Who is paid to keep, liquidate, challenge, reset; is it enough; what if nobody does. |
+| G-5 | **Adverse states.** When does rational play harm the protocol (bank run, profitable oracle manipulation, cascade, reseeding a drained pool at a chosen price). |
+
+### Off-chain (builders and frontend, in scope by default when a UI exists)
+
+The user signs what a builder constructed and a frontend displayed.
+
+| # | Procedure |
+|---|---|
+| B-1 | Every user action maps to a builder and one contract path. Contract paths no builder constructs (refunds, exits) are stuck value in practice: M-Lock. |
+| B-2 | The builder pins what the script leaves open (payee, residual). A script that lets the builder choose is safe only if every builder chooses correctly: an off-chain trust edge. |
+| B-3 | Displayed equals enforced: slippage, fees, recipients, amounts, deadlines. |
+| B-4 | Every server-supplied value that enters a transaction; what a compromised backend could make the user sign. |
+| B-5 | Signing scope: the user signs exactly what was shown; nothing added after display. |
+
+### Entity level (once)
+
+| # | Procedure |
+|---|---|
+| E-1 | **Key inventory.** Every admin PK, whitelist, config box: single signer or multisig, mainnet variant present, what it can change. Single signer on mainnet is KEY-RISK. |
+| E-2 | **Upgrade paths.** What can change, by whom, with what delay. |
+| E-3 | **Off-chain coupling.** What breaks if the keeper or parameter is wrong or absent. |
+| E-4 | **Build and hash pinning.** Repo builds; hash-pinning tests green *in this run*; re-pin procedure documented. |
+| E-5 | **Traps.** Every trap below has an explicit verdict per contract with a line cite either way. |
+| E-8 | **Cross-group composition.** Consolidate every trust edge (X assumes Y checks Z; closed by `file:line` or UNVERIFIED; how the counterparty is pinned) across all groups, then ask — over the edges alone, no source — which unverified or cross-group edges compose into an attack. Each candidate names the lines to read; settle it from source. Per-group passes see only their own end of an edge; this step sees both ends. The Dexy drain was two such edges composing. |
+
+## Coverage check
+
+Before fieldwork, one read-only agent on a cheap model is given only the interaction
+map and the value ledger (no source) and names any box, terminal spend, or credit path
+with no ledger row; each proposal is settled from source (add the row or log a
+decision). The stdlib `validate-audits.py --phase {3,5,8}` then gates fieldwork
+dispatch, the report, and sign-off as a hard gate.
+
+## Pre-named traps
+
+Every one comes from a real finding. Return a verdict per contract with `file:line`
+either way. The vocabulary is fixed and the pole matters: **PRESENT** = the
+vulnerability class is present; **ABSENT** = the class applies and the closing line is
+cited; **N/A** = the construct does not exist in this contract; **PARTIAL** = present on
+some paths, or pending a named probe. "PRESENT (enforced)" is not a verdict, and
+ABSENT without a cited line is not a verdict.
+
+| ID | Class | Check | Origin |
+|---|---|---|---|
+| T1 | Decoy input / positional index | Script reads `INPUTS(n)` / `OUTPUTS(n)` / `dataInputs(n)` without pinning the slot by NFT, script hash, or `== SELF`. | Dexy LP drain, 2026-09-07 (~288k ERG), `main.es`/`swap.es` |
+| T2 | Guard + logic context-var execution | What is hashed vs executed, byte for byte; any path where guard runs without logic; absent ctx var fails closed? | Lithos 2026-09 |
+| T3 | Singleton NFT conservation | Every spend path forces the NFT into a successor at the same script, pinned by propositionBytes or hash. | Lithos 2026-09 |
+| T4 | AVL proofs | Digest pinned into successor; lookup proof for a different key; insert twice; flags/keyLength preserved. | Lithos 2026-09 |
+| T5 | Bond / value accounting | Trace every arithmetic step across the lifecycle; any exit without a matching decrement. | Lithos 2026-09 |
+| T6 | Permissionless spend driven by another box | Driver pinned by NFT not script; driver's logic constrains where the gated value goes. | Lithos 2026-09 |
+| T7 | Testnet artifacts reaching mainnet | PK-gated whitelists/configs, dead testnet contracts; is there a mainnet variant at all. | Lithos K-1/K-2 |
+| T8 | Terminal path lacks the sibling's state update | Non-terminal branch removes; terminal branch does not and enforces no sum conservation; ctx-var collection without distinctness. | Lithos H-1 `Payout.ergo` path 3 |
+| T9 | Op byte unread on the co-spent side | A box that may only leave in counterparty op *k* never reads the counterparty's op var; escapes inside any other op. | Lithos H-2 `MinerData_Logic` |
+| T10 | Late honest action backdates a window | Period boundary set from `HEIGHT` at transform; late transform collapses a protective window. | Lithos M-1 `Holding_Logic:190` |
+| T11 | Unpinned value swept as residual | Extra admitted input with no pinned output, or withdrawal pins payees but not the remaining reserve; builder pockets it. | Lithos M-2; Dexy F-9 `hodlcoin.es` |
+| T12 | Capacity exhaustion with no eviction | Bounded set fillable by entries that never progress; no removal path; permanent halt. | Lithos M-3 `Collateral_Mainnet` |
+| T13 | Shared credential token across targets | One NFT id in N units authorises N boxes; any unit at `INPUTS(0)` satisfies every target; update tx admits extra inputs. | Dexy F-2 `bank.es:82`, `update.es:56` |
+| T14 | Register bounded one way on a permissionless path | `>=` but no `<=`; spender sets far future; height-gated path frozen, no recovery. | Dexy F-3 `payout.es:70` |
+| T15 | Script-preservation compare that skips bytes | `propositionBytes.slice(1, size)` leaves the header byte free; successor unspendable. Compare full bytes or hash. | Dexy F-4 `emission.es:24` |
+| T16 | One branch lacks the script pin its siblings have | Siblings check successor `propositionBytes` + value floor; one branch checks tokens only. Diff successor checks across branches. | Dexy F-5 `buyback.es:54` |
+| T17 | Token-weighted quorum with concentrated supply | Quorum sums token amounts; if one address holds a quorum, governance is that address. KEY-RISK. | Dexy F-6 `update.es:52` |
+| T18 | Proportional redeem with no liquidity floor | Ratio-invariant fee lets a dominant holder drain to dust; supply 0 bricks mint; pool price resets for downstream consumers. | Dexy F-7 `redeem.es:35` |
+| T19 | Stale trigger reads as sustained | Trigger records first height; reset needs an actor; consumers gate on `trigger < HEIGHT - T`; nobody resets. | Dexy F-8 `tracking.es:111` |
+
+## Severity matrix
+
+Set before fieldwork. A finding's severity is the cell it lands in. Deviations are
+logged rulings, not arguments.
+
+**Magnitude.** M-Total: all protocol-held value or a pool any user's funds sit in.
+M-Pooled: bounded value belonging to someone other than the actor (other users, or a
+protocol-owned box); one of several identical pools or vaults is M-Pooled unless the
+attack reaches every instance in one transaction or repeats across all at no marginal
+cost, which is M-Total. M-Integrity: no direct value path, but a mechanism protecting
+others' value is defeated. M-Lock: value or function permanently unusable. M-Delay:
+protocol function delayed or temporarily denied, bounded, no value at risk once it
+resumes (distinct from the permanent M-Lock). M-Own: only the actor's own funds, or a
+lock the victim's own signature creates. M-None: no value path.
+
+**Likelihood is the actor threshold**: how many actors, of what kind, must deviate.
+L-Open: one anonymous actor, ~fee cost, no precondition. L-Conditional: one actor with
+a realistic state precondition. L-Costly: collusion of several, a proportion of stake
+or hashrate, honest liveness failure, or a victim error first. L-Escalated: a
+credential does more than the design issued it for (one unit bypasses a quorum; key
+for A reaches B). L-Privileged: a key the design trusts, for the action it grants.
+An honest-liveness failure is L-Costly by definition, and a precondition the shipped client cannot currently produce is L-Costly at that commit. A keeper or refresh path that was never built is such a precondition (L-Costly, launch-blocking), not a certainty that raises the cell. An attack rational only for a different population (a node-less miner, a stakeless holder) is rated for that population and named; a genuine three-way split routes to the developer. Profitable deviation means rational actors do it: class as if permissionless. A defect
+with no deviating actor at all (an honest path that cannot be mined) is a reliability
+failure rated by the LOW/INFO test, not by this axis, unless it disables a protection
+users depend on within a window (then the liveness floor, MEDIUM).
+
+| | L-Open | L-Conditional | L-Costly | L-Escalated | L-Privileged |
+|---|---|---|---|---|---|
+| **M-Total** | CRITICAL | HIGH | MEDIUM | HIGH | KEY-RISK |
+| **M-Pooled** | HIGH | HIGH | MEDIUM | HIGH | KEY-RISK |
+| **M-Integrity** | HIGH | MEDIUM | MEDIUM | MEDIUM | KEY-RISK |
+| **M-Lock** | HIGH | MEDIUM | MEDIUM | MEDIUM | LOW |
+| **M-Delay** | LOW | LOW | INFO | LOW | INFO |
+| **M-Own** | LOW | LOW | LOW | LOW | INFO |
+| **M-None** | INFO | INFO | INFO | INFO | INFO |
+
+Multiple paths: classify each, take the higher. A deploy-time coupling — a constant set once at launch and never touched again — whose failure is total and undetectable is LOW (launch-blocking): rated LOW but its checklist item cannot be signed off without evidence. A value changed in normal operation (a whitelist, a proof set, a rotating key) is not a coupling; a mismatch there is an operations state rated on its merits. A finding reachable only if a register
+assumption fails carries that row and its threshold as precondition and is rated on
+that threshold. Design-level (incentive) and off-chain (builder, frontend) findings are
+rated on the same matrix; there is no softer scale for game-theory findings. **Modifiers:** front-runnable (note, no
+change); liveness-dependent safety (floor MEDIUM); full on-chain shield verified this
+audit (drop one level, floor LOW); partial shield (no change); latent, enabling state
+not yet on-chain (no change). **Deployment status is a column, not a cell:** live,
+latent, patched on-chain, not deployed. Never rate down because the code is not
+deployed. **KEY-RISK** is the segregation-of-duties column, reported separately from
+defects; launch-blocking if a single hot key on mainnet. **LOW vs INFO:** fail-closed
+correctness with a one-line fix is LOW; hygiene with no behavioural effect is INFO.
+
+## Finding format
+
+Every finding carries: assertion violated (Existence, Completeness, Accuracy, Cutoff,
+Rights & Obligations, Classification, Presentation); procedure that surfaced it;
+`file:line`; kind (code / design / off-chain); magnitude class, likelihood class,
+cell, modifiers; actor threshold and whether profitable or griefing-only; the register
+assumption it depends on, if any; a numbered scenario
+with magnitudes; who can do it and the precondition; for value findings the
+reconciliation (value in, pinned out, residual, residual goes to); the smallest fix
+that closes every variant; and confirmation the honest path still passes under the fix.
+A finding without a constructed transaction is a hypothesis and is listed separately.
+
+A candidate whose deciding fact is outside source or unsettled by any tool this session
+is a **needs-validation record** (NV-n) with its trace, blocker, and plan and no
+severity, listed in its own "Needs validation" report section, never in the findings
+table. A refuted candidate is a **rejected record** (REJ-n) with the line that closed
+it and the commit that line was read at; a later pass on the same code closes a
+matching candidate by reference when that line is unchanged, else re-adjudicates it. A finding title never names a severity or KEY-RISK.
 
 
 ========================================================================
@@ -102027,7 +101872,7 @@ tags: [ergoscript, language-spec, types, contracts, sigmaprop, avl-tree, box, re
 category: reference
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-02
+updated: 2026-09-23
 estimated_tokens: 13250
 source: original
 author: ahrobe
@@ -102037,7 +101882,7 @@ ergo_version: "6.0"
 
 # ErgoScript Language Description
 
-### Introduction
+## Introduction
 
 ErgoScript is a language to write contracts for [Ergo
 blockchain](https://ergoplatform.org). ErgoScript contracts can be compiled to
@@ -102091,7 +101936,7 @@ method)
 
 The following sections describe ErgoScript and its operations. 
 
-#### ErgoScript language features overview
+### ErgoScript language features overview
 
 - syntax borrowed from Scala but simplified
 - standard syntax and semantics for well known constructs (operations, code blocks, if branches etc.)
@@ -102102,7 +101947,7 @@ The following sections describe ErgoScript and its operations.
 - semicolon inference in blocks
 - type constructors: Pair, Coll, Option
 
-#### Operations and constructs overview
+### Operations and constructs overview
 
 - Binary operations: `>, <, >=, <=, +, -, &&, ||, ==, !=, |, &, *, /, %, ^, ++`
 - predefined primitives: `deserializeTo`, `serialize`, `blake2b256`, `byteArrayToBigInt`, `proveDlog` etc. 
@@ -102116,7 +101961,7 @@ The following sections describe ErgoScript and its operations.
 - user defined function declarations: `def isProven(pk: GroupElement) = proveDlog(pk).isProven`
 - lambdas and high-order methods: `OUTPUTS.exists { (out: Box) => out.value >= minToRaise }`
 
-#### Data types 
+### Data types 
 
 In ErgoScript, everything is an object in the sense that we can call member functions and properties on any variable.
 Some of the types can have a special internal representation - for example, numbers and booleans can be
@@ -102152,7 +101997,7 @@ types as in the following example.
 }
 ```
 
-#### Literal syntax and Constants
+### Literal syntax and Constants
 
 Literals are used to introduce values of some types directly in program text
 like in the following example:
@@ -102168,10 +102013,10 @@ Note that many types don't have literal syntax and their values are introduced
 by applying operations, for example `deserialize` function can be used to introduce
 a constant of any type by using Base64 encoded string (See [predefined function](#PredefinedFunctions)).
 
-### Data Types
+## Data Types
 <a name="DataTypes"></a>
 
-#### Primitive Types
+### Primitive Types
 
 Below we specify methods of pre-defined types using Scala-like declaration of
 classes. Note, the `Boolean` type doesn't have pre-defined methods in addition
@@ -102315,7 +102160,7 @@ bi.modInverse(m) > 0 // returns multiplicative inverse of bi mod m
 ```
 
 
-#### Context Data 
+### Context Data 
 
 Every script is executed in a context, which is a collection of data available
 for operations in the script. The context data is available using the `CONTEXT`
@@ -102476,7 +102321,7 @@ class PreHeader {
 
 ```
 
-#### Box type
+### Box type
 
 Box represents a unit of storage in Ergo blockchain. It contains 10 registers
 (indexed 0-9). First 4 are mandatory and the others are optional.
@@ -102590,7 +102435,7 @@ box.R3[Int].isDefined
 box.R3[Int].getOrElse(d) 
 ```
 
-#### GroupElement
+### GroupElement
 ```scala
 /** Base class for points on elliptic curves. */
 class GroupElement {
@@ -102620,7 +102465,7 @@ class GroupElement {
 }
 ```
 
-#### SigmaProp
+### SigmaProp
 ```scala
 /** Proposition which can be proven and verified by sigma protocol. */
 trait SigmaProp {
@@ -102669,7 +102514,7 @@ trait SigmaProp {
 }
 ```
 
-#### AvlTree
+### AvlTree
 
 ```scala
 /** Type of data which efficiently authenticates potentially huge dataset having key-value dictionary interface.
@@ -102813,7 +102658,7 @@ class AvlTree {
 }
 ```
 
-#### Option[T]
+### Option[T]
 
 ```scala
 /** Represents optional values. Instances of `Option`
@@ -102865,7 +102710,7 @@ class Option[A] {
 }
 ```
 
-#### Coll[T]
+### Coll[T]
 
 ```scala
 /** Indexed (zero-based) collection of elements of type `A` 
@@ -103054,7 +102899,7 @@ satisfying some predicate (condition)
 val ok = OUTPUTS.exists { (box: Box) => box.value > 1000 }
 ``` 
 
-### Global functions
+## Global functions
 
 There are some functions which do not belong to other types, thus they put under `Global` type. Those functions are:
 
@@ -103120,7 +102965,7 @@ src == restored
 ```
 
 
-### Predefined functions
+## Predefined functions
 <a name="PredefinedFunctions"></a>
 
 ErgoScript standard library include predefined functions that can be called 
@@ -107747,6 +107592,639 @@ print(payments_api.find_babel_boxes(token_id=\'01dce8a5632d19799950ff90bca3b5d0c
 - API Rate Limit: 10 requests per second to the public Ergo Explorer API.
 - Timeout: 15 seconds per API request.
 - The tool performs two API calls for each request to search for both ErgoTree header formats (`10...` and `18c101...`).
+
+
+========================================================================
+
+<!-- FILE: content/skills/contract-audit-engagement.md -->
+---
+title: "Contract Audit Engagement — Financial-Audit Method for eUTXO Contracts"
+description: "End-to-end method for auditing ErgoScript contract sets the way a financial audit is run: scope memo, value ledger of every spend path, fixed procedure checklist, two independent passes with burden-on-safe adjudication, severity matrix set before fieldwork, workpapers, management letter, retest, sign-off. Calibrated on the Dexy-stable and Lithos-Client engagements."
+tags: [ergoscript, audit, security, engagement, methodology, workpapers, severity, dual-pass, debit-side]
+category: skill
+difficulty: advanced
+sdk: [none]
+author: CannonQ
+source: original
+license: AGPL-3.0
+updated: 2026-09-19
+---
+# Contract Audit Engagement
+
+## Context
+
+Most LLM contract audits are a single read of a single file that produces a list.
+Coverage is whatever the model happened to look at, severity is whatever it felt like,
+and there is no record of what was *not* tested. A financial audit is organised the
+opposite way: the population is enumerated before testing, the procedures are fixed
+before fieldwork, materiality is set before anyone looks at a number, every conclusion
+points at a workpaper, and the engagement is not over until management has responded
+and the fixes have been retested.
+
+This skill is that structure applied to eUTXO contracts. It was built from two real
+engagements on Ergo in September 2026:
+
+- **Dexy-stable** (18 contracts), during which a live mainnet drain of the LP pools
+  (~288k ERG) was found from source, and where two auditors given the same trap on
+  the same cluster returned opposite verdicts.
+- **Lithos-Client** (28 contracts), a developer-requested pre-launch review that
+  produced 2 HIGH, 3 MEDIUM, and 2 KEY-RISK findings.
+
+Across both, all sixteen CRITICAL, HIGH, and MEDIUM findings were caught by the
+debit-side or entity-level procedures below. None needed a credit-side procedure.
+
+The compact checklist, trap register, and severity matrix live in the EKB reference
+`audit-program` and are injected into every `audit_contract` / `audit_verify` call.
+This skill is the engagement around them.
+
+---
+
+## 0. If you are not an auditor
+
+| Audit term | Plain meaning here |
+|---|---|
+| Assertion | The property a test checks (input genuine, every path covered, amount right, timing not gameable, right key, right branch, docs match code) |
+| Population | Everything that must be tested: every (box, spend path) pair |
+| Materiality / severity matrix | The severity scale, fixed before anyone reads code so it cannot drift per finding |
+| Vouching | Tracing a value movement to the line that authorises it |
+| Management representations | What the developer states the protocol assumes: initial state, invariants, who is honest, what is deliberately unchecked |
+| Compensating control | When a check is absent, the other thing that stops the bad outcome |
+| Workpaper | The evidence file a conclusion points at |
+| Concurring review | A second reviewer whose job is to break your finding |
+| Fraud risk assessment | Who has an incentive to exploit a hole, not just whether it exists |
+
+## 1. The one idea: audit the debit side
+
+A financial auditor vouches every disbursement and confirms every cash balance,
+because that is where value moves. Credits follow if the debits are right.
+
+In eUTXO the debit side is every *spend* of a contract-guarded box. The script is the
+only approval control over that spend. So the population under audit is every
+(box, spend path) pair, and each one gets the five cheque questions: who approved it,
+who is the payee, is the amount right, does it reconcile, was it recorded so it cannot
+be paid twice.
+
+**The reconciliation.** ERG is conserved per transaction. For every spend path:
+
+```
+value in (all inputs the path admits)
+  - value pinned to specific outputs by the script
+  = residual  →  goes to whoever builds the transaction
+```
+
+An unbounded residual is an unsupported disbursement, whatever the path's intent. Two
+of the sixteen serious findings were visible from this column alone.
+
+**Assertion crosswalk.** Every finding names the financial-statement assertion it
+violates, so the report and the workpapers share one vocabulary:
+
+| Assertion | eUTXO meaning | Example |
+|---|---|---|
+| Existence | The input the script relies on is the genuine one; each claim paid corresponds to exactly one real entry | Dexy decoy input; Lithos duplicate keys paid *n* times |
+| Completeness | Every spend path enumerated; every output that must be constrained is; every required state update happens | Missing AVL `remove` on a terminal path; unpinned co-input |
+| Accuracy | Rounding, overflow, unit mismatch, sum conservation | Overflow reliance |
+| Cutoff | Height and time windows cannot be shrunk, moved, or backdated | Late transform backdates a period |
+| Rights & Obligations | Who can spend; who can change config | Single-PK whitelist |
+| Classification | The builder cannot force a branch other than the one intended | Op byte unread; selector flipped by an inflated sum |
+| Presentation | Comments, UI, and off-chain code match what the script enforces | Header claims a check the code lacks |
+
+**Segregation of duties.** One key that can both approve and disburse is the classic
+material weakness. Here it is a single PK over a whitelist, config box, or oracle.
+Report these as **KEY-RISK**, in their own section, not in the defect table.
+
+**Assumptions and omissions.** Every protocol works under assumptions about initial
+state, invariants, actors, and off-chain parties. Some are enforced by a line; some
+hold only because the developer expects them to. They are obtained from the developer
+before fieldwork (the way an auditor obtains management's representations) and
+verified into a register. Fieldwork tests inside them first, which is what separates a
+real exploit from one that needs an assumption to fail, and then with each
+easy-to-fail row removed. In eUTXO every check a script does *not* make is a decision:
+intentional omissions go in the register with the developer's reason, and the reason
+is verified against the code.
+
+**Incentives.** Auditors assess fraud risk from pressure, opportunity, and
+rationalisation. Code review finds opportunity only. A profitable hole will be used by
+rational actors, whose population is everyone; the likelihood axis of the matrix is the
+**actor threshold**: how many actors, of what kind, must deviate. One anonymous actor
+is the lowest bar. A design whose rational move harms the protocol is a finding on the
+same matrix as a code defect.
+
+**The contracts are not the whole system.** A user signs what a builder constructed
+and a frontend displayed. Builders and frontend are in scope by default when a UI
+exists; scoping them out is a recorded decision.
+
+**Review, not audit — name it honestly.** This method produces a *review* unless every
+contract received the full per-contract treatment (the EKB two-pass tool included,
+nothing truncated). Title the deliverable a review, head the summary "Summary" not
+"Opinion", and give a coverage sentence stating what each contract received and any
+tool degradation (a cluster that overflowed an input, a probe that could not settle a
+semantics question, a file read only statically). When the claim and the work diverge,
+the claim moves down to meet the work.
+
+---
+
+## 2. Engagement lifecycle
+
+```
+00 Engagement   scope memo: commit, contracts, instances, recipient, deadline, type;
+                developer questionnaire sent; off-chain scope decided
+01 Walkthrough  interaction map: boxes, tokens, who spends what
+01b Assumptions the developer's representations, verified: initial state, invariants,
+                actors, off-chain, intentional omissions; ranked by how easily they fail
+02 Value ledger the debit-side register: every box × every spend path
+03 Fieldwork    procedure checklist per spend path, from source only, inside the
+                assumptions then with each removed; two independent passes on every
+                fund-holding contract; incentive (G) and off-chain (B) procedures
+04 Adjudicate   every dual-pass disagreement, burden on the side that said safe;
+                then an independent falsification pass on every CRITICAL/HIGH/MEDIUM
+05 Report       management letter to the developer
+06 Response     developer replies logged per finding
+07 Retest       re-run the specific procedure against the fix commit
+08 Sign-off     opinion, open items, subsequent-events caveat
+```
+
+Nothing in Phase 3 starts until the memo and the value ledger exist. Nothing is
+reported that does not point at a workpaper.
+
+### Phase 0 · Engagement memo
+
+| # | Do |
+|---|---|
+| 0.1 | Pin the commit. Record hash, branch, upstream relation, and `sha256` of every in-scope file. |
+| 0.2 | List in-scope contracts by file. List explicitly what is out (builders, UI, tests, legacy fixtures). |
+| 0.3 | Name the report recipient, the deadline, and whether the engagement is developer-requested or independent. |
+| 0.4 | Record the engagement **type**: pre-deployment, review of a deployed system, or incident. Only the last two use any chain procedure (E-1b, E-6). |
+| 0.5 | List every **instance** of the contract set (DexyGold, USE, …) with its constants source and, if deployed, value held. All in scope at equal rigour unless excluded here. |
+| 0.6 | Confirm the severity matrix applies unchanged. Any project-specific adjustment is written here, before fieldwork, with a reason. |
+| 0.7 | List the tooling available (EKB audit tools, compiler, MockChain, node). A procedure that needs absent tooling is N/A with that reason, never quietly downgraded. |
+| 0.8 | Copy the trap register from `audit-program` and add any traps specific to this engagement. Every fieldwork agent returns a verdict per trap per contract. |
+| 0.9 | **Send the developer questionnaire** (below). Answers seed the assumptions register. Do not wait for it to start the walkthrough; do wait, or infer and mark inferred, before fieldwork. |
+| 0.10 | **Decide off-chain scope.** Builders and frontend in scope by default when a UI exists; record the decision and the paths. |
+| 0.11 | **Write the engagement letter.** One page to the developer, sent with the questionnaire: what is reviewed and at which commit, how, what they will get, what is needed from them (answers, permission to run tests, a contact), what happens after the report, disclosure terms (findings private first; they decide public release), what the review is not, timing. Derived from the memo but never the memo: the memo carries house rules, the tooling table, and the trap register, and stays internal. |
+
+**Developer questionnaire.** (1) Initial state: what must be true of genesis boxes,
+supplies, tree parameters, spare-token holders. (2) Invariants: what stays true across
+every transaction, and which line enforces each. (3) Actors: who is assumed honest and
+in what proportion; what a rational participant does on each path; who is paid to
+keep, liquidate, challenge, reset, and how much. (4) Off-chain: what keepers, oracles,
+or parameters must keep doing; what happens if they stop. (5) Intentional omissions:
+which checks were left out, why, and what closes each instead. (6) Known sharp edges:
+what looks like a bug but is not; what looks minor but is dangerous. (7) Deployment:
+which instances exist or are planned and which holds the most value.
+
+### Phase 1 · Walkthrough
+
+Inventory every box type (script, identifying NFT, registers), every token (minted,
+held, burned where), every cross-contract read (data input) and co-spend (input) with
+how the counterparty is identified, the lifecycle of each value-holding box from
+creation to terminal spend, every admin key and config box, and every off-chain
+assumption the contracts depend on.
+
+The cluster is the interaction lens and it comes first on purpose: a per-contract EKB call cannot see dependencies, trust edges, or a spend of A that only makes sense given B. The map produces, per contract, a short hand-forward list (dependencies, trust edges, cluster-surfaced things to check) carried into that contract's per-contract EKB call and its Phase 3 brief, so the deep pass verifies what the cluster found rather than re-deriving it.
+
+Phase 1 maps. It does not audit. Suspected issues go in a "candidate findings" list
+with `file:line` and are proven or dropped in Phase 3.
+
+### Phase 1b · Assumptions register
+
+One row per assumption, five kinds: initial state, invariant, actor, off-chain,
+intentional omission. Columns: id, kind, assumption, stated by (`questionnaire` /
+`docs (path)` / `header` / `inferred (code)`; docs and header are the developer's
+written representations and count as documented intent),
+enforced by (`file:line`) or **unenforced**, compensating control, what breaks if it
+fails, fails with (one actor / k actors / proportion / honest liveness failure / never
+without a code change), dependent findings. Every developer representation and every
+trust edge from the walkthrough becomes a row. An unenforced row with no compensating
+control is a candidate finding before fieldwork. Each intentional omission's reason is
+verified against the code. Rows are ranked by how easily they fail; one-actor rows are
+tested first.
+
+### Phase 2 · Value ledger
+
+One row per (box, spend path). If a path is not in the ledger it was not audited.
+
+| Column | Content |
+|---|---|
+| VL | Row id |
+| Box (contract) | |
+| Assets held | ERG, tokens, by register or claim |
+| Spend path | Branch or op byte; terminal paths are separate rows |
+| Trigger | Who can build the tx, at what cost |
+| Inputs read, pinned how | NFT / script hash / position only |
+| Outputs pinned by script | |
+| Residual → who | The reconciliation |
+| State update enforced | AVL remove, register advance, successor, destruction, or **none** |
+| Assertions at risk | |
+| Rank | H = every procedure; M/L = sampled, decision recorded |
+
+Add credit-side rows for every claim-creating path (what value must arrive, which line
+checks it, bounded by value?). Reconcile: every box in the walkthrough has a row;
+every terminal spend has a row.
+
+**Coverage critic.** After the ledger is drafted, one read-only agent on a cheap
+model (Sonnet 5) is given only the interaction map and the value ledger, no source,
+and names boxes, terminal spends, and credit paths with no ledger row (return
+sections: missing rows, rows without a box, terminal spends unlisted, stop), saved to
+`evidence/agent-coverage-critic.md`. QB settles each proposal from source: add the
+row, or log `DEC-n` with the reason. QB's own reconcile above stays; this is the
+independent check on it, the way the blind re-derivation checks QB's cells. Gate: no
+Phase 3 dispatch until every proposal is added or `DEC-n`'d (validator `--phase 3`).
+
+### Phase 3 · Fieldwork
+
+**Two standing rules.**
+
+*Fieldwork is source-only.* Agents work from the pinned source and the memo. Every
+procedure is source-level; a finding is established from source alone. Most
+engagements are pre-deployment, where there is no chain state to consult. On a
+deployed system, chain access is used for exactly two entity-level procedures
+(E-1b credential concentration, E-6 deployed bytes match source), performed after
+fieldwork by the lead, not by the fieldwork agents.
+
+*Dual pass with burden on "safe."* Every H-ranked row, meaning every contract that
+holds or moves funds, gets two independent passes on the same brief with no sight of
+each other's work, and the two passes are **differently shaped**: a *coverage* pass
+that runs the procedures and cites the closing line for each, and a *prosecutor* pass
+that presumes every path exploitable, tries to build the extracting transaction, and
+concedes only to a cited line it has tried to route around. Run them on different
+model tiers where possible. Two identical passes measure reproducibility, not
+independence: the first smoke test of this method ran two coverage passes on one brief
+and got near-identical returns, while every real disagreement came from
+differently-shaped passes (the prosecutor framing, an incentives pass, a blind severity
+re-derivation, and the falsifier). Verdicts are recorded side by side. Any
+disagreement is a mandatory adjudication in Phase 4, and the burden is on whichever
+side said safe: it must cite the line that closes the attack. If it cannot, the
+finding stands.
+
+*The brief.* Both passes receive one brief file (commit, files, ledger rows,
+assumptions register rows, traps, EKB security context, house rules) identified by
+its sha256, never a prompt re-typed twice. If the EKB context carries its own Pass 1
+instructions or a 1-to-10 rating request, the brief says the return schema and the
+matrix override them. Passes label findings `<ledger row>/<procedure>/<slug>`, never
+by ordinal, so the two returns can be merged by underlying fact.
+
+*Origin.* On Dexy, auditor P2-4 (main and swap) composed the LP decoy layout and rated
+it HIGH. Auditor P2-5 (mint and redeem), given the same trap, refuted it, arguing that
+singleton coupling forced the real pool to input 0. No such line exists. A single pass
+assigned to mint and redeem would have declared the pool clean. The pool was already
+empty.
+
+*Inside the assumptions, then without them.* Every procedure runs first with the
+register taken as true. Then, for each row marked as failing with one actor, the
+procedures re-run on the paths it touches. A finding that depends on an assumption
+failing carries the row id and its actor threshold as precondition.
+
+**The procedures** are D-1..D-13 (debit side, per spend path), C-1..C-3 (credit side),
+S-1..S-4 (source level, per contract), A-1..A-3 (per register row), G-1..G-5
+(incentives, once, design level), B-1..B-5 (builders and frontend, when in scope), and
+E-1..E-6 (entity level), as listed in `audit-program`. Each ends done (line cite),
+exception (finding id), or N/A (reason). Design-level and off-chain findings go through
+the same finding record, concurring review, and matrix as code findings.
+
+**Evidence.** Every exception gets a finding record with a constructed scenario. Every
+library or chain semantic a result depends on (AVL `getMany` duplicate behaviour,
+serialization offsets) is settled by an empirical probe with the output saved verbatim.
+Agents return the procedure ids they covered and the ones they could not.
+A probe request or open question that cannot be settled this session is recorded with
+its trace (`path:line`), its blocker (the exact unresolved fact), and its plan (the
+probe, node check, or developer question that would settle it), so Phase 4 can lift it
+into a needs-validation record (NV-n).
+
+**Reconcile the checklist** at the end of Phase 3: every procedure id against every
+H-ranked row, with both passes in each cell (`✓/✓`, `X/X (F-003)`, `X/✓ → ADJ-2`). A
+cell with an unresolved `→ ADJ-n` is unfinished work.
+
+### Phase 4 · Adjudication and concurring review
+
+| # | Do |
+|---|---|
+| 4.−1 | **Cross-group composition check (E-8).** Before adjudicating, consolidate every trust edge from the map and both passes into one table (from-contract, assumption, counterparty, closed-by line or UNVERIFIED, counterparty pin). Give one read-only agent that table, the box/NFT inventory, and the trap register — no source — and ask which unverified or cross-group edges compose into an attack, with the lines to read. Settle each candidate from source; survivors become findings (kind: composition) and go to the falsifier. Per-group passes see only their own end of an edge; this is the cheap way to see both ends without a monolithic whole-protocol pass. |
+| 4.0 | **Adjudicate every dual-pass disagreement.** Read the source at the cited lines. The safe side must have named the line that closes the attack; verify that line does what was claimed. If it does not exist or does not close it, the finding stands at the severity the other pass derived. Adjudication is decided from source; a landed transaction is corroboration, never the deciding evidence. Record as `ADJ-n`: both positions, the line cited, what was found there, outcome. A "safe" outcome without a verified line is not permitted. Then **merge by underlying fact**: the coverage pass, the prosecutor, the incentives pass, and the off-chain pass each describe the same defect with their own label and cell; one finding record per fact, with a derivation row listing every pass's cell. |
+| 4.1 | Every CRITICAL, HIGH, and MEDIUM goes to an independent falsification pass with the finding record and the source only. Verdict: CONFIRMED / OVERSTATED / WRONG / STALE-ANCHOR. |
+| 4.2 | Every prescribed fix is checked for rejecting legitimate spends. A fix that breaks the honest path is not a fix. |
+| 4.3 | Severity is re-derived from the matrix, blind to the original cell, in batches of about ten records. This is a mechanical classification and a check on the lead's cells, so it runs on a cheaper, independent model (Sonnet 5) rather than the Opus fieldwork tier; every disagreement is a ruling (`R-n`) with the matrix cell cited, never a verdict. |
+| 4.4 | Anchors re-verified against the pinned commit. |
+| 4.5 | **Needs-validation records (NV-n).** Every structured open item with a source trace and a named blocker becomes a record in `04-NEEDS-VALIDATION.md`: an unrun probe request, an open question with a trace, a falsifier OVERSTATED whose residual claim rests on an unsettled fact, a coverage-critic proposal source cannot reach this session, or a developer question. Each carries its trace, blocker, and plan (`probe:` / `node:` / `developer:`) and `severity: none`, and never enters the findings table. QB lifts these; the agents never write them. A `?` with no source trace is a scope limitation, not an NV. |
+| 4.6 | **Rejected register (REJ-n).** Every refuted candidate becomes a record in `04-REJECTED.md` with the line that closed it (`closed_by`, `path:line`) and the commit that line was read at. Every falsifier WRONG withdraws its finding (`status: withdrawn`) and adds a REJ entry with the same label; every ADJ resolved safe where a pass had filed an exception adds one; every composition candidate that does not hold adds one. Phase 7 and any later pass on the same code read it. |
+| 4.7 | **Validator gate.** The stdlib `validate-audits.py <AUDITS> --phase {3,5,8}` is a hard gate; a non-zero exit blocks the phase. `--phase 3` (before fieldwork dispatch): the Phase 0-2 files and `00-source-hashes.txt` exist, the ledger has an H row, the reconciliation section is filled, the coverage-critic evidence and ledger line exist. `--phase 5` (before the report): every finding and workpaper front matter parses, the matrix rule holds, the checklist and ADJ references resolve, withdrawn findings have a REJ entry, NV records carry `severity: none`, REJ records carry a `closed_by` line. `--phase 8` (before sign-off): the report exists with zero em dashes and a `## Needs validation` section listing every NV, and the response log, retest, and sign-off exist. |
+
+### Phase 5 · Report
+
+A management letter, in this order. The developer reads the first page carefully and
+the rest selectively.
+
+1. **Opinion paragraph.** Three or four sentences: what, at which commit, headline
+   counts, the single most important result, positive or negative.
+2. **Scope and method.** Commit, contracts, instances, tooling, and **what was not
+   done**, stated here rather than buried.
+3. **Findings table.** Id, severity, deployment status, kind (code / design /
+   off-chain), location, title, fix size.
+4. **Assumptions the opinion rests on.** The register rows verified, and the
+   unenforced rows with their compensating controls, so a reader who disagrees with a
+   row knows which findings move.
+5. **KEY-RISK section**, separate from findings: the trust assumptions, whether the
+   developer pre-disclosed them, what must change before mainnet.
+6. **Per-finding detail** for CRITICAL, HIGH, and MEDIUM, including design-level and off-chain —
+   as four bullets each, never a run-on paragraph: **What** (mechanism, `file:line`),
+   **Why it matters** (consequence, who), **Fix** (smallest change, any falsifier
+   correction), **Verified** (falsifier verdict; omit if none ran). Across the whole
+   developer-facing report, no prose paragraph over ~120 words; longer becomes bullets
+   or a table. The reader triages from the bullets and opens the finding records only
+   for the derivation. No em dashes anywhere in the report (colon, semicolon, period,
+   or parentheses instead; a Unicode minus in a code span is not an em dash). No
+   AI-prose flourishes ("worth noting", "delve", "crucial", "robust", "leverage") and
+   no anthropomorphic verbs on boxes or rent; say what happens. Empty table cells
+   read "none" or "n/a", never a lone dash.
+7. **LOW and INFO** as a table plus a launch-readiness checklist.
+7b. **Needs validation.** One entry per `NV-n`, three bullets each: What / Blocker /
+   Plan. No severity, and never in the findings table. A candidate with a source trace
+   whose deciding fact is unsettled is disclosed here, so the developer can supply the
+   fact or the retest can run the plan.
+8. **What was verified sound.** Traps found absent, paths proven leak-free. This is
+   what makes the opinion paragraph credible.
+9. **Re-pin note.** Every contract fix moves hashes; say what must be re-minted.
+
+### Phase 6 · Response log
+
+One row per finding: developer response (date, source), disposition (Fix / Accept /
+Defer / Dispute / No response), fix commit. A dispute triggers a re-run of the
+falsification pass with the developer's argument as input; a dispute that survives
+stays a finding, one that does not is withdrawn and the withdrawal is logged.
+A needs-validation record answered by the developer is dispositioned like a finding:
+with the fact settled it becomes a finding (rated on the matrix, then sent to the
+falsifier) or a REJ entry.
+
+### Phase 7 · Retest
+
+For each finding with disposition Fix, at the fix commit: re-run the *specific
+procedure* that surfaced it, not a general re-read; construct the original attack
+transaction, which must fail; construct the honest transaction on the same path,
+which must pass; confirm the hash re-pin landed. Result: Closed / Partial / Not fixed.
+Retest reads `04-REJECTED.md`: a new candidate whose label matches a REJ entry is
+closed by reference when the closing line is unchanged at the fix commit, else it is
+re-adjudicated. Every NV whose plan was executed is re-checked and gets a retest row.
+
+### Phase 8 · Sign-off
+
+The opinion at the retest commit, the open items with disposition and reason, any
+checklist lines that ended `?` or N/A as scope limitations, and the subsequent-events
+caveat: the opinion covers the retest commit and nothing after it.
+`validate-audits.py --phase 8` passes before sign-off, and every still-open NV is
+listed as an open item without a severity.
+
+---
+
+## 3. Severity
+
+The matrix, magnitude and likelihood classes, modifiers, deployment-status rule, and
+KEY-RISK definition are in `audit-program`. The engagement rules around them:
+
+- The matrix is confirmed in the memo before fieldwork. It is not renegotiated per
+  finding. A finding that seems to deserve a different cell is a **ruling** (`R-n`):
+  from-cell, to-cell, reason, visible in the notes.
+- Findings are numbered `F-NNN` in order recorded, with severity as a field. The
+  report table sorts by severity. This keeps ids stable when the concurring review
+  moves a finding.
+- A hypothesis without a constructed transaction or probe result is not a finding.
+  It goes under "open questions."
+- A KEY-RISK the developer already flagged in source is still reported, with a note
+  that it was pre-disclosed.
+
+**Calibration.** Across the two engagements the matrix reproduces 13 of 16 CRITICAL /
+HIGH / MEDIUM / KEY-RISK rulings that were made ad hoc at the time. The three
+divergences were all cases where the matrix answer was more defensible: a
+token-weighted quorum held by one address is KEY-RISK rather than MEDIUM; an
+unprivileged full-reserve drain in an undeployed contract is CRITICAL with status
+"not deployed" rather than MEDIUM.
+
+---
+
+## 4. Workpapers
+
+Someone who was not there must be able to follow what was done, see the evidence, and
+reach the same conclusion. In practice that someone is the next session after a
+context reset.
+
+```
+AUDITS/                        never committed
+  00-ENGAGEMENT.md             scope memo
+  00-source-hashes.txt         sha256 per in-scope file at the pinned commit
+  01-INTERACTION-MAP.md        walkthrough
+  01-ASSUMPTIONS.md            developer representations, verified
+  02-VALUE-LEDGER.md           debit-side register
+  02-PROGRAM-CHECKLIST.md      procedure × row reconciliation, both passes
+  03-WORKPAPERS/WS-*.md        one per contract group; both passes side by side
+  04-CONCURRING.md             adjudications and falsifier verdicts
+  04-NEEDS-VALIDATION.md       needs-validation records, NV-n, no severity
+  04-REJECTED.md               refuted candidates, REJ-n, with the closing line
+  05-REPORT.md                 management letter
+  06-RESPONSE-LOG.md
+  07-RETEST.md
+  08-SIGNOFF.md
+  findings/F-NNN.md            one per finding, fixed schema
+  evidence/                    probe-*.txt verbatim; agent-*-a.md / -b.md unedited; agent-coverage-critic.md
+  notes.md                     rulings R-n, adjudications ADJ-n, decisions, open questions, dead ends
+```
+
+**Reference codes.** `WS-A §3.2`, `VL-12`, `F-007`, `NV-3`, `REJ-2`, `EV/probe-avl-getmany.txt`, `D-7`,
+`R-3`, `ADJ-2`. A finding cites the ledger row, the procedure, the workpaper section,
+and the evidence. Nothing in the report is unsupported by something in the folder.
+
+**Tickmarks.** `✓` verified to source · `P` probe-confirmed · `F` falsifier-confirmed ·
+`X` exception (finding id) · `–` N/A (reason) · `?` open. A `?` that survives to the
+report is an NV record if it names a candidate defect with a source trace, otherwise a scope limitation.
+
+**Workpaper header.** Every file in `03-WORKPAPERS/` opens with YAML front matter
+carrying the fixed fields: `workpaper`, `group`, `commit`, `pass_a`, `pass_b`,
+`pass_b_waived`, `ledger_rows`, `exceptions`, `open_questions`. When `pass_b` is
+`none`, `pass_b_waived` names the `DEC-n` that waived the second pass. The prose lines
+that follow (brief sha256, adjudicated by, procedures performed) are the fields the
+front matter does not carry; the validator parses the front matter at `--phase 5`.
+
+**Finding record** (`findings/F-NNN.md`). The fixed fields live in the record's YAML
+front matter, not a header table: `id`, `label`, `title`, `status`, `kind`,
+`assertion`, `procedure`, `ledger_rows`, `anchors`, `magnitude`, `likelihood`,
+`modifiers`, `severity`, `ruling`, `actor_threshold`, `depends_on`,
+`deployment_status`, `falsifier`, `fix_reviewed_by`. The body holds the prose sections,
+in this order: `## Claim`, `## Scenario`, `## Who and precondition`,
+`## Reconciliation (value findings)`, `## Derivation` (coverage cell, prosecutor cell,
+incentives cell, blind re-derivation cell, falsifier verdict, and what the merged
+record was built from), `## Evidence`, `## Fix`, `## Response (Phase 6)`,
+`## Retest (Phase 7)`. A fixed field is never carried in both the front matter and the
+body; the validator parses the front matter at `--phase 5`.
+
+**Validator.** `validate-audits.py` is a stdlib Python script (no PyYAML, no pip) run
+as a hard gate at three phases: `python3 validate-audits.py <AUDITS> --phase {3,5,8}`
+exits 0 with no errors and 1 with a numbered error list (`E-n path: message`), and a
+non-zero exit blocks the phase. It parses the front matter, checks the enums and the
+matrix rule, and reconciles the checklist; it never touches a node, an explorer, or
+the network. Legacy records with no front matter produce errors, not a crash.
+
+**Evidence rules.** Probe output is saved verbatim including the command; an edited
+probe is not evidence. Agent reports are saved unedited; the two passes are saved
+separately and never merged except through an `ADJ-n`. Never claim a test is green
+unless it was run in this engagement; a committed green artifact is not evidence.
+
+---
+
+## 5. Running it with the EKB tools
+
+`audit_contract` (Pass 1) and `audit_verify` (Pass 2) inject `audit-program` into
+their context, so both passes carry the same procedures, traps, and matrix. The
+engagement wraps them:
+
+1. **Phase 3, coverage and prosecutor.** Call `audit_contract` **once per contract**,
+   not once per cluster: it is a per-contract tool whose matched-docs are a semantic
+   search on that contract's patterns, and concatenating a cluster dilutes the match
+   and overflows the input. Put the security-context and matched-docs sections for a
+   group's contracts into that group's brief file. Then run two separate contexts on
+   that brief: a coverage pass (procedures, closing lines) and a prosecutor pass
+   (presume exploitable, build the transaction, concede only to a line you tried to
+   route around), on different model tiers if you can. In Claude Code that is two
+   subagents dispatched in parallel with the same brief path and hash. Neither sees
+   the other. Save both returns unedited.
+2. **Phase 4.0, adjudicate.** Diff the two verdict sets. For each disagreement, read
+   the cited lines yourself and rule with the burden on safe.
+3. **Phase 4.1, concurring.** Run a dedicated falsification agent on each HIGH and
+   MEDIUM record with the source and that record only. Then call `audit_verify` with
+   the merged findings: **it returns a Pass-2 prompt, not an opinion.** Give that
+   prompt to one more independent context as a missed-issues sweep, ignore its
+   1-to-10 rating, and route anything new back through adjudication. The
+   falsifier's "attack the recommended fix" step is the only review a prescribed fix
+   gets; say in the report that LOW and INFO fixes are unreviewed.
+4. **Phases 5–8** are documents and a retest; the tools are not involved.
+
+The tools cannot enforce that the two Pass 1 runs were independent. That is the
+caller's orchestration, and it is the single most important thing this skill adds to
+the two-tool audit.
+
+---
+
+## 6. Templates
+
+Minimal fill-in versions. Copy into `AUDITS/` at the start of an engagement.
+
+**ENGAGEMENT-LETTER.md** (one page, to the developer)
+
+```
+To / From / Date
+What we are reviewing: <N> contracts under <path> at commit <hash>, plus builders<, frontend>
+How: map every box and spend path; assumptions from your docs and answers; fixed checklist;
+     two independent review passes reading every contract; adversarial check on serious findings; severity
+     scale fixed in advance; source-only, no tx built or broadcast, tests read unless you permit a run
+What you get: opinion; findings table; trust assumptions separate from defects; assumptions the
+     opinion rests on; launch checklist; what was tested and found sound; file:line on everything
+What we need: questionnaire answers by <date>; may we run <test cmd>; a follow-up contact
+After the report: response log per finding; retest at your fix commit; sign-off naming the commit
+Disclosure: findings to you privately first; you decide public release
+What this is not: a certified audit or a warranty; limitations stated in the report
+Timing: <deadline and why>
+```
+
+**00-ENGAGEMENT.md** (internal, never sent)
+
+```
+Project:            Repo / path:
+Commit:             (branch:   upstream:   )   Source hashes: 00-source-hashes.txt
+Date opened:        Requested by:              Recipient and channel:
+Engagement type:    pre-deployment / deployed review / incident
+Deadline and why:
+
+In scope:   | Group | Files | Lines | Notes |
+Instances:  | Instance | Constants source | Value held (height) or "planned" | In scope |
+Credentials:| Credential | Recognised by (file:line) | Units | Intended holders | Actual (deployed only) |
+Out of scope (explicit):
+Severity matrix applies unchanged: yes / no  — adjustments, with reason:
+Tooling available:   | Tool | Available | Procedures N/A if absent |
+Pre-named traps:     T1.. plus engagement-specific
+House rules: cite file:line for every claim; "checked here" vs "assumed elsewhere" is a
+  named trust edge; never edit source, sign, or touch a node during review; AUDITS/ never committed.
+```
+
+**01-ASSUMPTIONS.md**
+
+```
+| A | Kind | Assumption | Stated by | Enforced by (file:line) / UNENFORCED | Compensating control | What breaks if it fails | Fails with | Dependent findings |
+Omissions verified: | A | Developer's reason | Holds? | Evidence (redundancy line or cost) |
+```
+
+**02-VALUE-LEDGER.md**
+
+```
+| VL | Box | Assets | Spend path | Trigger | Inputs read / pinned how | Outputs pinned | Residual → | State update | Assertions | Rank | WP |
+| VL-C1 | Box | Claim created | Value that must arrive | Check (file:line) | Bounded? | Rank | WP |
+Reconciliation: every walkthrough box has a row · every terminal spend has a row
+```
+
+**notes.md — adjudications**
+
+```
+| ADJ | Contract / trap | Pass A said | Pass B said | Line cited by safe side | Found at that line | Outcome |
+```
+
+**04-NEEDS-VALIDATION.md**
+
+```
+## NV-1 · AVL getMany on repeated keys
+- label: VL-2/D-10/getmany-duplicates
+- raised_by: pass B                       # pass A | pass B | falsifier (F-00n OVERSTATED) | QB | probe request | coverage critic | developer
+- trace: contracts/Payout.ergo:210, contracts/Payout.ergo:233
+- claimed: what the defect is if the fact resolves against the code (one line)
+- blocker: the exact unresolved fact, outside source or unsettled by any tool this session
+- plan: probe: <exact MockChain/appkit question> | node: <read-only check> | developer: <question>   (at least one)
+- severity: none
+```
+
+**04-REJECTED.md**
+
+```
+## REJ-1 · Decoy input at INPUTS(0) on mint
+- label: VL-2/D-2/decoy-input
+- raised_by: pass B                       # pass A | pass B | falsifier WRONG on F-00n | composition C-n | prior run <tag> | developer dispute
+- claimed: one line
+- closed_by: contracts/mint.es:88 (pins INPUTS(0).tokens(0)._1 == lpNFT)
+- decided_in: ADJ-4                       # ADJ-n | 04-CONCURRING.md F-00n | DEC-n | 06-RESPONSE-LOG.md F-00n
+- commit: 1b892c4                         # the commit the closing line was read at
+```
+
+**07-RETEST.md**
+
+```
+Fix commit:            Source hashes second column updated: yes / no
+| Finding | Procedure re-run | Attack tx vs fix | Honest tx | Re-pin | Closed / Partial / Not fixed |
+Accepted / deferred (no procedure run): | Finding | Disposition | Developer's reason |
+```
+
+**08-SIGNOFF.md**
+
+```
+Opinion: At commit <retest hash>, the contracts listed in 00-ENGAGEMENT.md were reviewed
+under this program. All CRITICAL, HIGH, and MEDIUM findings are Closed except those listed below.
+Open items: | Finding | Severity | Disposition | Reason |
+Scope limitations: checklist lines that ended ? or N/A for tooling reasons
+Subsequent events: this opinion covers the retest commit only.
+Signed: session / date
+```
+
+---
+
+## 7. Adding to the trap register
+
+At sign-off, each CRITICAL, HIGH, or MEDIUM that was not already a listed class gets a row in
+`audit-program`: class name, the procedure(s) that should have caught it, origin
+engagement and finding, the one-paragraph check. The origin column is the audit trail
+for why the trap exists. That file is how one engagement's fieldwork compounds into
+the next engagement's program, for everyone who calls the audit tools.
+
+---
+
+## References
+
+- Runnable package (runbook, agents, templates, validator with tests): https://github.com/cannonQ/contract-audit-skill (AGPL-3.0). Clone it and run `./install.sh` for Claude Code; other hosts follow its README.
+- `audit-program` — procedures, traps, severity matrix (injected into both audit tools)
+- `known-issues` — the nine general vulnerability categories
+- `audit-context` — LLM pitfall calibration
+- `contract-audit-methodology` pattern — the two-pass tool design
 
 
 ========================================================================
