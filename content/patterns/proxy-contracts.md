@@ -5,7 +5,7 @@ tags: [proxy-contracts, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [kushti/dexy-stable, paideiadao/paideia-contracts, duckpools/lend-protocol-contracts]
 ---
@@ -203,3 +203,6 @@ Below is a production-ready proxy script modeled on the patterns from Dexy and P
 
   // 6. Executor box can go to any address (executor chooses their own P2PK).
   //    The cap
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

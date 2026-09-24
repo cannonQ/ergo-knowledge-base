@@ -5,7 +5,7 @@ tags: [offchain-bots, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [spectrum-finance/ergo-dex-backend, duckpools/lend-protocol-contracts, duckpools/voting-bot]
 ---
@@ -231,3 +231,6 @@ export class ErgoNodeClient {
     limit = 100
   ): Promise<ErgoTransaction[]> {
     const { data } = await this.http.
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

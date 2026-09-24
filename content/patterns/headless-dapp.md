@@ -5,7 +5,7 @@ tags: [headless-dapp, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [DjedAlliance/Djed-Ergo, StabilityNexus/Gluon-Ergo-SDK]
 ---
@@ -216,3 +216,6 @@ impl BankBox {
     /// as the reserve base.
     pub fn base_reserves(&self) -> NanoErg {
         self.0.value.as_u
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

@@ -5,7 +5,7 @@ tags: [djedalliance, djed-ergo, defi, ergoscript, scala]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/DjedAlliance/Djed-Ergo"
 project: djedalliance-djed-ergo
@@ -142,3 +142,6 @@ val ageusdBank: AgeUSDBank = AgeUSDBank.fromStateBox(
 
 ```scala
 val
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

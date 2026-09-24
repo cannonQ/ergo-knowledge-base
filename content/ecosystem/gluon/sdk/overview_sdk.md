@@ -5,7 +5,7 @@ tags: [stabilitynexus, gluon-ergo-sdk, defi, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Gluon-Ergo-SDK"
 project: stabilitynexus-gluon-ergo-sdk
@@ -141,3 +141,6 @@ These calls should be refreshed before each transaction construction to ensure y
 
 ```typescript
 const ergAmount
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

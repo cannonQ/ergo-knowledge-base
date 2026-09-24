@@ -5,7 +5,7 @@ tags: [singleton-state-nft, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [kushti/dexy-stable, DjedAlliance/Djed-Ergo, ergoplatform/oracle-core, paideiadao/paideia-contracts]
 ---
@@ -206,3 +206,6 @@ The Bank box is the canonical real-world example. It holds the `bankNFT` in `tok
   // ------------------------------------------------------------------
   val selfBankNft = SELF.tokens(0)._1
   val isBankBox   = selfBankNft == bankNFT        // sanity; enforced by NFT uniqu
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

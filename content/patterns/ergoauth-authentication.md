@@ -5,7 +5,7 @@ tags: [ergoauth, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [paideiadao/paideia-app]
 ---
@@ -222,3 +222,6 @@ export default async function handler(
 // server/api/auth/verify.ts
 import { NextApiRequest, NextApiResponse } from "next";
 import { Address, Wallet, ErgoBoxes } from "er
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

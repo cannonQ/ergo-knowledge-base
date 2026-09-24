@@ -5,7 +5,7 @@ tags: [duckpools, lend-protocol-contracts, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/duckpools/lend-protocol-contracts"
 contract_file: contracts/pools/drafts/SIGUSD-POOL/Proxy-Contracts/withdraw.md
@@ -139,3 +139,6 @@ This contract acts as a **withdrawal proxy** in the duckpools lending protocol, 
 This contract implements a **two-stage state machine**:
 ```
 [Pending Request] ──(timeout)──> [Refunded to User]
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

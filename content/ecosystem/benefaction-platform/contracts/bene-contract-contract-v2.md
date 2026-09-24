@@ -5,7 +5,7 @@ tags: [stabilitynexus, benefactionplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/bene_contract/contract_v2.es
@@ -124,3 +124,6 @@ val r8 = SELF.R8[Coll[Coll[Byte]]].get
 val ownerErgoTree = r8(0)          // P2PK/P2S authorization
 val devFeeHash = r8(1)             // Dev fee recipient validation
 val devFee = byteArrayToBigInt(r8(2))  // Fee percentage
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

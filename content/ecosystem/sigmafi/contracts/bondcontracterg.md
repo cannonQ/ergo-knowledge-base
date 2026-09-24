@@ -5,7 +5,7 @@ tags: [k-singh, sigma-finance, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/K-Singh/Sigma-Finance"
 contract_file: contracts/BondContractERG.ergo
@@ -142,3 +142,6 @@ OpenOrder Box
 BondContractERG Box (holds collateral, enforces terms)
     ↓ (split into two paths)
     ├─→ RepaymentBox (to Lender) + ReturnBox (to Borrower)  
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

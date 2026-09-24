@@ -5,7 +5,7 @@ tags: [stabilitynexus, bountiful-bountyplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/Bountiful-BountyPlatform-Ergo"
 contract_file: contracts/dev_fee.es
@@ -136,3 +136,6 @@ Based on the code structure, this contract composes with:
 ```
 Platform Contracts → Accumulate Fees → dev_fee.es (Guard) → 
   Fee Distribution Tx → 
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

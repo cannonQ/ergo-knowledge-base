@@ -5,7 +5,7 @@ tags: [stabilitynexus, benefactionplatform-ergo, ergoscript, contract]
 category: ecosystem
 difficulty: advanced
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/StabilityNexus/BenefactionPlatform-Ergo"
 contract_file: contracts/bene_contract/contract_v1_1.es
@@ -116,3 +116,6 @@ This ensures no tokens are double-counted during complex multi-step transactions
 def isSigmaPropEqualToBoxProp(propAndBox: (SigmaProp, Box)): Boolean = {
   val propBytes: Coll[Byte] = prop.propBytes
   val treeBytes: Coll[
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

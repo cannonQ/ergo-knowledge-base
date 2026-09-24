@@ -5,7 +5,7 @@ tags: [rosen-bridge, scanner, infrastructure, typescript]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-03
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/rosen-bridge/scanner"
 project: rosen-bridge-scanner
@@ -172,3 +172,6 @@ const obsExtractor = new ObservationExtractor(
 
 // 3. Register extractors — the scanner calls processBlock / rollbackBlock
 scanner.registerExt
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

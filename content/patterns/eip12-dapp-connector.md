@@ -5,7 +5,7 @@ tags: [eip12-dapp-connector, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [nautls/nautilus-wallet, ThierryM1212/SAFEW, fleet-sdk/fleet]
 ---
@@ -261,3 +261,6 @@ export interface EIP12AuthApi {
 }
 
 // ─── Context API (the `ergo` object) ──────
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

@@ -5,7 +5,7 @@ tags: [acosmrkas, mew-prediction, defi, typescript, svelte]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/AcoSmrkas/mew-prediction"
 project: acosmrkas-mew-prediction
@@ -169,3 +169,6 @@ Campaign Boxes are identified by their **State NFT Token ID** (fixed at creation
 // Find current campaign Box by NFT
 const response = await fetch(
   `https://api.ergoplatform.com/api/v1/boxes/unspent/byTokenId/${campaignN
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

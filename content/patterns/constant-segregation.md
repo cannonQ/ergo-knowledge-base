@@ -5,7 +5,7 @@ tags: [constant-segregation, pattern, integration]
 category: reference
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-09
+updated: 2026-09-24
 source: auto-generated
 source_repos: [ergoplatform/sigmastate-interpreter, fleet-sdk/fleet]
 ---
@@ -203,3 +203,6 @@ import { OutputBuilder, SAFE_MIN_BOX_VALUE, TransactionBuilder } from "@fleet-sd
 
 const vestingOutput = new OutputBuilder(
   SAFE_MIN_BOX_VALUE,    // Minimum
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*

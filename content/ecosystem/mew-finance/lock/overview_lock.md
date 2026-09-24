@@ -5,7 +5,7 @@ tags: [acosmrkas, mew-lock, defi, typescript, svelte]
 category: ecosystem
 difficulty: intermediate
 sdk: [none]
-updated: 2026-03-04
+updated: 2026-09-24
 source: auto-generated
 source_repo: "https://github.com/AcoSmrkas/mew-lock"
 project: acosmrkas-mew-lock
@@ -107,3 +107,6 @@ The frontend is a SvelteKit/TypeScript single-page application that functions as
 4. No re-locking:      OUTPUTS.forall(_.propositionBytes != SELF.propositionBytes)
                        → assets cannot be recycled into a new lock in the same TX
 5. Dev fee ER
+```
+
+*Listing truncated at generation time; the closing lines are missing. Consult the source repository for the complete file.*
