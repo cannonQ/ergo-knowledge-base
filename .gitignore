@@ -30,6 +30,12 @@ venv/
 *.yaml
 how would I create a simple locking contract.md
 
+# Local environment files (API keys); only the example is tracked
+.env
+.env.local
+mcp-server/.env
+mcp-server/.env.local
+
 # OS
 .DS_Store
 Thumbs.db
