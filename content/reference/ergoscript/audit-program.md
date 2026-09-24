@@ -1,6 +1,6 @@
 ---
 title: "ErgoScript Audit Program — Procedures, Traps, and Severity Matrix"
-description: "Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T19, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill."
+description: "Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T21, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill."
 category: reference
 difficulty: advanced
 tags: [ergoscript, audit, security, severity, traps, debit-side, procedures]
@@ -8,7 +8,7 @@ sdk: [none]
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-19
+updated: 2026-09-24
 ---
 # ErgoScript Audit Program
 
@@ -178,6 +178,8 @@ ABSENT without a cited line is not a verdict.
 | T17 | Token-weighted quorum with concentrated supply | Quorum sums token amounts; if one address holds a quorum, governance is that address. KEY-RISK. | Dexy F-6 `update.es:52` |
 | T18 | Proportional redeem with no liquidity floor | Ratio-invariant fee lets a dominant holder drain to dust; supply 0 bricks mint; pool price resets for downstream consumers. | Dexy F-7 `redeem.es:35` |
 | T19 | Stale trigger reads as sustained | Trigger records first height; reset needs an actor; consumers gate on `trigger < HEIGHT - T`; nobody resets. | Dexy F-8 `tracking.es:111` |
+| T20 | Long arithmetic on a delta before the BigInt upcast | A product or sum of two `Long` deltas computed before `.toBigInt` overflows and throws: fail-closed, but it caps a legitimate value at a ceiling. Find the upcast point and check whether any arithmetic is done Long-first (D-5). | Lithos v2 F-039 (LithosDex; missed by both passes and the EKB tools, recovered only at retest) |
+| T21 | Owner-only path proves ownership on inputs but never requires the token to survive | The path checks the caller holds the ownership token on the input side but never pins it into an output, so a resize, claim, or redeem can burn the owner's own token. Every owner-gated path must force the ownership token into a successor (D-4, D-7). | Lithos v2 F-040 (LithosDex; self-harm class, missed by both passes and the EKB tools) |
 
 ## Severity matrix
 

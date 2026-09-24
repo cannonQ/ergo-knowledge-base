@@ -56,7 +56,7 @@ Pass `"list"` to `get_skill` to see all available skills at any time.
 
 Two independent tools implement a two-pass audit framework:
 
-1. **`audit_contract`** (Pass 1) — Returns security context (9 known vulnerability categories, secure design patterns, LLM pitfall calibration, and the Audit Program: debit-side procedure checklist, pre-named trap register T1–T19 from real findings, severity matrix) plus EKB documentation dynamically matched to your contract's patterns. The LLM performs the initial audit using this grounding data.
+1. **`audit_contract`** (Pass 1) — Returns security context (9 known vulnerability categories, secure design patterns, LLM pitfall calibration, and the Audit Program: debit-side procedure checklist, pre-named trap register T1–T21 from real findings, severity matrix) plus EKB documentation dynamically matched to your contract's patterns. The LLM performs the initial audit using this grounding data.
 
 2. **`audit_verify`** (Pass 2) — Takes the original code and your Pass 1 findings. Returns the same security context but with **independent reviewer framing**: *"Another auditor produced these findings. Assume they made mistakes."* This eliminates confirmation bias and catches false positives and missed issues.
 
