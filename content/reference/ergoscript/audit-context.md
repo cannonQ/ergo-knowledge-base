@@ -106,12 +106,14 @@ A failing read fails the script only if the tree evaluates it. An out-of-range `
 3. Only the hoisted part runs. With `val o = box.R4[Int]` hoisted, a wrongly typed R4 throws and an absent R4 does not (the `.get` stays in the arm). With `val r = box.R4[Int].get` hoisted, both throw.
 4. `anyOf(Coll(...))` and `allOf(Coll(...))` evaluate every element. They do not short-circuit; `||` and `&&` do.
 5. To settle a real contract, read its compiled tree or probe it. The source alone does not say where a multi-use `val` lands. One observed exception: a `val` declared outside and used on both sides of an `&&` inside one arm, each time through the same sub-expression, stayed in the arm.
+6. A sigma-level OR evaluates both sides. In `ownerKey || sigmaProp(condition)` the boolean `condition` is evaluated even when the owner signs. If it throws, the owner's spend fails too. A read inside a branch of `condition` that is not taken is still skipped (point 1).
 
 What it changes for audit work:
 
 - "The transaction cannot exist because a read in another arm throws" is not a valid reason to close an attack. "This path is dead because another arm's read throws" is not a valid liveness finding. Both need the read to be shown to sit in a top-level definition of the compiled tree.
 - The real hazard runs the other way: a multi-use `val` over an output or data-input read makes every path depend on that box's shape, including refund and owner paths that never use the value.
 - `anyOf` and `allOf` over a `Coll` give no guard ordering.
+- An owner or refund key joined to a boolean arm with `||` is reachable only when that arm evaluates without throwing. Argue it from the box layouts the owner can build, not from the key being present.
 
 Limits: MockChain only; fleet-sdk 0.12.0, sigmastate-js 0.4.6; tree versions 0 and 1. A deployed tree may come from another compiler version, so read the compiled tree or probe it.
 
