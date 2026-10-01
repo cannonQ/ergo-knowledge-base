@@ -68,11 +68,11 @@
 - [EIP-0044: Arbitrary Data Signing Standard](content/reference/eips/eip-0044.md): Address types for sidechains (~1024 tokens)
 - [ergoplatform/eips — Overview](content/reference/eips/overview_eips.md): All Ergo Improvement Proposals as structured reference docs (~2078 tokens)
 - [ergoplatform/ergoscript-by-example — Overview](content/reference/ergoscript-by-example/overview_ergoscript-by-example.md): 13 annotated ErgoScript contract examples — pin lock, escrow, token sale, swaps, stealth addresses, timed funds (~2056 tokens)
-- [ErgoScript Audit Context — LLM Pitfalls & Calibration](content/reference/ergoscript/audit-context.md) (~1862 tokens)
+- [ErgoScript Audit Context — LLM Pitfalls & Calibration](content/reference/ergoscript/audit-context.md) (~2893 tokens)
 - [ErgoScript Audit Program — Procedures, Traps, and Severity Matrix](content/reference/ergoscript/audit-program.md): Compact audit program injected into every audit_contract and audit_verify call: the debit-side procedure checklist, the pre-named trap register (T1–T21, each from a real finding), and the severity matrix. The full engagement method is the contract-audit-engagement skill. (~5239 tokens)
 - [ErgoScript Built-in Functions](content/reference/ergoscript/built-in-functions.md): Quick reference for all global/predefined functions available in ErgoScript. (~1171 tokens)
 - [ErgoScript Context Variables](content/reference/ergoscript/context-variables.md): Quick reference for blockchain context objects available in every ErgoScript contract. (~1425 tokens)
-- [Known ErgoScript Security Issues](content/reference/ergoscript/known-issues.md) (~1142 tokens)
+- [Known ErgoScript Security Issues](content/reference/ergoscript/known-issues.md) (~2682 tokens)
 - [ErgoScript Language Specification](content/reference/ergoscript/language-spec.md): Complete reference for the ErgoScript smart contract language: types, operations, context variables, predefined functions, Box/SigmaProp/AvlTree/Coll APIs, and known limitations. (~13388 tokens)
 - [ergoplatform/sigmastate-interpreter — Overview](content/reference/ergoscript/overview_ergoscript.md): ErgoScript compiler internals, ErgoTree spec, test cases as usage examples (~2041 tokens)
 - [Plasma-AVL Phase 2.4-2.6 Race Resolution Patterns](content/reference/ergoscript/plasma-avl-phase-2.4-2.6.md) (~1844 tokens)
@@ -197,7 +197,7 @@
 ## Integration Patterns
 - [AMM / LP mechanics](content/patterns/amm-lp-mechanics.md): AMM / LP mechanics — swap math, liquidity provision, LP token minting, fee extraction, pool state boxes (~2075 tokens)
 - [Constant segregation](content/patterns/constant-segregation.md): Constant segregation — substConstants pattern for contract templates without recompilation (~2408 tokens)
-- [Two-Pass Contract Audit Methodology](content/patterns/contract-audit-methodology.md) (~2291 tokens)
+- [Two-Pass Contract Audit Methodology](content/patterns/contract-audit-methodology.md) (~2354 tokens)
 - [EIP-12 dApp Connector](content/patterns/eip12-dapp-connector.md): EIP-12 dApp Connector — connection API, context API, multi-wallet detection, TypeScript types (~2400 tokens)
 - [ErgoAuth (EIP-28)](content/patterns/ergoauth-authentication.md): ErgoAuth (EIP-28) — user authentication via SigmaProp signature, challenge-response flow (~2250 tokens)
 - [ErgoPay (EIP-20)](content/patterns/ergopay-signing.md): ErgoPay (EIP-20) — mobile signing, URI scheme, dynamic vs static requests, desktop↔mobile flow (~2514 tokens)
@@ -597,4 +597,4 @@
 - [Topic Index](content/topics/topic-index.md) (~12799 tokens)
 
 ---
-Total: 571 documents, ~1,139,995 tokens
+Total: 571 documents, ~1,142,629 tokens

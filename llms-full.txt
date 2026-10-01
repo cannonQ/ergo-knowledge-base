@@ -1,7 +1,7 @@
 # Ergo Developer Knowledge Base — Full Context
 
 Total documents: 571
-Estimated tokens: ~1,139,995
+Estimated tokens: ~1,142,629
 
 ========================================================================
 
@@ -90997,7 +90997,7 @@ tags: [ergoscript, audit, security, llm, two-pass, dual-pass, adjudication, seve
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-08
+updated: 2026-10-01
 ---
 # Two-Pass Contract Audit Methodology
 
@@ -91030,7 +91030,6 @@ A structured approach to auditing ErgoScript contracts using LLMs, developed thr
 │  • Vulnerabilities (CRITICAL/HIGH/MEDIUM/LOW)        │
 │  • Logic errors                                      │
 │  • Best practice violations                          │
-│  • Security rating (1-10)                            │
 └───────────────────────┬─────────────────────────────┘
                         │
                         ▼
@@ -91048,7 +91047,7 @@ A structured approach to auditing ErgoScript contracts using LLMs, developed thr
 │  • Confirmed vulnerabilities                         │
 │  • NEW issues found ("SECOND PASS FINDING")          │
 │  • Removed false positives (with explanations)       │
-│  • Final consolidated security rating                │
+│  • Rating from worst open finding, plus if-fixed     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -91087,8 +91086,10 @@ The first pass performs a standard security audit with pre-calibration:
 4. **List findings** with severity derived from the matrix: magnitude class × likelihood class → cell, plus modifiers; deployment status as a separate field
 5. **Identify logic errors** or potential bugs
 6. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
-7. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
+7. **Verify against all known issues** (13 categories — see Known ErgoScript Security Issues)
 8. **Provide specific recommendations** with code fixes, and confirm the honest path still passes under each fix
+
+Pass 1 gives no overall rating. The rating is produced once, at the end of Pass 2.
 
 **Key:** The system prompt includes the LLM pitfall warnings BEFORE the first pass runs. This pre-calibration reduces (but does not eliminate) false positives in Pass 1 itself.
 
@@ -91113,7 +91114,7 @@ The second pass receives both the original contract AND the complete Pass 1 outp
    - Data input manipulation vectors
    - Front-running opportunities
 6. **Re-derive severity from the matrix** for every finding without reference to Pass 1's cell; log any difference as a ruling with the cell cited
-7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent
+7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent. The last line of the report is the rating line, `Rating: N/10. If fixed: should go to X-Y. Key risks: <ids or none>. Pending: <ids or none>.` The band is set by the worst open finding (rule in the tool's Pass 2 instructions)
 
 ---
 
@@ -101156,7 +101157,7 @@ difficulty: advanced
 tags: [ergoscript, audit, llm, security, calibration, semantics, probes]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-09-23
+updated: 2026-10-01
 ---
 # ErgoScript Audit Context — LLM Pitfalls & Calibration
 
@@ -101202,23 +101203,26 @@ LLMs flag theoretical numeric truncation or overflow issues without considering 
 
 LLMs miss that some patterns are intentional design choices:
 - `&&` can produce smaller ErgoTree than `allOf()` — this is a valid optimization, not a code smell
-- `getVar` is off-chain supplied and may be intentionally flexible to support multiple UIs/backends
+- `getVar` being builder-supplied is by design and not a finding in itself
 
-**Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake.
+`getVar` IS a finding when the value feeds a payee, an amount, a branch choice, or a collection used for a sum, count or payout, and the script does not itself constrain every value the builder could supply there (for a branch choice: each branch is fully constrained on its own; for a collection: distinctness, see Known Issues #13). The value is chosen by whoever builds the transaction.
+
+**Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake. For `getVar`, check what the value feeds before dismissing it.
 
 ---
 
 ## Settled Semantics (empirical, do not re-derive)
 
-Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during the
-ErgoDEX engagement, 2026-09-17 to 2026-09-20. These are probe results, not inferences, and
+Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during audit
+engagements in September and October 2026. These are probe results, not inferences, and
 each has already flipped at least one real finding's verdict.
 
 **Arithmetic and indexing fail closed, they do not fail open.**
 
-- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS and the whole
-  script fails, including when the read sits inside an untaken `if` arm. A `tokens.size >= n`
-  guard makes the same script pass. `getOrElse` returns the default.
+- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS whenever it is
+  evaluated, and the whole script fails. A `tokens.size >= n` guard makes the same script pass.
+  `getOrElse` returns the default. Whether a read inside a branch that is not taken is evaluated
+  at all is covered in the next section.
 - `Long * Int` and `Long * Long` overflow THROW ("long overflow"). The same product taken
   `.toBigInt` first does not overflow.
 - `BigInt` division by zero THROWS ("BigInteger divide by zero").
@@ -101239,6 +101243,31 @@ is wrong as written. The transaction does not exist. Rate the denial of service,
   contract's register read.
 - A refund arm's reachability must be argued from who controls the box layout, not from the
   read being throw-safe.
+
+**The interpreter runs the compiled tree, not the source: branches that are not taken are not evaluated, hoisted definitions always are.**
+
+A failing read fails the script only if the tree evaluates it. An out-of-range `Coll` index and a wrongly typed register read behave the same way in every case below. An earlier version of this page said that an untaken `if` arm throws. That was wrong.
+
+1. Not evaluated unless reached: the arms of an `if`, the right-hand side of a boolean `&&` and `||` (a sigma-level `||` evaluates both sides, point 6), and the body of a function (`def` or lambda). A failing read there does not fail the script when the branch is not taken. This holds whether the condition is a run-time value or a constant, and with constant segregation on or off.
+2. Always evaluated: a definition the compiler places at the top of the script. It runs on every spend, whether or not any use of it is reached. What the compiler places there:
+   - a `val` declared outside the branches and used in two or more places that are not reached together (two `if` arms; an `if` arm and a `||` right-hand side; the two sides of an `&&` inside one arm) is hoisted and always runs;
+   - a `val` used once is moved into its use, so it runs only if that branch does;
+   - a `val` declared inside an arm stays in the arm;
+   - a `val` that is never used is dropped from the tree;
+   - the same read written inline in each arm (no shared `val`) stays in each arm.
+3. Only the hoisted part runs. With `val o = box.R4[Int]` hoisted, a wrongly typed R4 throws and an absent R4 does not (the `.get` stays in the arm). With `val r = box.R4[Int].get` hoisted, both throw.
+4. `anyOf(Coll(...))` and `allOf(Coll(...))` evaluate every element. They do not short-circuit; `||` and `&&` do.
+5. To settle a real contract, read its compiled tree or probe it. The source alone does not say where a multi-use `val` lands. One observed exception: a `val` declared outside and used on both sides of an `&&` inside one arm, each time through the same sub-expression, stayed in the arm.
+6. A sigma-level OR evaluates both sides. In `ownerKey || sigmaProp(condition)` the boolean `condition` is evaluated even when the owner signs. If it throws, the owner's spend fails too. A read inside a branch of `condition` that is not taken is still skipped (point 1).
+
+What it changes for audit work:
+
+- "The transaction cannot exist because a read in another arm throws" is not a valid reason to close an attack. "This path is dead because another arm's read throws" is not a valid liveness finding. Both need the read to be shown to run on that path: it sits in a top-level definition of the compiled tree (point 2), in an element of `anyOf`/`allOf` (point 4), or in an operand of a sigma-level `||` or `&&` (point 6).
+- The real hazard runs the other way: a multi-use `val` over an output or data-input read makes every path depend on that box's shape, including refund and owner paths that never use the value.
+- `anyOf` and `allOf` over a `Coll` give no guard ordering.
+- An owner or refund key joined to a boolean arm with `||` is reachable only when that arm evaluates without throwing. Argue it from the box layouts the owner can build, not from the key being present.
+
+Limits: MockChain only; fleet-sdk 0.12.0, sigmastate-js 0.4.6; tree versions 0 and 1. A deployed tree may come from another compiler version, so read the compiled tree or probe it.
 
 **`getMany` returns a repeated key repeatedly.** A collection taken from a context variable
 and passed to `getMany` without a distinctness check yields duplicate entries, so a per-entry
@@ -101281,6 +101310,7 @@ When auditing ErgoScript contracts:
 6. Detect **OR-branch bypasses** — test each OR branch independently for unintended spending
 7. Check for **front-running vulnerabilities** — identify where sensitive data is revealed in the spending transaction
 8. Verify **data input validation** — ensure data inputs are authenticated, not just assumed
+9. Check **output exclusivity** — for every output a spend path checks, ask what binds it to this input alone, and which other script, version or product pays the same address (Known Issues #10)
 
 
 ========================================================================
@@ -101949,7 +101979,7 @@ difficulty: intermediate
 tags: [ergoscript, security, audit, vulnerabilities]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-03-09
+updated: 2026-10-01
 ---
 # Known ErgoScript Security Issues
 
@@ -101963,13 +101993,15 @@ A checklist of known vulnerability categories for ErgoScript smart contracts. Us
 
 Data inputs are read-only references consumed without being spent. If the contract does not verify the authenticity of a data input (e.g., checking for a specific NFT or known box ID), an attacker can substitute a malicious box with crafted register values.
 
-**Mitigation:** Always verify data input identity via singleton NFT, expected ErgoTree hash, or known box ID.
+A script-hash (ErgoTree) match on a data input proves which script guards the box. It does not prove who created the box or who wrote its registers: anyone can send a hand-built box with arbitrary registers to any script address. This narrows the Audit Program's D-3 and T1, which accept a script-hash pin: for a box whose registers are read, a script hash closes the slot for the script only, not for the register values.
+
+**Mitigation:** Authenticate a data input whose registers you read by a protocol-controlled singleton NFT, or by a known box ID. A script-hash pin alone is a finding when the registers feed a price, an amount, a payee or a branch choice.
 
 ### 2. Token Loss / Unpreserved Tokens
 
 Tokens must be explicitly accounted for in all OUTPUTS. If a contract spends a box containing tokens but does not enforce their presence in outputs, tokens can be permanently lost or stolen.
 
-**Mitigation:** Use `OUTPUTS.exists(...)` checks to enforce token preservation. Verify both token ID and quantity.
+**Mitigation:** Put the tokens in an output whose script, token ID and amount are all checked, and bind that output to this input. Pinning the output by index does not bind it: two boxes of the same script that both check `OUTPUTS(0)` are both satisfied by one output, and the builder keeps the second box's tokens. `OUTPUTS.exists(...)` has the same gap. Use a binding from #10 (write `SELF.id` into the output and check it, pin `SELF` to an input index, or sum over all inputs that share the script). A true one-unit singleton cannot sit in two inputs, so for it the index pin alone is enough.
 
 ### 3. OR-Branch Bypass Paths
 
@@ -102001,6 +102033,8 @@ Block HEIGHT logic is susceptible to off-by-one errors and mempool timing issues
 
 **Mitigation:** Use tolerance windows (e.g., `±10` blocks rather than `±1`) for HEIGHT comparisons. See the Plasma-AVL Phase 2.4-2.6 patterns for a detailed case study.
 
+A height that the transaction builder writes (a deadline or start height in a register, or a box's creation height) is only as tight as the bounds the script puts on it. A one-sided bound lets the builder backdate a window or push a deadline far into the future. Bound it on both sides relative to `HEIGHT` (for example `unlock >= HEIGHT + n && unlock <= HEIGHT + n + slack`).
+
 ### 8. Cyclic Script Hash Dependencies
 
 If contract A's ErgoTree references contract B's hash, and contract B references contract A's hash, neither can be deployed — a chicken-and-egg problem.
@@ -102013,6 +102047,61 @@ ErgoScript evaluation has a JIT cost budget. Complex scripts with deep nesting, 
 
 **Mitigation:** Keep scripts efficient. Profile JIT costs during testing. Break complex logic across multiple contract stages if needed.
 
+### 10. One Output Satisfying Several Inputs (Shared Output / Shared Payee)
+
+Every input's script is evaluated on its own. If a spend path identifies its payout only by who is paid plus `>=` its own amount, or by output position, or by `OUTPUTS.exists`, then one output satisfies every input that makes the same check. The builder co-spends several boxes in one transaction, pays the largest claim once, and keeps the rest.
+
+Example: two boxes both require "an output to address P with value >= `SELF.value`".
+
+| Slot | Content |
+|------|---------|
+| Input 0 | box A, 100 ERG |
+| Input 1 | box B, 80 ERG |
+| Output 0 | P, 100 ERG |
+| Output 1 | builder, 80 ERG |
+
+Box A passes (100 >= 100). Box B passes (100 >= 80). With N boxes the builder keeps everything except the largest.
+
+Shapes to check:
+
+- The same script in several boxes.
+- Several branches of one script reading the same output.
+- Two different scripts that accept the same output (for example a refund and a repayment that pay the same user).
+- Another script's branch that accepts this box as a co-input.
+- A fixed new version co-spent beside a still-live older version that pays the same address.
+- A "singleton" NFT minted in more than one unit, so two boxes can both be "the" box.
+
+The shared payee is the attack surface, not the single contract. Review every script, version and product that pays the same address together.
+
+**Mitigation:** In order of strength:
+
+1. Write `SELF.id` into the payout output (for example in R4) and check it. Each input bound this way needs its own output, so several boxes can still be spent in one transaction. It holds between all scripts that use the same binding in the same register.
+2. Pin the input index (`SELF.id == INPUTS(0).id`). Only one such box fits in a transaction. It holds between scripts that pin the same index.
+3. Sum over all inputs that share the script and require the output to cover the sum. This covers the same script only.
+4. Give each version or product its own payee address. This is operational, and it removes only the cross-version and cross-product cases.
+
+None of 1 to 3 protects a script that has no binding. A box whose script only checks the payee and `>=` its own amount can still be spent beside a bound box and be satisfied by that box's output, and its value goes to the builder. For boxes already deployed without a binding, no new script protects them: option 4 keeps new outputs from paying them off, but two old boxes that pay the same address can still be swept together. Spending the old boxes is the only full protection.
+
+The question an auditor must answer: which other script, in any version or protocol, pays this same address, and what stops one output from satisfying both?
+
+### 11. Positional Trust (Decoy Input or Output)
+
+A script that treats `INPUTS(i)`, `OUTPUTS(i)` or a data input at a fixed index as "the pool box" or "the bank box" without checking its identity lets the builder put a different box in that position. The decoy carries whatever values make the arithmetic pass, with or without the real box elsewhere in the transaction.
+
+**Mitigation:** Check the singleton NFT of every box read by position, and where a specific script is expected, check the script too. Do this in every script that reads the box. Do not rely on another contract's check unless that contract's box is itself proven to be in the transaction.
+
+### 12. Unpinned Residual Goes to the Builder
+
+A script constrains only the outputs it names. Any value or token in the inputs that no checked output is required to hold goes wherever the transaction builder sends it. Checks written as `>=` on one output, or that pin some outputs but not the total, leave a residual.
+
+**Mitigation:** For every spend path write the reconciliation: inputs minus pinned outputs equals the residual, and state who receives it. A residual from the protocol's inputs that goes to an arbitrary builder is a finding unless it is bounded and intended (a stated keeper reward, the miner fee).
+
+### 13. Context-Variable Collections Without Distinctness
+
+A collection supplied by the builder through `getVar` (keys, indexes, box IDs) is attacker-chosen. Passing it to `getMany` returns a repeated key repeatedly, so a per-entry sum, count or payout can be satisfied several times by one real entry.
+
+**Mitigation:** Require the collection to be distinct (for example strictly increasing) before using it for a sum, a count or a payout.
+
 ---
 
 ## Secure Design Patterns
@@ -102020,12 +102109,13 @@ ErgoScript evaluation has a JIT cost budget. Complex scripts with deep nesting, 
 | Pattern | Description |
 |---------|-------------|
 | **CommitReveal** | Hash commitment in stage 1, reveal in stage 2 |
-| **PerpetualToken** | Enforce token preservation via `OUTPUTS.exists(...)` + script hash match |
+| **PerpetualToken** | Enforce token preservation in an output with script match and exact token ID and amount, bound to this input (see #10). An output-index pin or `OUTPUTS.exists(...)` without a binding is the vulnerable form, unless the token is a one-unit singleton |
 | **MultiStage Workflow** | Validate next state via `OUTPUT.propositionBytes.blake2b256 == expected_hash` |
 | **Multisig** | Use `sigmaProp(pkA && pkB)` or `atLeast(n, keys)` |
 | **EmergencyRefund** | Use `HEIGHT > timeout && ownerKey` for stuck-fund recovery |
 | **StateContinuation** | Require next box to preserve registers and tokens |
 | **OracleAuth** | Require oracle NFT or expected box ID for price/data feeds |
+| **ExclusiveOutput** | Write `SELF.id` into the payout output and check it, so each input needs its own output (see #10) |
 
 
 ========================================================================
