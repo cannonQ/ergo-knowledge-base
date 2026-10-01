@@ -94,7 +94,7 @@ const PASS2_RATING_RULE = [
   "  - If no code fix would change the band, write `If fixed: stays at X-Y.`",
   "  - KEY-RISK items do not move the band. Name them after `Key risks:` on the rating line.",
   "  - Needs-validation items do not move the rating. Name them after `Pending:` on the rating line.",
-  "  - If whether boxes are already deployed is itself pending, give the band for the code and put the deployed-box condition in the `until` clause.",
+  "  - If it is not known whether any boxes are already deployed, give the band for the code and state the condition instead, for example: `If fixed: should go to 9-10, provided no unfixed boxes are already deployed.`",
 ];
 
 const handler = createMcpHandler(
