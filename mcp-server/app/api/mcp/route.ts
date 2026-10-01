@@ -72,13 +72,14 @@ const QUICK_SEVERITY_MATRIX = [
   "",
   "Pick the row by whose value is affected and the column by who can do it. The severity is the cell.",
   "There are six outcomes: CRITICAL, HIGH, MEDIUM, LOW, INFO, KEY-RISK. KEY-RISK is reported separately from defects.",
+  "\"A trusted key\" means a key used for what the design grants it. A key or token that does more than it was issued for (one unit of a credential passes a quorum, a key for one box reaches another, a \"singleton\" minted in several units) is not a trusted key: use the \"Anyone, given a realistic state\" column.",
   "This is the plain-language form of the severity matrix in the Audit Program above. Where a finding needs that matrix's modifiers, the Audit Program governs.",
   "Never rate a finding down because the code is not deployed yet.",
 ];
 
 // Rating rule for the end of Pass 2
 const PASS2_RATING_RULE = [
-  "- **Rating** (last line of the report, in exactly this form): `Rating: N/10. If fixed: should go to X-Y.`",
+  "- **Rating** (last line of the report, in this form): `Rating: N/10. If fixed: should go to X-Y. Key risks: <ids or none>. Pending: <ids or none>.`",
   "  - The rating is derived, not estimated. The worst open finding sets the band:",
   "",
   "    | Worst open finding | Band |",
@@ -89,10 +90,11 @@ const PASS2_RATING_RULE = [
   "    | CRITICAL | 1-3 |",
   "",
   "  - Inside the band, how many findings sit at that level and how large their fixes are set the score.",
-  "  - \"If fixed\" is the band of the worst finding left after every recommended CODE fix is applied. A finding the code cannot fix (accepted by design, operational, or affecting boxes already deployed) stays in, and the reason is stated on the same line, for example: `If fixed: should go to 7-8 until the older live boxes are spent or moved to a separate payee address.`",
+  "  - \"If fixed\" is the band of the worst finding left after every recommended CODE fix is applied. A finding the code cannot fix (accepted by design, operational, or affecting boxes already deployed) stays in, and the reason goes in an `until <reason>` clause inside the \"If fixed\" sentence, for example: `If fixed: should go to 7-8 until the older live boxes are spent or moved to a separate payee address.`",
   "  - If no code fix would change the band, write `If fixed: stays at X-Y.`",
-  "  - KEY-RISK items are listed next to the rating and do not move the band.",
-  "  - Needs-validation items are listed as pending and do not move the rating.",
+  "  - KEY-RISK items do not move the band. Name them after `Key risks:` on the rating line.",
+  "  - Needs-validation items do not move the rating. Name them after `Pending:` on the rating line.",
+  "  - If whether boxes are already deployed is itself pending, give the band for the code and put the deployed-box condition in the `until` clause.",
 ];
 
 const handler = createMcpHandler(
@@ -543,7 +545,7 @@ const handler = createMcpHandler(
           "2. **Enumerate all spend paths** — trace every branch in the script's boolean logic",
           "3. **Check against all 13 Known ErgoScript Security Issues:**",
           "   - Unvalidated data inputs (is every data input whose registers are read authenticated by a singleton NFT or box ID? A script-hash match proves the script, not who wrote the registers)",
-          "   - Token loss (are ALL tokens in inputs accounted for in outputs? Is the output pinned by index with script, token ID and amount, rather than `OUTPUTS.exists`?)",
+          "   - Token loss (are ALL tokens in inputs accounted for in outputs? Is the output that holds them checked for script, token ID and amount AND bound to this input (`SELF.id` in the output, an input-index pin, or a sum over same-script inputs)? An output-index pin or `OUTPUTS.exists` alone lets two inputs share one output)",
           "   - OR-branch bypasses (can any `||` branch be satisfied independently in an unintended way?)",
           "   - Missing signature requirements (are all spend paths gated by `sigmaProp`/`proveDlog`/`atLeast`?)",
           "   - Point-at-infinity edge cases (are GroupElement values from registers validated?)",

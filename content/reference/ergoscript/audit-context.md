@@ -53,7 +53,7 @@ LLMs miss that some patterns are intentional design choices:
 - `&&` can produce smaller ErgoTree than `allOf()` — this is a valid optimization, not a code smell
 - `getVar` being builder-supplied is by design and not a finding in itself
 
-`getVar` IS a finding when the value feeds a payee, an amount, a branch choice, or a collection used for a sum, count or payout (see Known Issues #13), because that value is chosen by whoever builds the transaction.
+`getVar` IS a finding when the value feeds a payee, an amount, a branch choice, or a collection used for a sum, count or payout, and the script does not itself constrain every value the builder could supply there (for a branch choice: each branch is fully constrained on its own; for a collection: distinctness, see Known Issues #13). The value is chosen by whoever builds the transaction.
 
 **Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake. For `getVar`, check what the value feeds before dismissing it.
 
@@ -96,7 +96,7 @@ is wrong as written. The transaction does not exist. Rate the denial of service,
 
 A failing read fails the script only if the tree evaluates it. An out-of-range `Coll` index and a wrongly typed register read behave the same way in every case below. An earlier version of this page said that an untaken `if` arm throws. That was wrong.
 
-1. Not evaluated unless reached: the arms of an `if`, the right-hand side of `&&` and `||`, and the body of a function (`def` or lambda). A failing read there does not fail the script when the branch is not taken. This holds whether the condition is a run-time value or a constant, and with constant segregation on or off.
+1. Not evaluated unless reached: the arms of an `if`, the right-hand side of a boolean `&&` and `||` (a sigma-level `||` evaluates both sides, point 6), and the body of a function (`def` or lambda). A failing read there does not fail the script when the branch is not taken. This holds whether the condition is a run-time value or a constant, and with constant segregation on or off.
 2. Always evaluated: a definition the compiler places at the top of the script. It runs on every spend, whether or not any use of it is reached. What the compiler places there:
    - a `val` declared outside the branches and used in two or more places that are not reached together (two `if` arms; an `if` arm and a `||` right-hand side; the two sides of an `&&` inside one arm) is hoisted and always runs;
    - a `val` used once is moved into its use, so it runs only if that branch does;
@@ -110,7 +110,7 @@ A failing read fails the script only if the tree evaluates it. An out-of-range `
 
 What it changes for audit work:
 
-- "The transaction cannot exist because a read in another arm throws" is not a valid reason to close an attack. "This path is dead because another arm's read throws" is not a valid liveness finding. Both need the read to be shown to sit in a top-level definition of the compiled tree.
+- "The transaction cannot exist because a read in another arm throws" is not a valid reason to close an attack. "This path is dead because another arm's read throws" is not a valid liveness finding. Both need the read to be shown to run on that path: it sits in a top-level definition of the compiled tree (point 2), in an element of `anyOf`/`allOf` (point 4), or in an operand of a sigma-level `||` or `&&` (point 6).
 - The real hazard runs the other way: a multi-use `val` over an output or data-input read makes every path depend on that box's shape, including refund and owner paths that never use the value.
 - `anyOf` and `allOf` over a `Coll` give no guard ordering.
 - An owner or refund key joined to a boolean arm with `||` is reachable only when that arm evaluates without throwing. Argue it from the box layouts the owner can build, not from the key being present.

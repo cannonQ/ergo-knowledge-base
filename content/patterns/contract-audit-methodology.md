@@ -123,7 +123,7 @@ The second pass receives both the original contract AND the complete Pass 1 outp
    - Data input manipulation vectors
    - Front-running opportunities
 6. **Re-derive severity from the matrix** for every finding without reference to Pass 1's cell; log any difference as a ruling with the cell cited
-7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent. The last line of the report is the rating line, `Rating: N/10. If fixed: should go to X-Y.` The band is set by the worst open finding (rule in the tool's Pass 2 instructions)
+7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent. The last line of the report is the rating line, `Rating: N/10. If fixed: should go to X-Y. Key risks: <ids or none>. Pending: <ids or none>.` The band is set by the worst open finding (rule in the tool's Pass 2 instructions)
 
 ---
 

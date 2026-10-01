@@ -19,7 +19,7 @@ A checklist of known vulnerability categories for ErgoScript smart contracts. Us
 
 Data inputs are read-only references consumed without being spent. If the contract does not verify the authenticity of a data input (e.g., checking for a specific NFT or known box ID), an attacker can substitute a malicious box with crafted register values.
 
-A script-hash (ErgoTree) match on a data input proves which script guards the box. It does not prove who created the box or who wrote its registers: anyone can send a hand-built box with arbitrary registers to any script address.
+A script-hash (ErgoTree) match on a data input proves which script guards the box. It does not prove who created the box or who wrote its registers: anyone can send a hand-built box with arbitrary registers to any script address. This narrows the Audit Program's D-3 and T1, which accept a script-hash pin: for a box whose registers are read, a script hash closes the slot for the script only, not for the register values.
 
 **Mitigation:** Authenticate a data input whose registers you read by a protocol-controlled singleton NFT, or by a known box ID. A script-hash pin alone is a finding when the registers feed a price, an amount, a payee or a branch choice.
 
@@ -27,7 +27,7 @@ A script-hash (ErgoTree) match on a data input proves which script guards the bo
 
 Tokens must be explicitly accounted for in all OUTPUTS. If a contract spends a box containing tokens but does not enforce their presence in outputs, tokens can be permanently lost or stolen.
 
-**Mitigation:** Pin the output by index, and check its script, its token ID and its amount. `OUTPUTS.exists(...)` only proves that some output somewhere has the property. It does not bind that output to this input, so several inputs can all point at the same output (see #10). Use it only together with a binding to `SELF`.
+**Mitigation:** Put the tokens in an output whose script, token ID and amount are all checked, and bind that output to this input. Pinning the output by index does not bind it: two boxes of the same script that both check `OUTPUTS(0)` are both satisfied by one output, and the builder keeps the second box's tokens. `OUTPUTS.exists(...)` has the same gap. Use a binding from #10 (write `SELF.id` into the output and check it, pin `SELF` to an input index, or sum over all inputs that share the script). A true one-unit singleton cannot sit in two inputs, so for it the index pin alone is enough.
 
 ### 3. OR-Branch Bypass Paths
 
@@ -104,9 +104,9 @@ The shared payee is the attack surface, not the single contract. Review every sc
 1. Write `SELF.id` into the payout output (for example in R4) and check it. Each input bound this way needs its own output, so several boxes can still be spent in one transaction. It holds between all scripts that use the same binding in the same register.
 2. Pin the input index (`SELF.id == INPUTS(0).id`). Only one such box fits in a transaction. It holds between scripts that pin the same index.
 3. Sum over all inputs that share the script and require the output to cover the sum. This covers the same script only.
-4. Give each version or product its own payee address. This is operational.
+4. Give each version or product its own payee address. This is operational, and it removes only the cross-version and cross-product cases.
 
-None of 1 to 3 protects a script that has no binding. A box whose script only checks the payee and `>=` its own amount can still be spent beside a bound box and be satisfied by that box's output, and its value goes to the builder. For boxes already deployed without a binding, the only protection is option 4 for everything new, or spending the old boxes first.
+None of 1 to 3 protects a script that has no binding. A box whose script only checks the payee and `>=` its own amount can still be spent beside a bound box and be satisfied by that box's output, and its value goes to the builder. For boxes already deployed without a binding, no new script protects them: option 4 keeps new outputs from paying them off, but two old boxes that pay the same address can still be swept together. Spending the old boxes is the only full protection.
 
 The question an auditor must answer: which other script, in any version or protocol, pays this same address, and what stops one output from satisfying both?
 
@@ -120,7 +120,7 @@ A script that treats `INPUTS(i)`, `OUTPUTS(i)` or a data input at a fixed index 
 
 A script constrains only the outputs it names. Any value or token in the inputs that no checked output is required to hold goes wherever the transaction builder sends it. Checks written as `>=` on one output, or that pin some outputs but not the total, leave a residual.
 
-**Mitigation:** For every spend path write the reconciliation: inputs minus pinned outputs equals the residual, and state who receives it. A residual above the miner fee that goes to an arbitrary builder is a finding.
+**Mitigation:** For every spend path write the reconciliation: inputs minus pinned outputs equals the residual, and state who receives it. A residual from the protocol's inputs that goes to an arbitrary builder is a finding unless it is bounded and intended (a stated keeper reward, the miner fee).
 
 ### 13. Context-Variable Collections Without Distinctness
 
@@ -135,7 +135,7 @@ A collection supplied by the builder through `getVar` (keys, indexes, box IDs) i
 | Pattern | Description |
 |---------|-------------|
 | **CommitReveal** | Hash commitment in stage 1, reveal in stage 2 |
-| **PerpetualToken** | Enforce token preservation at a pinned output index with script match and exact token ID and amount. `OUTPUTS.exists(...)` without a binding to this input is the vulnerable form (see #10) |
+| **PerpetualToken** | Enforce token preservation in an output with script match and exact token ID and amount, bound to this input (see #10). An output-index pin or `OUTPUTS.exists(...)` without a binding is the vulnerable form, unless the token is a one-unit singleton |
 | **MultiStage Workflow** | Validate next state via `OUTPUT.propositionBytes.blake2b256 == expected_hash` |
 | **Multisig** | Use `sigmaProp(pkA && pkB)` or `atLeast(n, keys)` |
 | **EmergencyRefund** | Use `HEIGHT > timeout && ownerKey` for stuck-fund recovery |
