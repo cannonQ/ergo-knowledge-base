@@ -5,7 +5,7 @@ difficulty: advanced
 tags: [ergoscript, audit, llm, security, calibration, semantics, probes]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-09-23
+updated: 2026-10-01
 ---
 # ErgoScript Audit Context — LLM Pitfalls & Calibration
 
@@ -51,23 +51,26 @@ LLMs flag theoretical numeric truncation or overflow issues without considering 
 
 LLMs miss that some patterns are intentional design choices:
 - `&&` can produce smaller ErgoTree than `allOf()` — this is a valid optimization, not a code smell
-- `getVar` is off-chain supplied and may be intentionally flexible to support multiple UIs/backends
+- `getVar` being builder-supplied is by design and not a finding in itself
 
-**Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake.
+`getVar` IS a finding when the value feeds a payee, an amount, a branch choice, or a collection used for a sum, count or payout (see Known Issues #13), because that value is chosen by whoever builds the transaction.
+
+**Before reporting:** Consider whether the pattern is an intentional tradeoff rather than a mistake. For `getVar`, check what the value feeds before dismissing it.
 
 ---
 
 ## Settled Semantics (empirical, do not re-derive)
 
-Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during the
-ErgoDEX engagement, 2026-09-17 to 2026-09-20. These are probe results, not inferences, and
+Settled on a fleet-sdk MockChain harness (fleet-sdk 0.12.0, sigmastate-js 0.4.6) during audit
+engagements in September and October 2026. These are probe results, not inferences, and
 each has already flipped at least one real finding's verdict.
 
 **Arithmetic and indexing fail closed, they do not fail open.**
 
-- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS and the whole
-  script fails, including when the read sits inside an untaken `if` arm. A `tokens.size >= n`
-  guard makes the same script pass. `getOrElse` returns the default.
+- An out-of-range `Coll` index (`box.tokens(i)` where `i >= tokens.size`) THROWS whenever it is
+  evaluated, and the whole script fails. A `tokens.size >= n` guard makes the same script pass.
+  `getOrElse` returns the default. Whether a read inside a branch that is not taken is evaluated
+  at all is covered in the next section.
 - `Long * Int` and `Long * Long` overflow THROW ("long overflow"). The same product taken
   `.toBigInt` first does not overflow.
 - `BigInt` division by zero THROWS ("BigInteger divide by zero").
@@ -88,6 +91,29 @@ is wrong as written. The transaction does not exist. Rate the denial of service,
   contract's register read.
 - A refund arm's reachability must be argued from who controls the box layout, not from the
   read being throw-safe.
+
+**The interpreter runs the compiled tree, not the source: branches that are not taken are not evaluated, hoisted definitions always are.**
+
+A failing read fails the script only if the tree evaluates it. An out-of-range `Coll` index and a wrongly typed register read behave the same way in every case below. An earlier version of this page said that an untaken `if` arm throws. That was wrong.
+
+1. Not evaluated unless reached: the arms of an `if`, the right-hand side of `&&` and `||`, and the body of a function (`def` or lambda). A failing read there does not fail the script when the branch is not taken. This holds whether the condition is a run-time value or a constant, and with constant segregation on or off.
+2. Always evaluated: a definition the compiler places at the top of the script. It runs on every spend, whether or not any use of it is reached. What the compiler places there:
+   - a `val` declared outside the branches and used in two or more places that are not reached together (two `if` arms; an `if` arm and a `||` right-hand side; the two sides of an `&&` inside one arm) is hoisted and always runs;
+   - a `val` used once is moved into its use, so it runs only if that branch does;
+   - a `val` declared inside an arm stays in the arm;
+   - a `val` that is never used is dropped from the tree;
+   - the same read written inline in each arm (no shared `val`) stays in each arm.
+3. Only the hoisted part runs. With `val o = box.R4[Int]` hoisted, a wrongly typed R4 throws and an absent R4 does not (the `.get` stays in the arm). With `val r = box.R4[Int].get` hoisted, both throw.
+4. `anyOf(Coll(...))` and `allOf(Coll(...))` evaluate every element. They do not short-circuit; `||` and `&&` do.
+5. To settle a real contract, read its compiled tree or probe it. The source alone does not say where a multi-use `val` lands. One observed exception: a `val` declared outside and used on both sides of an `&&` inside one arm, each time through the same sub-expression, stayed in the arm.
+
+What it changes for audit work:
+
+- "The transaction cannot exist because a read in another arm throws" is not a valid reason to close an attack. "This path is dead because another arm's read throws" is not a valid liveness finding. Both need the read to be shown to sit in a top-level definition of the compiled tree.
+- The real hazard runs the other way: a multi-use `val` over an output or data-input read makes every path depend on that box's shape, including refund and owner paths that never use the value.
+- `anyOf` and `allOf` over a `Coll` give no guard ordering.
+
+Limits: MockChain only; fleet-sdk 0.12.0, sigmastate-js 0.4.6; tree versions 0 and 1. A deployed tree may come from another compiler version, so read the compiled tree or probe it.
 
 **`getMany` returns a repeated key repeatedly.** A collection taken from a context variable
 and passed to `getMany` without a distinctness check yields duplicate entries, so a per-entry
@@ -130,3 +156,4 @@ When auditing ErgoScript contracts:
 6. Detect **OR-branch bypasses** — test each OR branch independently for unintended spending
 7. Check for **front-running vulnerabilities** — identify where sensitive data is revealed in the spending transaction
 8. Verify **data input validation** — ensure data inputs are authenticated, not just assumed
+9. Check **output exclusivity** — for every output a spend path checks, ask what binds it to this input alone, and which other script, version or product pays the same address (Known Issues #10)

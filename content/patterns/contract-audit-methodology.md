@@ -6,7 +6,7 @@ tags: [ergoscript, audit, security, llm, two-pass, dual-pass, adjudication, seve
 author: CannonQ
 source: original
 license: AGPL-3.0
-updated: 2026-09-08
+updated: 2026-10-01
 ---
 # Two-Pass Contract Audit Methodology
 
@@ -39,7 +39,6 @@ A structured approach to auditing ErgoScript contracts using LLMs, developed thr
 │  • Vulnerabilities (CRITICAL/HIGH/MEDIUM/LOW)        │
 │  • Logic errors                                      │
 │  • Best practice violations                          │
-│  • Security rating (1-10)                            │
 └───────────────────────┬─────────────────────────────┘
                         │
                         ▼
@@ -57,7 +56,7 @@ A structured approach to auditing ErgoScript contracts using LLMs, developed thr
 │  • Confirmed vulnerabilities                         │
 │  • NEW issues found ("SECOND PASS FINDING")          │
 │  • Removed false positives (with explanations)       │
-│  • Final consolidated security rating                │
+│  • Rating from worst open finding, plus if-fixed     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -96,8 +95,10 @@ The first pass performs a standard security audit with pre-calibration:
 4. **List findings** with severity derived from the matrix: magnitude class × likelihood class → cell, plus modifiers; deployment status as a separate field
 5. **Identify logic errors** or potential bugs
 6. **Check against secure patterns** (CommitReveal, PerpetualToken, MultiStage, etc.)
-7. **Verify against all known issues** (9 categories — see Known ErgoScript Security Issues)
+7. **Verify against all known issues** (13 categories — see Known ErgoScript Security Issues)
 8. **Provide specific recommendations** with code fixes, and confirm the honest path still passes under each fix
+
+Pass 1 gives no overall rating. The rating is produced once, at the end of Pass 2.
 
 **Key:** The system prompt includes the LLM pitfall warnings BEFORE the first pass runs. This pre-calibration reduces (but does not eliminate) false positives in Pass 1 itself.
 
@@ -122,7 +123,7 @@ The second pass receives both the original contract AND the complete Pass 1 outp
    - Data input manipulation vectors
    - Front-running opportunities
 6. **Re-derive severity from the matrix** for every finding without reference to Pass 1's cell; log any difference as a ruling with the cell cited
-7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent
+7. **Produce final consolidated report** with the findings table (id, severity, deployment status, location, title, fix size), the KEY-RISK section separate from defects, and a "verified sound" section listing the traps found absent. The last line of the report is the rating line, `Rating: N/10. If fixed: should go to X-Y.` The band is set by the worst open finding (rule in the tool's Pass 2 instructions)
 
 ---
 

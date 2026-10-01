@@ -56,6 +56,45 @@ function extractSearchTerms(code: string): string {
   return terms.join(" ");
 }
 
+// Quick severity matrix, used in both audit passes
+const QUICK_SEVERITY_MATRIX = [
+  "### Severity: quick matrix",
+  "",
+  "| Whose value, what happens | Anyone, now | Anyone, given a realistic state | Needs collusion, hashrate, a victim's mistake, or a keeper offline | A trusted key |",
+  "|---|---|---|---|---|",
+  "| All of it, or every pool | CRITICAL | HIGH | MEDIUM | KEY-RISK |",
+  "| Other people's funds, bounded | HIGH | HIGH | MEDIUM | KEY-RISK |",
+  "| A protection others rely on is broken | HIGH | MEDIUM | MEDIUM | KEY-RISK |",
+  "| Funds or function permanently locked | HIGH | MEDIUM | MEDIUM | LOW |",
+  "| Temporary delay, no value lost | LOW | LOW | INFO | INFO |",
+  "| Only the actor's own funds | LOW | LOW | LOW | INFO |",
+  "| Nothing | INFO | INFO | INFO | INFO |",
+  "",
+  "Pick the row by whose value is affected and the column by who can do it. The severity is the cell.",
+  "There are six outcomes: CRITICAL, HIGH, MEDIUM, LOW, INFO, KEY-RISK. KEY-RISK is reported separately from defects.",
+  "This is the plain-language form of the severity matrix in the Audit Program above. Where a finding needs that matrix's modifiers, the Audit Program governs.",
+  "Never rate a finding down because the code is not deployed yet.",
+];
+
+// Rating rule for the end of Pass 2
+const PASS2_RATING_RULE = [
+  "- **Rating** (last line of the report, in exactly this form): `Rating: N/10. If fixed: should go to X-Y.`",
+  "  - The rating is derived, not estimated. The worst open finding sets the band:",
+  "",
+  "    | Worst open finding | Band |",
+  "    |---|---|",
+  "    | LOW or INFO only | 9-10 |",
+  "    | MEDIUM | 7-8 |",
+  "    | HIGH | 4-6 |",
+  "    | CRITICAL | 1-3 |",
+  "",
+  "  - Inside the band, how many findings sit at that level and how large their fixes are set the score.",
+  "  - \"If fixed\" is the band of the worst finding left after every recommended CODE fix is applied. A finding the code cannot fix (accepted by design, operational, or affecting boxes already deployed) stays in, and the reason is stated on the same line, for example: `If fixed: should go to 7-8 until the older live boxes are spent or moved to a separate payee address.`",
+  "  - If no code fix would change the band, write `If fixed: stays at X-Y.`",
+  "  - KEY-RISK items are listed next to the rating and do not move the band.",
+  "  - Needs-validation items are listed as pending and do not move the rating.",
+];
+
 const handler = createMcpHandler(
   (server) => {
     // Tool 1: Semantic search across all EKB content
@@ -502,25 +541,32 @@ const handler = createMcpHandler(
           "",
           "1. **Explain** what the contract does in simple terms",
           "2. **Enumerate all spend paths** — trace every branch in the script's boolean logic",
-          "3. **Check against all 9 Known ErgoScript Security Issues:**",
-          "   - Unvalidated data inputs (are data inputs authenticated by NFT/box ID/ErgoTree?)",
-          "   - Token loss (are ALL tokens in inputs accounted for in outputs?)",
+          "3. **Check against all 13 Known ErgoScript Security Issues:**",
+          "   - Unvalidated data inputs (is every data input whose registers are read authenticated by a singleton NFT or box ID? A script-hash match proves the script, not who wrote the registers)",
+          "   - Token loss (are ALL tokens in inputs accounted for in outputs? Is the output pinned by index with script, token ID and amount, rather than `OUTPUTS.exists`?)",
           "   - OR-branch bypasses (can any `||` branch be satisfied independently in an unintended way?)",
           "   - Missing signature requirements (are all spend paths gated by `sigmaProp`/`proveDlog`/`atLeast`?)",
           "   - Point-at-infinity edge cases (are GroupElement values from registers validated?)",
           "   - Front-running (is sensitive data revealed in the spending transaction?)",
-          "   - Incorrect HEIGHT comparisons (off-by-one errors? tolerance window too tight for mempool?)",
+          "   - Incorrect HEIGHT comparisons (off-by-one errors? tolerance window too tight for mempool? Is a height the builder writes bounded on both sides relative to `HEIGHT`, or can a one-sided bound be backdated or pushed far out?)",
           "   - Cyclic script hash dependencies (does the contract reference another contract's hash that references this one?)",
           "   - JIT cost limits (complex folds, deep nesting, large collection operations?)",
+          "   - One output satisfying several inputs (what binds each checked output to this input alone? Consider two boxes of this script in one transaction, another script, an older live version, another product paying the same address)",
+          "   - Positional trust (is every box read by index identified by its NFT?)",
+          "   - Unpinned residual (inputs minus pinned outputs: who gets the rest?)",
+          "   - Context-variable collections without a distinctness check (`getVar` collections used for a sum, count or payout)",
           "4. **Verify against Secure Design Patterns** — does the contract use the right pattern for its purpose?",
-          "   (CommitReveal, PerpetualToken, MultiStage, Multisig, EmergencyRefund, StateContinuation, OracleAuth)",
+          "   (CommitReveal, PerpetualToken, MultiStage, Multisig, EmergencyRefund, StateContinuation, OracleAuth, ExclusiveOutput)",
           "5. **Check ERG and token conservation** — all value must be accounted for across INPUTS → OUTPUTS",
           "6. **Validate register usage** — are R4-R9 accessed with correct types? Are `.get` calls safe?",
           description
             ? "7. **Intent verification** — does the code actually implement the described behavior? Look for logic bugs where the code is secure but does the wrong thing"
             : "",
-          "8. **List all findings** with severity: CRITICAL, HIGH, MEDIUM, LOW",
-          "9. **Rate overall security** on a 1-10 scale",
+          "8. **List all findings** with severity taken from the quick matrix below (name the row and the column used for each)",
+          "",
+          ...QUICK_SEVERITY_MATRIX,
+          "",
+          "Do not give an overall rating or score in Pass 1. The rating is produced once, at the end of Pass 2.",
           "",
           "---",
           "",
@@ -674,19 +720,30 @@ const handler = createMcpHandler(
           "- Data input manipulation vectors (can an attacker substitute a different data input box?)",
           "- Front-running opportunities (is sensitive data revealed before commitment?)",
           "- Off-chain assumptions (\"can a different backend construct a transaction that violates this assumption while still satisfying the script?\")",
+          "- One output satisfying several inputs (co-spend two boxes of this contract; co-spend this box beside any other script, older version or product that pays the same address; does one output satisfy both?)",
+          "- A box read by position without an NFT check",
+          "- A residual that no checked output is required to hold",
           description
             ? "- Intent mismatches (does the code actually do what the description says it should?)"
             : "",
           "",
-          "### Step 4: Produce final consolidated report",
+          "### Step 4: Re-derive severity",
+          "",
+          "Re-derive the severity of every confirmed and new finding from the quick matrix below, independently of the first auditor's label, and state the row and column used.",
+          "",
+          ...QUICK_SEVERITY_MATRIX,
+          "",
+          "### Step 5: Produce final consolidated report",
           "",
           "Your output must include:",
           "- **Contract summary** (1-2 sentences)",
-          "- **Confirmed vulnerabilities** from Pass 1 (with severity + specific code references)",
+          "- **Confirmed vulnerabilities** from Pass 1 (with the re-derived severity + specific code references)",
           "- **Removed false positives** (with explanation for each removal)",
-          "- **New findings** (clearly marked as \"VERIFICATION FINDING\" with severity)",
+          "- **New findings** (clearly marked as \"VERIFICATION FINDING\" with the re-derived severity)",
+          "- **Key risks** (KEY-RISK items), listed separately from defects",
+          "- **Needs validation**: items whose deciding fact could not be settled from the code, listed as pending with what would settle them",
           "- **Final recommendations** with code fixes where applicable",
-          "- **Final security rating** (1-10)",
+          ...PASS2_RATING_RULE,
         ]
           .filter(Boolean)
           .join("\n");

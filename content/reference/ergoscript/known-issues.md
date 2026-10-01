@@ -5,7 +5,7 @@ difficulty: intermediate
 tags: [ergoscript, security, audit, vulnerabilities]
 source: degens-world
 source_url: "https://github.com/Degens-World/Ergo-Context/blob/main/context.md"
-updated: 2026-03-09
+updated: 2026-10-01
 ---
 # Known ErgoScript Security Issues
 
@@ -19,13 +19,15 @@ A checklist of known vulnerability categories for ErgoScript smart contracts. Us
 
 Data inputs are read-only references consumed without being spent. If the contract does not verify the authenticity of a data input (e.g., checking for a specific NFT or known box ID), an attacker can substitute a malicious box with crafted register values.
 
-**Mitigation:** Always verify data input identity via singleton NFT, expected ErgoTree hash, or known box ID.
+A script-hash (ErgoTree) match on a data input proves which script guards the box. It does not prove who created the box or who wrote its registers: anyone can send a hand-built box with arbitrary registers to any script address.
+
+**Mitigation:** Authenticate a data input whose registers you read by a protocol-controlled singleton NFT, or by a known box ID. A script-hash pin alone is a finding when the registers feed a price, an amount, a payee or a branch choice.
 
 ### 2. Token Loss / Unpreserved Tokens
 
 Tokens must be explicitly accounted for in all OUTPUTS. If a contract spends a box containing tokens but does not enforce their presence in outputs, tokens can be permanently lost or stolen.
 
-**Mitigation:** Use `OUTPUTS.exists(...)` checks to enforce token preservation. Verify both token ID and quantity.
+**Mitigation:** Pin the output by index, and check its script, its token ID and its amount. `OUTPUTS.exists(...)` only proves that some output somewhere has the property. It does not bind that output to this input, so several inputs can all point at the same output (see #10). Use it only together with a binding to `SELF`.
 
 ### 3. OR-Branch Bypass Paths
 
@@ -57,6 +59,8 @@ Block HEIGHT logic is susceptible to off-by-one errors and mempool timing issues
 
 **Mitigation:** Use tolerance windows (e.g., `±10` blocks rather than `±1`) for HEIGHT comparisons. See the Plasma-AVL Phase 2.4-2.6 patterns for a detailed case study.
 
+A height that the transaction builder writes (a deadline or start height in a register, or a box's creation height) is only as tight as the bounds the script puts on it. A one-sided bound lets the builder backdate a window or push a deadline far into the future. Bound it on both sides relative to `HEIGHT` (for example `unlock >= HEIGHT + n && unlock <= HEIGHT + n + slack`).
+
 ### 8. Cyclic Script Hash Dependencies
 
 If contract A's ErgoTree references contract B's hash, and contract B references contract A's hash, neither can be deployed — a chicken-and-egg problem.
@@ -69,6 +73,61 @@ ErgoScript evaluation has a JIT cost budget. Complex scripts with deep nesting, 
 
 **Mitigation:** Keep scripts efficient. Profile JIT costs during testing. Break complex logic across multiple contract stages if needed.
 
+### 10. One Output Satisfying Several Inputs (Shared Output / Shared Payee)
+
+Every input's script is evaluated on its own. If a spend path identifies its payout only by who is paid plus `>=` its own amount, or by output position, or by `OUTPUTS.exists`, then one output satisfies every input that makes the same check. The builder co-spends several boxes in one transaction, pays the largest claim once, and keeps the rest.
+
+Example: two boxes both require "an output to address P with value >= `SELF.value`".
+
+| Slot | Content |
+|------|---------|
+| Input 0 | box A, 100 ERG |
+| Input 1 | box B, 80 ERG |
+| Output 0 | P, 100 ERG |
+| Output 1 | builder, 80 ERG |
+
+Box A passes (100 >= 100). Box B passes (100 >= 80). With N boxes the builder keeps everything except the largest.
+
+Shapes to check:
+
+- The same script in several boxes.
+- Several branches of one script reading the same output.
+- Two different scripts that accept the same output (for example a refund and a repayment that pay the same user).
+- Another script's branch that accepts this box as a co-input.
+- A fixed new version co-spent beside a still-live older version that pays the same address.
+- A "singleton" NFT minted in more than one unit, so two boxes can both be "the" box.
+
+The shared payee is the attack surface, not the single contract. Review every script, version and product that pays the same address together.
+
+**Mitigation:** In order of strength:
+
+1. Write `SELF.id` into the payout output (for example in R4) and check it. Each input bound this way needs its own output, so several boxes can still be spent in one transaction. It holds between all scripts that use the same binding in the same register.
+2. Pin the input index (`SELF.id == INPUTS(0).id`). Only one such box fits in a transaction. It holds between scripts that pin the same index.
+3. Sum over all inputs that share the script and require the output to cover the sum. This covers the same script only.
+4. Give each version or product its own payee address. This is operational.
+
+None of 1 to 3 protects a script that has no binding. A box whose script only checks the payee and `>=` its own amount can still be spent beside a bound box and be satisfied by that box's output, and its value goes to the builder. For boxes already deployed without a binding, the only protection is option 4 for everything new, or spending the old boxes first.
+
+The question an auditor must answer: which other script, in any version or protocol, pays this same address, and what stops one output from satisfying both?
+
+### 11. Positional Trust (Decoy Input or Output)
+
+A script that treats `INPUTS(i)`, `OUTPUTS(i)` or a data input at a fixed index as "the pool box" or "the bank box" without checking its identity lets the builder put a different box in that position. The decoy carries whatever values make the arithmetic pass, with or without the real box elsewhere in the transaction.
+
+**Mitigation:** Check the singleton NFT of every box read by position, and where a specific script is expected, check the script too. Do this in every script that reads the box. Do not rely on another contract's check unless that contract's box is itself proven to be in the transaction.
+
+### 12. Unpinned Residual Goes to the Builder
+
+A script constrains only the outputs it names. Any value or token in the inputs that no checked output is required to hold goes wherever the transaction builder sends it. Checks written as `>=` on one output, or that pin some outputs but not the total, leave a residual.
+
+**Mitigation:** For every spend path write the reconciliation: inputs minus pinned outputs equals the residual, and state who receives it. A residual above the miner fee that goes to an arbitrary builder is a finding.
+
+### 13. Context-Variable Collections Without Distinctness
+
+A collection supplied by the builder through `getVar` (keys, indexes, box IDs) is attacker-chosen. Passing it to `getMany` returns a repeated key repeatedly, so a per-entry sum, count or payout can be satisfied several times by one real entry.
+
+**Mitigation:** Require the collection to be distinct (for example strictly increasing) before using it for a sum, a count or a payout.
+
 ---
 
 ## Secure Design Patterns
@@ -76,9 +135,10 @@ ErgoScript evaluation has a JIT cost budget. Complex scripts with deep nesting, 
 | Pattern | Description |
 |---------|-------------|
 | **CommitReveal** | Hash commitment in stage 1, reveal in stage 2 |
-| **PerpetualToken** | Enforce token preservation via `OUTPUTS.exists(...)` + script hash match |
+| **PerpetualToken** | Enforce token preservation at a pinned output index with script match and exact token ID and amount. `OUTPUTS.exists(...)` without a binding to this input is the vulnerable form (see #10) |
 | **MultiStage Workflow** | Validate next state via `OUTPUT.propositionBytes.blake2b256 == expected_hash` |
 | **Multisig** | Use `sigmaProp(pkA && pkB)` or `atLeast(n, keys)` |
 | **EmergencyRefund** | Use `HEIGHT > timeout && ownerKey` for stuck-fund recovery |
 | **StateContinuation** | Require next box to preserve registers and tokens |
 | **OracleAuth** | Require oracle NFT or expected box ID for price/data feeds |
+| **ExclusiveOutput** | Write `SELF.id` into the payout output and check it, so each input needs its own output (see #10) |
