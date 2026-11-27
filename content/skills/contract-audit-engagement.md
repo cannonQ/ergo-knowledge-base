@@ -155,6 +155,7 @@ reported that does not point at a workpaper.
 | 0.2 | List in-scope contracts by file. List explicitly what is out (builders, UI, tests, legacy fixtures). |
 | 0.3 | Name the report recipient, the deadline, and whether the engagement is developer-requested or independent. |
 | 0.4 | Record the engagement **type**: pre-deployment, review of a deployed system, or incident. Only the last two use any chain procedure (E-1b, E-6). |
+| 0.4b | Record the **chain** the contracts run on: `ergo` or `yolo` (YOLO SigmaChain). Ask whoever requested the audit; do not infer it from the repo, the constants, or the methods used. It is passed as `chain` on every `audit_contract` and `audit_verify` call. |
 | 0.5 | List every **instance** of the contract set (DexyGold, USE, …) with its constants source and, if deployed, value held. All in scope at equal rigour unless excluded here. |
 | 0.6 | Confirm the severity matrix applies unchanged. Any project-specific adjustment is written here, before fieldwork, with a reason. |
 | 0.7 | List the tooling available (EKB audit tools, compiler, MockChain, node). A procedure that needs absent tooling is N/A with that reason, never quietly downgraded. |
@@ -477,8 +478,15 @@ engagement wraps them:
 1. **Phase 3, coverage and prosecutor.** Call `audit_contract` **once per contract**,
    not once per cluster: it is a per-contract tool whose matched-docs are a semantic
    search on that contract's patterns, and concatenating a cluster dilutes the match
-   and overflows the input. Put the security-context and matched-docs sections for a
-   group's contracts into that group's brief file. Then run two separate contexts on
+   and overflows the input. Pass the `chain` recorded in the memo on every call (and
+   on `audit_verify` in 4.1). For a chain other than `ergo` the return opens with a
+   "Chain facts" section, marks Ergo figures in the rest of the context, and adds
+   chain checks to the instructions; a return may also carry "Proposed cross-chain
+   traps", which are proposed and do not come from real losses. `compact: true`
+   leaves out the four fixed pages and lists the calls that fetch them: use it when a
+   full return does not fit in one tool result, and fetch the fixed pages once per
+   engagement. Put the security-context and matched-docs sections for a
+   group's contracts into that group's brief file, with "Chain facts" once. Then run two separate contexts on
    that brief: a coverage pass (procedures, closing lines) and a prosecutor pass
    (presume exploitable, build the transaction, concede only to a line you tried to
    route around), on different model tiers if you can. In Claude Code that is two
