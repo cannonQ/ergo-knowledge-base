@@ -1,0 +1,65 @@
+== 1. Not evaluated unless reached ==
+AGREES  | if arm not taken (run-time condition)                            | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | if arm taken (control: the read does throw)                      | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0) | v0: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0)
+AGREES  | if arm not taken (constant condition)                            | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | && right side, left is false                                     | rule: skipped | v3: skipped (false) | v0: skipped (false)
+AGREES  | || right side, left is true                                      | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | def body, function not called on this path                       | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | lambda body, lambda not called on this path                      | rule: skipped | v3: skipped (true) | v0: skipped (true)
+
+== 2. Where a val lands ==
+AGREES  | val outside, used in two if arms, neither taken                  | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0) | v0: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0)
+AGREES  | val outside, used in an if arm and a || right side               | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0) | v0: runs    (THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0)
+AGREES  | val outside, used on both sides of && inside one arm             | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException ) | v0: runs    (THROWS ArrayIndexOutOfBoundsException )
+AGREES  |   same, both uses through the same sub-expression                | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | val outside, used once, in an arm not taken                      | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | val declared inside the arm, used twice there                    | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | val never used                                                   | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | same read written inline in two arms, neither taken              | rule: skipped | v3: skipped (true) | v0: skipped (true)
+
+== 3. Only the hoisted part runs ==
+AGREES  | hoisted `val o = SELF.R5[Int]`, R5 absent                        | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | hoisted `val o = SELF.R5[Int]`, R5 holds a Long                  | rule: runs    | v3: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at) | v0: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at)
+AGREES  | hoisted `val r = SELF.R5[Int].get`, R5 absent                    | rule: runs    | v3: runs    (THROWS NoSuchElementException None.get) | v0: runs    (THROWS NoSuchElementException None.get)
+AGREES  | hoisted `val r = SELF.R5[Int].get`, R5 holds a Long              | rule: runs    | v3: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at) | v0: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at)
+
+== 4. anyOf / allOf ==
+AGREES  | anyOf(Coll(true, bad read))                                      | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException ) | v0: runs    (THROWS ArrayIndexOutOfBoundsException )
+AGREES  | allOf(Coll(false, bad read))                                     | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException ) | v0: runs    (THROWS ArrayIndexOutOfBoundsException )
+
+== 6. Sigma-level OR ==
+AGREES  | key || sigmaProp(bad read)                                       | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException ) | v0: runs    (THROWS ArrayIndexOutOfBoundsException )
+AGREES  | key || sigmaProp(if (not taken) bad read else true)              | rule: skipped | v3: skipped (true) | v0: skipped (true)
+
+== Fail-closed arithmetic and register reads ("runs" = throws) ==
+AGREES  | Coll index out of range                                          | rule: runs    | v3: runs    (THROWS ArrayIndexOutOfBoundsException ) | v0: runs    (THROWS ArrayIndexOutOfBoundsException )
+AGREES  |   same behind a tokens.size guard                                | rule: skipped | v3: skipped (false) | v0: skipped (false)
+AGREES  | Long * Long overflow                                             | rule: runs    | v3: runs    (THROWS ArithmeticException long overflow) | v0: runs    (THROWS ArithmeticException long overflow)
+AGREES  |   same product taken .toBigInt first                             | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | BigInt division by zero                                          | rule: runs    | v3: runs    (THROWS ArithmeticException BigInteger divide by zero) | v0: runs    (THROWS ArithmeticException BigInteger divide by zero)
+AGREES  | R5[Int].getOrElse(0), R5 absent                                  | rule: skipped | v3: skipped (true) | v0: skipped (true)
+AGREES  | R5[Int].getOrElse(0), R5 holds a Long                            | rule: runs    | v3: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at) | v0: runs    (THROWS InvalidType Cannot getReg[Int](5): invalid type of value TestValue(7) at)
+
+agrees with the version 0/1 rule at version 3: 30; differs: 0
+
+== Sigma 6.0 methods (activated version 3, tree version 3) ==
+FACT    | Global.decodeNbits(104330148) == 61519568044032 (the difficulty) | true
+FACT    | a 6.0 method in a version 0 tree under activated version 2       | THROWS MethodNotFound  line 1: { sigmaProp(Global.decodeNbits(104330148L) > 0.toBi
+FACT    | Ergo mainnet header 1924816: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924816: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924817: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924817: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924818: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924818: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924818: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924818: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924819: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924819: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924819: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924819: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924820: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924820: blake2b256(bytes) == stated id == header.id | true
+FACT    | Ergo mainnet header 1924821: deserializeTo[Header](bytes).checkPow | true
+FACT    | Ergo mainnet header 1924821: blake2b256(bytes) == stated id == header.id | true
+FACT    | YOLO test chain header 3988: deserializeTo[Header](bytes).checkPow | false
+FACT    | YOLO test chain header 3988: blake2b256(bytes) == stated id == header.id | true

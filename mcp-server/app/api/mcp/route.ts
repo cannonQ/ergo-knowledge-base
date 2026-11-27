@@ -17,6 +17,30 @@ import {
   listAvailableErgoscriptRefs,
   listAvailableSkills,
 } from "@/lib/docs";
+import {
+  CHAINS,
+  COMPACT_CONTEXT_NOTE,
+  chainFactsSection,
+  chainPass1Steps,
+  chainPass2Checks,
+  conditionalSections,
+  formatMatchedDocs,
+  qualifyForChain,
+} from "@/lib/audit";
+
+// Inputs shared by both audit tools. Left at their defaults they change nothing.
+const CHAIN_INPUT = z
+  .enum(CHAINS)
+  .default("ergo")
+  .describe(
+    "Chain the contract runs on: 'ergo' (default) or 'yolo' (YOLO SigmaChain: 30 second blocks, Sigma 6.0 from block 1). 'yolo' adds a Chain facts block and marks Ergo figures in the context."
+  );
+const COMPACT_INPUT = z
+  .boolean()
+  .default(false)
+  .describe(
+    "Set true to leave out the fixed audit context (about 54,000 characters, the same for every contract) so the result fits in one tool result. The result then lists the four calls that fetch it once."
+  );
 
 // Extract key terms from ErgoScript code for semantic search
 function extractSearchTerms(code: string): string {
@@ -451,6 +475,7 @@ const handler = createMcpHandler(
         "Returns security context (known issues, secure patterns, LLM pitfalls), " +
         "relevant EKB documentation matched to the contract's patterns, " +
         "and detailed Pass 1 audit instructions. " +
+        "Optional: chain ('ergo' default, or 'yolo') and compact (true returns the per-contract part only). " +
         "After completing Pass 1, call audit_verify with your findings for independent verification.",
       {
         code: z
@@ -462,8 +487,10 @@ const handler = createMcpHandler(
           .describe(
             "Optional description of what the contract should do (enables intent-based auditing)"
           ),
+        chain: CHAIN_INPUT,
+        compact: COMPACT_INPUT,
       },
-      async ({ code, description }) => {
+      async ({ code, description, chain, compact }) => {
         // 1. Load static audit context (known issues + pitfalls + methodology)
         const auditContext = getAuditContext();
 
@@ -490,11 +517,16 @@ const handler = createMcpHandler(
           return true;
         });
 
-        const relevantDocs = uniqueResults.length > 0
-          ? uniqueResults
-              .map((r) => `### ${r.title}\n**Source:** ${r.file_path}\n\n${r.text}`)
-              .join("\n\n---\n\n")
-          : "No additional relevant documentation found.";
+        const relevantDocs = qualifyForChain(
+          formatMatchedDocs(uniqueResults, compact),
+          chain
+        );
+        // Chain facts (non-ergo only) and the sections that depend on what the contract uses
+        const chainFacts = chainFactsSection(chain);
+        const extraSections = conditionalSections(code, chain);
+        const fixedContext = compact
+          ? COMPACT_CONTEXT_NOTE
+          : qualifyForChain(auditContext, chain);
 
         // 3. Assemble the Pass 1 audit package
         const auditPackage = [
@@ -508,6 +540,7 @@ const handler = createMcpHandler(
           "",
           "---",
           "",
+          chainFacts,
           "## eUTXO Model — Core Reference",
           "",
           "Ergo uses the extended UTXO model. Key principles for auditing:",
@@ -527,10 +560,11 @@ const handler = createMcpHandler(
           "",
           "## Audit Context — Known Issues, Secure Patterns & LLM Pitfalls",
           "",
-          auditContext,
+          fixedContext,
           "",
           "---",
           "",
+          extraSections,
           "## Relevant EKB Documentation",
           "",
           relevantDocs,
@@ -564,6 +598,7 @@ const handler = createMcpHandler(
           description
             ? "7. **Intent verification** — does the code actually implement the described behavior? Look for logic bugs where the code is secure but does the wrong thing"
             : "",
+          chainPass1Steps(chain),
           "8. **List all findings** with severity taken from the quick matrix below (name the row and the column used for each)",
           "",
           ...QUICK_SEVERITY_MATRIX,
@@ -595,6 +630,7 @@ const handler = createMcpHandler(
         "Takes the original contract code and Pass 1 audit findings, " +
         "then returns security context with independent reviewer instructions. " +
         "Designed to catch false positives and find issues the first pass missed. " +
+        "Optional: chain and compact, as in audit_contract; pass the same values in both passes. " +
         "Call this after audit_contract with your Pass 1 output.",
       {
         code: z
@@ -609,8 +645,10 @@ const handler = createMcpHandler(
           .describe(
             "Optional description of what the contract should do"
           ),
+        chain: CHAIN_INPUT,
+        compact: COMPACT_INPUT,
       },
-      async ({ code, pass1_findings, description }) => {
+      async ({ code, pass1_findings, description, chain, compact }) => {
         // 1. Load the same static audit context
         const auditContext = getAuditContext();
 
@@ -635,11 +673,16 @@ const handler = createMcpHandler(
           return true;
         });
 
-        const relevantDocs = uniqueResults.length > 0
-          ? uniqueResults
-              .map((r) => `### ${r.title}\n**Source:** ${r.file_path}\n\n${r.text}`)
-              .join("\n\n---\n\n")
-          : "No additional relevant documentation found.";
+        const relevantDocs = qualifyForChain(
+          formatMatchedDocs(uniqueResults, compact),
+          chain
+        );
+        // Chain facts (non-ergo only) and the sections that depend on what the contract uses
+        const chainFacts = chainFactsSection(chain);
+        const extraSections = conditionalSections(code, chain);
+        const fixedContext = compact
+          ? COMPACT_CONTEXT_NOTE
+          : qualifyForChain(auditContext, chain);
 
         // 3. Assemble the Pass 2 verification package
         const verifyPackage = [
@@ -667,6 +710,7 @@ const handler = createMcpHandler(
           "",
           "---",
           "",
+          chainFacts,
           "## eUTXO Model — Core Reference",
           "",
           "Ergo uses the extended UTXO model. Key principles for verification:",
@@ -684,10 +728,11 @@ const handler = createMcpHandler(
           "",
           "## Audit Context — Known Issues, Secure Patterns & LLM Pitfalls",
           "",
-          auditContext,
+          fixedContext,
           "",
           "---",
           "",
+          extraSections,
           "## Relevant EKB Documentation",
           "",
           relevantDocs,
@@ -725,6 +770,7 @@ const handler = createMcpHandler(
           "- One output satisfying several inputs (co-spend two boxes of this contract; co-spend this box beside any other script, older version or product that pays the same address; does one output satisfy both?)",
           "- A box read by position without an NFT check",
           "- A residual that no checked output is required to hold",
+          chainPass2Checks(chain),
           description
             ? "- Intent mismatches (does the code actually do what the description says it should?)"
             : "",

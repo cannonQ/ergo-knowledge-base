@@ -31,8 +31,8 @@ Add to your MCP config (Claude Code, Gemini CLI, Codex CLI, Cursor, VS Code, Win
 | `get_ergoscript_ref` | ErgoScript language reference | `"built-in-functions"`, `"types"`, `"context-variables"` |
 | `list_projects` | Retrieves the master list of all 65 ecosystem projects | *(no input)* |
 | `get_skill` | Complete actionable skill docs (returned in full, not chunked) | `"nautilus"`, `"babel-fees"`, `"plasma-avl"`, `"list"` |
-| `audit_contract` | Pass 1: Initial ErgoScript security audit with full EKB context | ErgoScript code + optional description |
-| `audit_verify` | Pass 2: Independent verification of Pass 1 findings — catches false positives and missed issues | ErgoScript code + Pass 1 findings |
+| `audit_contract` | Pass 1: Initial ErgoScript security audit with full EKB context | ErgoScript code + optional description, `chain`, `compact` |
+| `audit_verify` | Pass 2: Independent verification of Pass 1 findings — catches false positives and missed issues | ErgoScript code + Pass 1 findings + optional `chain`, `compact` |
 
 ## Skills
 
@@ -61,6 +61,13 @@ Two independent tools implement a two-pass audit framework:
 2. **`audit_verify`** (Pass 2) — Takes the original code and your Pass 1 findings. Returns the same security context but with **independent reviewer framing**: *"Another auditor produced these findings. Assume they made mistakes."* This eliminates confirmation bias and catches false positives and missed issues.
 
 The two-tool split means Pass 2 approaches the contract fresh — or in Claude Code, you can spawn a subagent for Pass 2 (literally separate context window). Works with any LLM: Claude, Gemini, GPT, etc.
+
+Both tools take two optional inputs. Left out, the output is the same as before they existed.
+
+- **`chain`**: `ergo` (default) or `yolo`. With `yolo` the result opens with a Chain facts block for YOLO SigmaChain (30 second blocks, one-year storage rent, relay limits, address prefix) and marks lines in the Ergo-written context that state an Ergo figure. All YOLO numbers live in one page, `content/reference/ergoscript/yolo-chain-facts.md`, which points to the YOLO developer guide.
+- **`compact`**: `true` leaves out the four fixed context pages (about 54,000 characters, the same for every contract) and lists the calls that fetch them once, so a per-contract result fits in one tool result.
+
+Two sections are added by what the contract uses, on either chain: probe results for tree version 3 and the Sigma 6.0 methods (when the contract calls a 6.0 method, or the chain is `yolo`), and eight **proposed** cross-chain traps X1–X8 (when the contract deserializes a `Header` or `Box` or checks proof of work). The proposed traps do not come from real losses and are labelled so.
 
 For any contract that holds or moves funds, run Pass 1 **twice in independent contexts** before Pass 2, and adjudicate every disagreement with the burden on the side that said safe. A single Pass 1 declared the Dexy LP cluster clean while the pool was being drained. See the `contract-audit-engagement` skill for the full method.
 
