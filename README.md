@@ -69,6 +69,8 @@ Both tools take two optional inputs. Left out, the output is the same as before 
 
 Two sections are added by what the contract uses, on either chain: probe results for tree version 3 and the Sigma 6.0 methods (when the contract calls a 6.0 method, or the chain is `yolo`), and eight **proposed** cross-chain traps X1–X8 (when the contract deserializes a `Header` or `Box` or checks proof of work). The proposed traps do not come from real losses and are labelled so.
 
+`audit_verify` also carries a proposed mutation checklist (MC1 to MC20): twenty hostile changes to an honest transaction, answered per spend path. It is adapted from the mutator list of [ergo-redteam-lab](https://github.com/a-shannon/ergo-redteam-lab) and is marked proposed.
+
 For any contract that holds or moves funds, run Pass 1 **twice in independent contexts** before Pass 2, and adjudicate every disagreement with the burden on the side that said safe. A single Pass 1 declared the Dexy LP cluster clean while the pool was being drained. See the `contract-audit-engagement` skill for the full method.
 
 ## What to Ask

@@ -117,6 +117,14 @@ What it changes for audit work:
 
 Limits: MockChain only; fleet-sdk 0.12.0, sigmastate-js 0.4.6; tree versions 0 and 1. A deployed tree may come from another compiler version, so read the compiled tree or probe it.
 
+**Positional box indexes, a literal `sigmaProp(true)`, and the size constants.**
+
+Probed on 28 November 2026 with the stock Scala library (sigma-state 6.0.7, `fullReduction`), at tree version 3 and at tree version 0, with the same result at both. Probe and output: `examples/probes/audit-basics/`.
+
+- `OUTPUTS(k)`, `INPUTS(k)` and `CONTEXT.dataInputs(k)` with `k` out of range THROW like any other `Coll` index, and a size guard in front (`OUTPUTS.size > 1 && OUTPUTS(1)...`) returns false instead. In `ownerKey || sigmaProp(OUTPUTS(1).value > 0L)` the owner's spend also throws in a one-output transaction. With the size guard inside the `sigmaProp`, the owner's spend needs only the signature. So an unguarded positional index is a liveness question (which transaction shapes can no path accept?), not a theft by itself.
+- A literal `sigmaProp(true)` reduces to true: `key || sigmaProp(true)` needs no signature, and so does an `if` arm that returns it when taken. `key && sigmaProp(true)` still needs the signature. `key || sigmaProp(cond)` needs no signature whenever `cond` evaluates to true, so the literal is only the plainest case of an OR arm (category 3). `key || sigmaProp(false)` needs the signature and `key && sigmaProp(false)` can never be spent.
+- The library's size constants are `MaxBoxSize` 4,096 bytes, `MaxPropositionBytes` 4,096 bytes and `MaxTokens` 255. These were read from the library. The probe does not enforce them, and no oversized box was sent to a node. A box holds its script, its tokens and its registers inside the one box limit, so a script near the limit leaves little room for the rest, and a successor that grows on each spend (a longer collection in a register, one more token) can reach a size no transaction can create.
+
 **`getMany` returns a repeated key repeatedly.** A collection taken from a context variable
 and passed to `getMany` without a distinctness check yields duplicate entries, so a per-entry
 sum or payout can be satisfied more than once by one real entry. This is the origin of trap T8.

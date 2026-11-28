@@ -1,0 +1,25 @@
+Probe run 2026-11-28. sigma-state 6.0.7, Scala 2.12.18, scala-cli. Command: scala-cli --power run --server=false Probe.scala
+
+== 1. Positional box index out of range (one input, one output, no data inputs) ==
+OUTPUTS(0) (control: exists)                                       | v3: true                                                       | v0: true
+OUTPUTS(1)                                                         | v3: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1 | v0: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1
+INPUTS(1)                                                          | v3: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1 | v0: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1
+CONTEXT.dataInputs(0)                                              | v3: THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0 | v0: THROWS ArrayIndexOutOfBoundsException Index 0 out of bounds for length 0
+OUTPUTS.size > 1 && OUTPUTS(1) ...                                 | v3: false                                                      | v0: false
+key || sigmaProp(OUTPUTS(1) ...)                                   | v3: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1 | v0: THROWS ArrayIndexOutOfBoundsException Index 1 out of bounds for length 1
+key || sigmaProp(OUTPUTS.size > 1 && OUTPUTS(1) ...)               | v3: sigma                                                      | v0: sigma
+== 2. Literal sigmaProp(true) and sigmaProp(false) ==
+key alone (control)                                                | v3: sigma                                                      | v0: sigma
+sigmaProp(true)                                                    | v3: true                                                       | v0: true
+key || sigmaProp(true)                                             | v3: true                                                       | v0: true
+key && sigmaProp(true)                                             | v3: sigma                                                      | v0: sigma
+key || sigmaProp(false)                                            | v3: sigma                                                      | v0: sigma
+key && sigmaProp(false)                                            | v3: false                                                      | v0: false
+key || sigmaProp(R4 == 0), R4 is 0                                 | v3: true                                                       | v0: true
+key || sigmaProp(R4 == 0), R4 is 1                                 | v3: sigma                                                      | v0: sigma
+if (R4 == 0) sigmaProp(true) else key, R4 is 0                     | v3: true                                                       | v0: true
+== 3. Size constants in sigma-state 6.0.7 (read from the library, not enforced by this probe) ==
+SigmaConstants.MaxBoxSize            = 4096
+SigmaConstants.MaxPropositionBytes   = 4096
+SigmaConstants.MaxTokens             = 255
+SigmaConstants.MaxBoxSizeWithoutRefs = 4062

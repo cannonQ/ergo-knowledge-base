@@ -3,7 +3,7 @@ import path from "path";
 
 // Chain-specific and conditional sections for audit_contract and audit_verify.
 // With chain "ergo", no 6.0 or cross-chain construct in the contract, and compact off,
-// nothing in this file adds to or changes the tool output.
+// the only thing this file adds to the tool output is the mutation checklist in audit_verify.
 
 const ES_REF_DIR = path.join(process.cwd(), "..", "content", "reference", "ergoscript");
 
@@ -122,6 +122,19 @@ export function formatMatchedDocs(
       return `### ${r.title}\n**Source:** ${r.file_path}\n\n${text}`;
     })
     .join("\n\n---\n\n");
+}
+
+// Proposed mutation checklist, placed in every audit_verify result (Pass 2 only).
+export function mutationChecklistSection(): string {
+  const page = readPage("mutation-checklist.md");
+  if (!page) return "";
+  return [page, "", "---", ""].join("\n");
+}
+
+// The Pass 2 step that points at the checklist. Empty if the page is missing.
+export function mutationPass2Check(): string {
+  if (!readPage("mutation-checklist.md")) return "";
+  return "- The proposed mutation checklist above (MC1 to MC20): for each spend path, give a verdict per row (BLOCKED with the line, ACCEPTED with what it gains or costs, or N/A). An ACCEPTED is a lead until you show who it harms";
 }
 
 // Instruction steps that make an auditor use the Chain facts block. Empty for ergo.

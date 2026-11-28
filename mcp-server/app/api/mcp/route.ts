@@ -23,6 +23,8 @@ import {
   chainFactsSection,
   chainPass1Steps,
   chainPass2Checks,
+  mutationChecklistSection,
+  mutationPass2Check,
   conditionalSections,
   formatMatchedDocs,
   qualifyForChain,
@@ -733,6 +735,7 @@ const handler = createMcpHandler(
           "---",
           "",
           extraSections,
+          mutationChecklistSection(),
           "## Relevant EKB Documentation",
           "",
           relevantDocs,
@@ -771,6 +774,7 @@ const handler = createMcpHandler(
           "- A box read by position without an NFT check",
           "- A residual that no checked output is required to hold",
           chainPass2Checks(chain),
+          mutationPass2Check(),
           description
             ? "- Intent mismatches (does the code actually do what the description says it should?)"
             : "",
